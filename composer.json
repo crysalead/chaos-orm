@@ -1,0 +1,22 @@
+{
+    "name": "crysalead/chaos",
+    "description": "DataMapper ORM for PHP 5.4+.",
+    "keywords": ["DataMapper", "ORM", "Model"],
+    "license": "MIT",
+        "require": {
+        "php": ">=5.4",
+        "crysalead/string": "dev-master",
+        "crysalead/set": "dev-master"
+    },
+    "require-dev": {
+        "php": ">=5.4",
+        "crysalead/kahlan": "dev-master"
+    },
+    "autoload": {
+        "psr-4": { "chaos\\": "src/" }
+    },
+    "config": {
+        "bin-dir": "bin"
+    },
+    "minimum-stability": "dev"
+}
