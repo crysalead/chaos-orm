@@ -6,7 +6,7 @@ use RuntimeException;
 /**
  * SQL CRUD helper
  */
-class Select
+class CreateTable
 {
     /**
      * The generated SQL query.
@@ -28,14 +28,11 @@ class Select
      * @var string
      */
     protected $_parts = [
-        'select' => [],
-        'fields' => [],
-        'from'   => false,
-        'joins'  => false,
-        'where'  => false,
-        'group'  => false,
-        'having' => false,
-        'order'  => false
+        'createTable' => [],
+        'table'       => false,
+        'columns'     => false,
+        'constraints' => false,
+        'comment'     => false
     ];
 
     /**

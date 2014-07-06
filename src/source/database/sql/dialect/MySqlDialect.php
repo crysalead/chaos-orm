@@ -6,7 +6,7 @@ use set\Set;
 /**
  * MySQL dialect
  */
-class MySql extends \sql\Sql
+class MySqlDialect extends \chaos\source\database\sql\Sql
 {
     /**
      * Escape identifier character.
@@ -21,7 +21,7 @@ class MySql extends \sql\Sql
      * @var array
      */
     protected $_columns = [
-        'id'         => ['use' => 'INT', 'length' => 11, 'increment' => true],
+        'id'         => ['use' => 'INT', 'length' => 11, 'serial' => true],
         'string'     => ['use' => 'VARCHAR', 'length' => 255],
         'text'       => ['use' => 'TEXT'],
         'integer'    => ['use' => 'INT', 'length' => 11],
@@ -129,7 +129,7 @@ class MySql extends \sql\Sql
 
         $out .= $this->metas('column', $field, array('charset', 'collate'));
 
-        if (isset($increment) && $increment) {
+        if (isset($serial) && $serial) {
             $out .= ' NOT NULL AUTO_INCREMENT';
         } else {
             $out .= is_bool($null) ? ($null ? ' NULL' : ' NOT NULL') : '' ;

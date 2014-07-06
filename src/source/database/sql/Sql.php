@@ -2,6 +2,7 @@
 namespace chaos\source\database\sql;
 
 use set\Set;
+use string\String;
 
 /**
  * Ansi SQL dialect
@@ -124,12 +125,13 @@ class Sql
     {
         $defaults = [
             'classes' => [
-                'create'    => 'chaos\source\database\sql\statement\Create',
-                'select'    => 'chaos\source\database\sql\statement\Select',
-                'insert'    => 'chaos\source\database\sql\statement\Insert',
-                'update'    => 'chaos\source\database\sql\statement\Update',
-                'delete'    => 'chaos\source\database\sql\statement\Delete',
-                'drop'      => 'chaos\source\database\sql\statement\Drop'
+                'create'       => 'chaos\source\database\sql\statement\Create',
+                'select'       => 'chaos\source\database\sql\statement\Select',
+                'insert'       => 'chaos\source\database\sql\statement\Insert',
+                'update'       => 'chaos\source\database\sql\statement\Update',
+                'delete'       => 'chaos\source\database\sql\statement\Delete',
+                'create table' => 'chaos\source\database\sql\statement\CreateTable',
+                'drop table'   => 'chaos\source\database\sql\statement\DropTable'
             ],
             'adapter' => null,
             'columns' => [],
@@ -213,6 +215,19 @@ class Sql
         $this->_dateFormat = $config['dateFormat'];
         $this->_columns = $config['columns'] + $this->_columns;
         $this->_operators = $config['operators'] + $this->_operators;
+    }
+
+    /**
+     * Datasource adapter getter/setter
+     *
+     * @param  object|null $adapter The adapter instance to set to `null` if used as a getter.
+     * @return object|null          Returns the adatper or `null` if no adapter was set.
+     */
+    public function adapter($adapter = null) {
+        if ($adapter !== null) {
+            $this->_adapter = $adapter;
+        }
+        return $this->_adapter;
     }
 
     protected function cast($mode, $type, $value, $params = [])
@@ -360,11 +375,19 @@ class Sql
     }
 
     /**
-     * Generate a list of table identifers
+     * Generate a list of table identifers with alias when specified
      */
     public function tables($tables = [])
     {
         return join(', ', $this->_names(is_array($tables) ? $tables : func_get_args(), false));
+    }
+
+    /**
+     * Generate a table identifer
+     */
+    public function table($table)
+    {
+        return $this->escape($table);
     }
 
     /**
@@ -558,6 +581,22 @@ class Sql
             break;
         }
         return $this->value($value);
+    }
+
+    /**
+     * CREATE TABLE statement
+     */
+    public function createTable()
+    {
+        return 'CREATE TABLE';
+    }
+
+    /**
+     * DROP TABLE statement
+     */
+    public function dropTable()
+    {
+        return 'DROP TABLE';
     }
 
     /**
@@ -796,7 +835,7 @@ class Sql
                 break;
                 case 'toColumn':
                 case 'column':
-                    $data[$name] = join(', ', array_map([$this, 'name'], (array) $value));
+                    $data[$name] = join(', ', array_map([$this, 'escape'], (array) $value));
                 break;
             }
         }

@@ -276,10 +276,9 @@ class MongoDb extends \chaos\Source
     /**
      * Returns the list of collections in the currently-connected database.
      *
-     * @param string $class The fully-name-spaced class name of the model object making the request.
      * @return array Returns an array of objects to which models can connect.
      */
-    public function sources($class = null)
+    public function sources()
     {
         $this->_checkConnection();
         $conn = $this->connection;

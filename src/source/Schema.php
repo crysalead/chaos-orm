@@ -2,6 +2,7 @@
 namespace chaos\Source;
 
 use set\Set;
+use chaos\SourceException;
 
 /**
  * This class encapsulates a schema definition, usually for a model class, and is comprised
@@ -17,11 +18,11 @@ class Schema
     protected $_name = null;
 
     /**
-     * The datasource meta layer
+     * The datasource adpater
      *
      * @var object
      */
-    protected $_source = null;
+    protected $_adapter = null;
 
     /**
      * Is the schema is locked
@@ -58,14 +59,19 @@ class Schema
      *              - `'locked'`: set the ability to dynamically add/remove fields (defaults to `false`).
      *              - `'fields'`: array of field definition where keys are field names and values are
      *                arrays with the following keys. All properties are optionnal except the `'type'`:
-     *                  - `'type'`     : the type of the field.
-     *                  - `'model'`    : the model to use to box the loaded data (default to '`null`').
-     *                  - `'default'`  : the default value (default to '`null`').
-     *                  - `'null'`     : allow null value (default to `'null'`).
-     *                  - `'use'`      : the database type to override the associated type for
+     *                  - `'type'`      : the type of the field.
+     *                  - `'model'`     : the model to use to box the loaded data (default to '`null`').
+     *                  - `'default'`   : the default value (default to '`null`').
+     *                  - `'null'`      : allow null value (default to `'null'`).
+
+     *                  - `'length'`    : the length of the data (default to `'null'`).
+     *                  - `'precision'` : the precision (for decimals) (default to `'null'`).
+     *                  - `'use'`       : the database type to override the associated type for
      *                                   this type (default to `'null'`).
-     *                  - `'length'`   : the length of the data (default to `'null'`).
-     *                  - `'precision'`: the precision (for decimals) (default to `'null'`).
+     *                  - `'serial'`    : autoincremented field (default to `'null'`).
+     *                  - `'primary'`   : primary key (default to `'null'`).
+     *                  - `'unique'`    : unique key (default to `'null'`).
+     *                  - `'foreignKey'`: foreign key (default to `'null'`).
      *              - `'handlers'`     : casting handlers.
      *              - `'meta'`: array of meta definitions for the schema. The definitions are related to
      *                the datasource. For the MySQL adapter the following options are available:
@@ -78,7 +84,7 @@ class Schema
     {
         $defaults = [
             'name' => null,
-            'source' => null,
+            'adapter' => null,
             'locked' => true,
             'fields' => [],
             'handlers' => [],
@@ -87,7 +93,7 @@ class Schema
         $config = Set::merge($defaults, $config);
 
         $this->_name = $config['name'];
-        $this->_source = $config['source'];
+        $this->_adapter = $config['adapter'];
         $this->_locked = $config['locked'];
         $this->_fields = $config['fields'];
         $this->_handlers = $config['handlers'];
@@ -236,7 +242,8 @@ class Schema
      *                       If this schema contains field names that conflict with existing
      *                       field names, the existing fields will be overwritten.
      */
-    public function merge($schema) {
+    public function merge($schema)
+    {
         if ($this->_locked) {
             throw new SourceException("Schema cannot be modified.");
         }
@@ -245,25 +252,46 @@ class Schema
     }
 
     /**
-     * Delegate all other calls to the meta layer of the data source.
+     * Create the schema.
      *
-     * @param  string $name   Name of the method being called.
-     * @param  array  $params Enumerated array containing the passed parameters.
-     * @return mixed
+     * @return boolean
+     * @throws chaos\SourceException If no adapter is connected or the schema name is missing.
      */
-    public function __call($method, $params = [])
+    public function create()
     {
-        if (!$this->_source) {
-            throw new SourceException("Missing data source for this schema.");
+        $this->_adapterCheck();
+        return $this->_adapter->createSchema($this->_name, $this);
+    }
+
+    /**
+     * Drop the schema
+     *
+     * @return boolean
+     * @throws chaos\SourceException If no adapter is connected or the schema name is missing.
+     */
+    public function drop($method, $params = [])
+    {
+        $this->_adapterCheck();
+        return $this->_adapter->dropSchema($this->_name, $this);
+    }
+
+    /**
+     * Check if the schema is correctly connected to a data source and has a valid name.
+     *
+     * @throws chaos\SourceException If no adapter is connected or the schema name is missing.
+     */
+    protected function _adapterCheck()
+    {
+        if (!$this->_adapter) {
+            throw new SourceException("Missing data adapter for this schema.");
         }
         if (!isset($this->_name)) {
             throw new SourceException("Missing name for this schema.");
         }
-        array_unshift($params, $this->_name);
-        return call_user_func_array([$this->_source->meta(), $method], $params);
     }
 
-    public function cast($object, $key, $data, $options = []) {
+    public function cast($object, $key, $data, $options = [])
+    {
         $defaults = [
             'parent' => null,
             'pathKey' => null,
@@ -293,7 +321,8 @@ class Schema
         return $this->_castArray($object, $data, $pathKey, $options, $defaults);
     }
 
-    protected function _castArray($object, $val, $pathKey, $options, $defaults) {
+    protected function _castArray($object, $val, $pathKey, $options, $defaults)
+    {
         $isArray = $this->is('array', $pathKey) && (!$object instanceof $this->_classes['set']);
         $isObject = ($this->type($pathKey) === 'object');
         $valIsArray = is_array($val);
@@ -349,7 +378,8 @@ class Schema
      * @return mixed  Returns the result of `$value`, modified by a matching handler data type
      *                handler, if available.
      */
-    protected function _castType($value, $field) {
+    protected function _castType($value, $field)
+    {
         if ($this->is('null', $field) && ($value === null || $value === "")) {
             return null;
         }
@@ -365,7 +395,7 @@ class Schema
      */
     public function reset() {
         $this->_name = null;
-        $this->_source = null;
+        $this->_adapter = null;
         $this->_meta = [];
         $this->_fields = [];
         $this->_locked = true;

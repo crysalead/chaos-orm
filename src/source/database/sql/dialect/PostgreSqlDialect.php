@@ -6,7 +6,7 @@ use set\Set;
 /**
  * PostgreSQL dialect
  */
-class PostgreSql extends \sql\Sql
+class PostgreSqlDialect extends \chaos\source\database\sql\Sql
 {
     /**
      * Escape identifier character.

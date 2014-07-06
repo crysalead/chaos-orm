@@ -6,7 +6,7 @@ use set\Set;
 /**
  * Sqlite3 dialect
  */
-class Sqlite3 extends \sql\Sql
+class Sqlite3Dialect extends \chaos\source\database\sql\Sql
 {
     /**
      * Escape identifier character.

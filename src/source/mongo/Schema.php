@@ -8,7 +8,7 @@ use MongoRegex;
 use MongoBinData;
 use set\Set;
 
-class Schema extends \chaos\source\Schem
+class Schema extends \chaos\source\Schema
 {
     public function __construct($config = []) {
         $defaults = [
