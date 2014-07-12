@@ -16,67 +16,43 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
     protected $_escape = '`';
 
     /**
-     * MySQL column type definitions.
-     *
-     * @var array
-     */
-    protected $_columns = [
-        'id'         => ['use' => 'INT', 'length' => 11, 'serial' => true],
-        'string'     => ['use' => 'VARCHAR', 'length' => 255],
-        'text'       => ['use' => 'TEXT'],
-        'integer'    => ['use' => 'INT', 'length' => 11],
-        'biginteger' => ['use' => 'BIGINT'],
-        'boolean'    => ['use' => 'TINYINT', 'length' => 1],
-        'float'      => ['use' => 'FLOAT'],
-        'double'     => ['use' => 'DOUBLE'],
-        'decimal'    => ['use' => 'DECIMAL'],
-        'date'       => ['use' => 'DATE'],
-        'datetime'   => ['use' => 'DATETIME'],
-        'timestamp'  => ['use' => 'TIMESTAMP'],
-        'time'       => ['use' => 'TIME'],
-        'year'       => ['use' => 'YEAR', 'length' => 4],
-        'binary'     => ['use' => 'BLOB'],
-        'uuid'       => ['use' => 'CHAR', 'length' => 36]
-    ];
-
-    /**
      * Meta atrribute syntax
      * By default `'escape'` is false and 'join' is `' '`
      *
      * @var array
      */
-    protected $_metas = array(
-        'column' => array(
-            'charset' => array('keyword' => 'CHARACTER SET'),
-            'collate' => array('keyword' => 'COLLATE'),
-            'comment' => array('keyword' => 'COMMENT', 'escape' => true)
-        ),
-        'table' => array(
-            'charset' => array('keyword' => 'DEFAULT CHARSET'),
-            'collate' => array('keyword' => 'COLLATE'),
-            'engine' => array('keyword' => 'ENGINE'),
-            'tablespace' => array('keyword' => 'TABLESPACE')
-        )
-    );
+    protected $_metas = [
+        'column' => [
+            'charset' => ['keyword' => 'CHARACTER SET'],
+            'collate' => ['keyword' => 'COLLATE'],
+            'comment' => ['keyword' => 'COMMENT', 'escape' => true]
+        ],
+        'table' => [
+            'charset' => ['keyword' => 'DEFAULT CHARSET'],
+            'collate' => ['keyword' => 'COLLATE'],
+            'engine' => ['keyword' => 'ENGINE'],
+            'tablespace' => ['keyword' => 'TABLESPACE']
+        ]
+    ];
 
     /**
      * Column contraints
      *
      * @var array
      */
-    protected $_constraints = array(
-        'primary' => array('template' => 'PRIMARY KEY ({:column})'),
-        'foreign_key' => array(
-            'template' => 'FOREIGN KEY ({:column}) REFERENCES {:to} ({:toColumn}) {:on}'
-        ),
-        'index' => array('template' => 'INDEX ({:column})'),
-        'unique' => array(
+    protected $_constraints = [
+        'primary' => ['template' => 'PRIMARY KEY ({:column})'],
+        'foreign key' => [
+            'template' => 'FOREIGN KEY ({:foreignKey}) REFERENCES {:to} ({:primaryKey}) {:on}'
+        ],
+        'index' => ['template' => 'INDEX ({:column})'],
+        'unique' => [
             'template' => 'UNIQUE {:index} ({:column})',
             'key' => 'KEY',
             'index' => 'INDEX'
-        ),
-        'check' => array('template' => 'CHECK ({:expr})')
-    );
+        ],
+        'check' => ['template' => '{:constraint} CHECK ({:expr})']
+    ];
 
     /**
      * Constructor
@@ -88,7 +64,7 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
         $defaults = [
             'operators' => [
                 ':concat'      => ['format' => 'CONCAT(%s, %s)'],
-                ':pow'         => ['format' => 'pow(%s, %s)'],
+                ':pow'         => ['format' => 'POW(%s, %s)'],
                 '#'            => ['format' => '%s ^ %s'],
                 ':regex'       => ['format' => '%s REGEXP %s'],
                 ':rlike'       => [],
@@ -107,7 +83,7 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
     /**
      * Helper for creating columns
      *
-     * @see    chaos\source\database\Structure::column()
+     * @see    chaos\source\sql\Sql::column()
      * @param  array $field A field array
      * @return string The SQL column string
      */
@@ -118,24 +94,26 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
             $use = 'decimal';
         }
 
-        $out = $this->name($name) . ' ' . $use;
+        $column = $this->escape($name) . ' ' . $use;
 
         $allowPrecision = preg_match('/^(decimal|float|double|real|numeric)$/',$use);
         $precision = ($precision && $allowPrecision) ? ",{$precision}" : '';
 
         if ($length && ($allowPrecision || preg_match('/(char|binary|int|year)/',$use))) {
-            $out .= "({$length}{$precision})";
+            $column .= "({$length}{$precision})";
         }
 
-        $out .= $this->metas('column', $field, array('charset', 'collate'));
+        $result = [$column];
+        $result[] = $this->metas('column', $field, ['charset', 'collate']);
 
         if (isset($serial) && $serial) {
-            $out .= ' NOT NULL AUTO_INCREMENT';
+            $result[] = 'NOT NULL AUTO_INCREMENT';
         } else {
-            $out .= is_bool($null) ? ($null ? ' NULL' : ' NOT NULL') : '' ;
-            $out .= $default ? ' DEFAULT ' . $this->value($default, $field) : '';
+            $result[] = is_bool($null) ? ($null ? 'NULL' : 'NOT NULL') : '' ;
+            $result[] = $default ? 'DEFAULT ' . $this->value($default, $field) : '';
         }
 
-        return $out . $this->metas('column', $field, array('comment'));
+        $result[] = $this->metas('column', $field, ['comment']);
+        return join(' ', array_filter($result));
     }
 }

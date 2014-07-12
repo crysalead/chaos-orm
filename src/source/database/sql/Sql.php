@@ -1,8 +1,10 @@
 <?php
 namespace chaos\source\database\sql;
 
+use stdClass;
 use set\Set;
 use string\String;
+use chaos\SourceException;
 
 /**
  * Ansi SQL dialect
@@ -35,7 +37,7 @@ class Sql
      *
      * @var array
      */
-    protected $_columns = [];
+    protected $_types = [];
 
     /**
      * List of SQL operators, paired with handling options.
@@ -103,13 +105,6 @@ class Sql
     ];
 
     /**
-     * Type conversion definitions
-     *
-     * @var array
-     */
-    protected $_types = [];
-
-    /**
      * Date format
      *
      * @var string
@@ -134,87 +129,45 @@ class Sql
                 'drop table'   => 'chaos\source\database\sql\statement\DropTable'
             ],
             'adapter' => null,
-            'columns' => [],
+            'types' => [],
             'operators' => [],
-            'builders' => [
-                'prefix' => function ($operator, $parts) {
-                    $key = array_shift($parts);
-                    return "{$key} {$operator} " . reset($parts);
-                },
-                'list' => function ($operator, $parts) {
-                    $key = array_shift($parts);
-                    return "{$key} {$operator} (" . join(", ", $parts) . ')';
-                },
-                'between' => function ($operator, $parts) {
-                    $key = array_shift($parts);
-                    return "{$key} {$operator} " . reset($parts) . ' AND ' . end($parts);
-                },
-                'set' => function ($operator, $parts) {
-                    return join(" {$operator} ", $parts);
-                }
-            ],
-            'types' => [
-                'string'  => function($value, $params = []) { return (string) $value; },
-                'integer' => function($value, $params = []) { return (int) $value; },
-                'float'   => function($value, $params = []) { return (float) $value; },
-                'decimal' => function($value, $params = []) {
-                    $params += ['length' => 2];
-                    return number_format($number, $params['length']);
-                },
-                'uuid'    => function($value, $params = []) {
-                    $uuid = (string) $value;
-                    if (strlen($uuid) != 36) {
-                        throw new Exception("Invalid UUID value: `{$uuid}`.");
-                    }
-                    return $value;
-                },
-                'boolean' => [
-                    'core' => function($value, $params = []) { return !!$value; },
-                    'db' => function($value, $params = []) { return $value ? 1 : 0; }
-                ]
-            ],
+            'builders' => $this->_builders(),
             'dateFormat' => 'Y-m-d H:i:s'
         ];
-        $defaults['types'] += [
-            'text' => $defaults['types']['string'],
-            'biginteger' => $defaults['types']['integer'],
-            'double' => $defaults['types']['float']
-        ];
-
-        $dateToCore = function($value, $params = []) {
-            if (is_numeric($value)) {
-                return new DateTime('@' . $value);
-            }
-            return DateTime::createFromFormat($this->_dateFormat, $value);
-        };
-
-        $dateToDb = function($value, $params = []) {
-            $params += ['format' => null];
-            $format = $params['format'];
-            if ($format) {
-                if ($value instanceof DateTime) {
-                    return $value->format($format);
-                } elseif(($time = strtotime($value)) !== false) {
-                    return date($format, $time);
-                }
-            }
-            throw new Exception("Invalid date value: `{$value}`.");
-        };
-
-        foreach (['datetime', 'timestamp', 'date', 'time'] as $type) {
-            $defaults[$type]['core'] = $dateToCore;
-            $defaults[$type]['db'] = $dateToDb;
-        }
 
         $config = Set::merge($defaults, $config);
 
         $this->_classes = $config['classes'];
         $this->_adapter = $config['adapter'];
-        $this->_types = $config['types'];
         $this->_builders = $config['builders'];
         $this->_dateFormat = $config['dateFormat'];
-        $this->_columns = $config['columns'] + $this->_columns;
+        $this->_types = $config['types'] + $this->_types;
         $this->_operators = $config['operators'] + $this->_operators;
+    }
+
+    /**
+     * Return default operator builders
+     *
+     * @return array
+     */
+    protected function _builders() {
+        return [
+            'prefix' => function ($operator, $parts) {
+                $key = array_shift($parts);
+                return "{$key} {$operator} " . reset($parts);
+            },
+            'list' => function ($operator, $parts) {
+                $key = array_shift($parts);
+                return "{$key} {$operator} (" . join(", ", $parts) . ')';
+            },
+            'between' => function ($operator, $parts) {
+                $key = array_shift($parts);
+                return "{$key} {$operator} " . reset($parts) . ' AND ' . end($parts);
+            },
+            'set' => function ($operator, $parts) {
+                return join(" {$operator} ", $parts);
+            }
+        ];
     }
 
     /**
@@ -230,29 +183,6 @@ class Sql
         return $this->_adapter;
     }
 
-    protected function cast($mode, $type, $value, $params = [])
-    {
-        if (!isset($this->_types[$type])) {
-            throw new SqlException("Invalid type : `{$type}`.");
-        }
-        if (!isset($this->_column[$type])) {
-            throw new SqlException("Invalid column type : `{$type}`.");
-        }
-
-        $params += $this->_column[$type];
-        $func = $this->_types[$type];
-
-        if ($func instanceof Closure) {
-            return $func($value, $params);
-        }
-
-        if (!isset($func[$mode])) {
-            throw new SqlException("Invalid mode `{$mode}` for type `{$type}`.");
-        }
-
-        return $func[$mode]($value, $params);
-    }
-
     /**
      * SQL Statement factory
      *
@@ -261,146 +191,34 @@ class Sql
      */
     public function statement($name, $config = [])
     {
-        $defaults = ['adapter' => $this];
+        $defaults = ['sql' => $this];
         $config += $defaults;
 
         if (!isset($this->_classes[$name])) {
-            throw new SqlException("Unsupported statement `$name`");
+            throw new SourceException("Unsupported statement `$name`");
         }
         $statement = $this->_classes[$name];
         return new $statement($config);
     }
 
     /**
-     * SELECT statement
-     */
-    public function select()
-    {
-        return 'SELECT';
-    }
-
-    /**
-     * FROM statement
-     */
-    public function from($sources = [])
-    {
-        if (!$sources) {
-            throw new SqlException("A `FROM` statement require at least one table.");
-        }
-        return 'FROM ' . $this->tables($sources);
-    }
-
-    /**
-     * JOIN statement
-     */
-    public function joins($join = [])
-    {
-        $defaults = ['type' => 'LEFT'];
-        //$join += $defaults;
-
-        return '';
-    }
-
-    /**
-     * GROUP statement
-     */
-    public function group($value)
-    {
-        return $this->_sort($value, 'GROUP BY');
-    }
-
-    /**
-     * ORDER statement
-     */
-    public function order($value)
-    {
-        return $this->_sort($value, 'ORDER BY');
-    }
-
-    /**
-     * Helper method
-     *
-     * @param  mixed  $field  The field.
-     * @param  string $clause The clause name.
-     * @return string         Formatted clause.
-     */
-    protected function _sort($field, $clause = 'ORDER BY', $direction = true)
-    {
-        $direction = $direction ? ' ASC' : '';
-
-        if (is_string($field)) {
-            if (preg_match('/^(.*?)\s+((?:A|DE)SC)$/i', $field, $match)) {
-                $field = $match[1];
-                $direction = $match[2];
-            }
-            $field = [$field => $direction];
-        }
-
-        if (!is_array($field) || empty($field)) {
-            return;
-        }
-        $result = [];
-
-        foreach ($field as $column => $dir) {
-            if (is_int($column)) {
-                $column = $dir;
-                $dir = $direction;
-            }
-            $dir = preg_match('/^(asc|desc)$/i', $dir) ? " {$dir}" : $direction;
-
-            $column = $this->name($column);
-            $result[] = "{$column}{$dir}";
-        }
-        $fields = join(', ', $result);
-        return "{$clause} {$fields}";
-    }
-
-    /**
-     * LIMIT statement
-     */
-    public function limit($offset = null, $limit = null)
-    {
-        return '';
-    }
-
-    /**
-     * Generate a list of field identifiers
-     */
-    public function fields($fields = null)
-    {
-        if (!$fields) {
-            return '*';
-        }
-        return join(', ', $this->_names(is_array($fields) ? $fields : func_get_args(), true));
-    }
-
-    /**
-     * Generate a list of table identifers with alias when specified
-     */
-    public function tables($tables = [])
-    {
-        return join(', ', $this->_names(is_array($tables) ? $tables : func_get_args(), false));
-    }
-
-    /**
-     * Generate a table identifer
-     */
-    public function table($table)
-    {
-        return $this->escape($table);
-    }
-
-    /**
      * Generate a list of identifers
      */
-    public function _names($names, $star = false, $prefix = null)
+    public function names($names, $star = false, $prefix = null)
     {
         $sql = [];
         foreach ($names as $key => $value) {
             if (!is_array($value)) {
                 $value = ($value === '*' && $star) ? '*' : $this->escape($value);
-                $result = !is_numeric($key) ? $this->escape($key) . ' AS ' . $value : $value;
-                $sql[] = $prefix ? "{$prefix}.{$result}" : $result;
+                if (!is_numeric($key)) {
+                    $name = $this->escape($key);
+                    $name = $prefix ? "{$prefix}.{$name}" : $name;
+                    $sql[$name] = "{$name} AS {$value}";
+                } else {
+                    $name = $value;
+                    $name = $prefix ? "{$prefix}.{$name}" : $name;
+                    $sql[$name] = $name;
+                }
                 continue;
             }
             $op = key($value);
@@ -408,52 +226,10 @@ class Sql
                 $sql[] = $this->conditions($value);
             } else {
                 $prefix = $this->escape($key);
-                $sql = array_merge($sql, $this->_names($value, $star, $prefix));
+                $sql = array_merge($sql, $this->names($value, $star, $prefix));
             }
         }
         return $sql;
-    }
-
-    /**
-     * Returns a string of formatted conditions to be inserted into the query statement. If the
-     * query conditions are defined as an array, key pairs are converted to SQL strings.
-     *
-     * Conversion rules are as follows:
-     *
-     * - If `$key` is numeric and `$value` is a string, `$value` is treated as a literal SQL
-     *   fragment and returned.
-     *
-     * @param string|array $conditions The conditions for this query.
-     * @param array        $options    - `prepend` _boolean_: Whether the return string should be
-     *                                 prepended with the `WHERE` keyword.
-     * @return string                  Returns the `WHERE` clause of an SQL query.
-     */
-    public function where($conditions, $options = [])
-    {
-        $defaults = ['prepend' => 'WHERE'];
-        $options += $defaults;
-        return $this->conditions($conditions, $options);
-    }
-
-    /**
-     * Returns a string of formatted havings to be inserted into the query statement. If the
-     * query havings are defined as an array, key pairs are converted to SQL strings.
-     *
-     * Conversion rules are as follows:
-     *
-     * - If `$key` is numeric and `$value` is a string, `$value` is treated as a literal SQL
-     *   fragment and returned.
-     *
-     * @param string|array $conditions The havings for this query.
-     * @param array        $options    - `prepend` _boolean_: Whether the return string should be
-     *                                 prepended with the `HAVING` keyword.
-     * @return string                  Returns the `HAVING` clause of an SQL query.
-     */
-    public function having($conditions, $options = [])
-    {
-        $defaults = ['prepend' => 'HAVING'];
-        $options += $defaults;
-        return $this->conditions($conditions, $options);
     }
 
     /**
@@ -475,14 +251,20 @@ class Sql
         if (!$conditions) {
             return '';
         }
-        $defaults = ['prepend' => false, 'operator' => ':and'];
+        $defaults = ['prepend' => false, 'operator' => ':and', 'schemas' => []];
         $options += $defaults;
 
         if (!is_numeric(key($conditions))) {
             $conditions = [$conditions];
         }
 
-        $result = $this->_operator(strtolower($options['operator']), $conditions);
+        $states = [
+            'schemas' => $options['schemas'],
+            'schema' => null,
+            'key' => null,
+        ];
+
+        $result = $this->_operator(strtolower($options['operator']), $conditions, $states);
         return ($options['prepend'] && $result) ? "{$options['prepend']} {$result}" : $result;
     }
 
@@ -493,20 +275,20 @@ class Sql
      * @param  mixed  $conditions The data for the operator.
      * @return string              Returns a SQL string.
      */
-    protected function _operator($operator, $conditions)
+    protected function _operator($operator, $conditions, &$states)
     {
         $config = $this->_operators[$operator];
         if (!isset($this->_operators[$operator])) {
-            throw new SqlException("Unsupported operator `{$operator}`.");
+            throw new SourceException("Unsupported operator `{$operator}`.");
         }
 
-        $parts = $this->_conditions($conditions);
+        $parts = $this->_conditions($conditions, $states);
         $operator = (is_array($parts) && next($parts) === null && isset($config['null'])) ? $config['null'] : $operator;
         $operator = $operator[0] === ':' ? strtoupper(substr($operator, 1)) : $operator;
 
         if (isset($config['type'])) {
             if (!isset($this->_builders[$config['type']])) {
-                throw new SqlException("Unsupported builder `{$config['type']}`.");
+                throw new SourceException("Unsupported builder `{$config['type']}`.");
             }
             $builder = $this->_builders[$config['type']];
             return $builder($operator, $parts);
@@ -514,24 +296,30 @@ class Sql
         return join(" {$operator} ", $parts);
     }
 
-    public function _conditions($conditions)
+    /**
+     * Build a formated array of SQL statement.
+     *
+     * @param  string $key    The field name.
+     * @param  mixed  $value  The data value.
+     * @return array          Returns a array of SQL string.
+     */
+    public function _conditions($conditions, &$states)
     {
         $parts = [];
         foreach ($conditions as $key => $value) {
-            $key = strtolower($key);
-            if (isset($this->_formatters[$key])) {
-                $parts[] = $this->format($key, $value);
-            } elseif (isset($this->_operators[$key])) {
-                $parts[] = $this->_operator($key, $value);
+            $operator = strtolower($key);
+            if (isset($this->_formatters[$operator])) {
+                $parts[] = $this->format($operator, $value, $states['key'], $states['schema']);
+            } elseif (isset($this->_operators[$operator])) {
+                $parts[] = $this->_operator($operator, $value, $states);
             } elseif (is_numeric($key)) {
                 if (is_array($value)) {
-                    $parts = array_merge($parts, $this->_conditions($value));
+                    $parts = array_merge($parts, $this->_conditions($value, $states));
                 } else {
-                    $parts[] = $value;
+                    $parts[] = $this->value($value, $states['key'], $states['schema']);
                 }
             } else {
-                $parts[] = $this->_key($key, $value);
-
+                $parts[] = $this->_key($key, $value, $states);
             }
         }
         return $parts;
@@ -544,8 +332,13 @@ class Sql
      * @param  mixed  $value  The data value.
      * @return string         Returns a SQL string.
      */
-    protected function _key($key, $value)
+    protected function _key($key, $value, &$states)
     {
+        $escaped = $this->escape($key, $alias, $field);
+        $schema = isset($states['schemas'][$alias]) ? $states['schemas'][$alias] : null;
+        $states['key'] = $field;
+        $states['schema'] = $schema;
+
         if (is_array($value)) {
             $operator = strtolower(key($value));
             if (isset($this->_operators[$operator])) {
@@ -554,10 +347,10 @@ class Sql
                     $conditions = [$conditions];
                 }
                 array_unshift($conditions, [':key' => $key]);
-                return $this->_operator($operator, $conditions);
+                return $this->_operator($operator, $conditions, $states);
             }
         }
-        return "{$this->escape($key)} = {$this->value($value)}";
+        return "{$escaped} = {$this->value($value, $key, $schema)}";
     }
 
     /**
@@ -567,48 +360,33 @@ class Sql
      * @param  mixed  $value    The value to format.
      * @return string           Returns a SQL string.
      */
-    protected function format($operator, $value)
+    protected function format($operator, $value, $key = null, $schema = null)
     {
         switch ($operator) {
             case ':key':
                 return $this->escape($value);
             break;
             case ':value':
-                return $this->value($value);
+                return $this->value($value, $key, $schema);
             break;
             case ':raw':
                 return (string) $value;
             break;
         }
-        return $this->value($value);
-    }
-
-    /**
-     * CREATE TABLE statement
-     */
-    public function createTable()
-    {
-        return 'CREATE TABLE';
-    }
-
-    /**
-     * DROP TABLE statement
-     */
-    public function dropTable()
-    {
-        return 'DROP TABLE';
+        return $this->value($value, $key, $schema);
     }
 
     /**
      * Escapes a column/table/schema with dotted syntax support.
      *
-     * @param  string $name Identifier name.
-     * @return string
+     * @param  string $name  Identifier name.
+     * @param  string $alias The filled alias name if present.
+     * @return string        The escaped identifien.
      */
-    public function escape($name)
+    public function escape($name, &$alias = null, &$field = null)
     {
-        list($one, $two) = $this->undot($name);
-        return $one ? $this->_escape($one) . '.' . $this->_escape($two) : $this->_escape($name);
+        list($alias, $field) = $this->undot($name);
+        return $alias ? $this->_escape($alias) . '.' . $this->_escape($field) : $this->_escape($name);
     }
 
     /**
@@ -617,7 +395,7 @@ class Sql
      * @param  string $name Identifier name.
      * @return string
      */
-    public function _escape($name)
+    protected function _escape($name)
     {
         if (is_string($name) && preg_match('/^[a-z0-9_-]+$/i', $name)) {
             return $this->_escape . $name . $this->_escape;
@@ -667,8 +445,11 @@ class Sql
      * @param mixed $value The value to be converted. Arrays will be recursively converted.
      * @return mixed value with converted type
      */
-    public function value($value)
+    public function value($value, $key = null, $schema = null)
     {
+        if ($schema) {
+            $value = $schema->export($key, $value);
+        }
         switch (true) {
             case is_null($value):
                 return 'NULL';
@@ -677,10 +458,38 @@ class Sql
             case is_string($value):
                 return $this->quote($value);
             case is_array($value):
-                return 'ARRAY[' . join(', ', $value) . ']';
+                return '{' . join(', ', $value) . '}';
+            case $value instanceof stdClass:
+                return $value->scalar;
         }
         return (string) $value;
     }
+
+
+    // protected function cast($mode, $type, $value, $params = [])
+    // {
+    //     if (!isset($this->_handlers[$mode])) {
+    //         throw new SourceException("Invalid mode `{$mode}`.");
+    //     }
+    //     $handlers = $this->_handlers[$mode];
+
+    //     if (!isset($this->_column[$type])) {
+    //         throw new SourceException("Invalid column type : `{$type}`.");
+    //     }
+
+    //     $params += $this->_column[$type];
+    //     $func = $this->_handlers[$type];
+
+    //     if ($func instanceof Closure) {
+    //         return $func($value, $params);
+    //     }
+
+    //     if (!isset($func[$mode])) {
+    //         throw new SourceException("Invalid mode `{$mode}` for type `{$type}`.");
+    //     }
+
+    //     return $func[$mode]($value, $params);
+    // }
 
     /**
      * Generate a database-native column schema string
@@ -697,14 +506,10 @@ class Sql
         }
 
         if (!isset($field['name'])) {
-            throw new SqlException("Column name not defined.");
+            throw new SourceException("Column name not defined.");
         }
 
-        if (!isset($this->_columns[$field['type']])) {
-            throw new SqlException("Column type `{$field['type']}` does not exist.");
-        }
-
-        $field += $this->_columns[$field['type']];
+        $field += $this->adapter()->type($field['type']);
 
         $field += [
             'name' => null,
@@ -728,20 +533,19 @@ class Sql
      *
      * @param  array  $metas  The array of column metas.
      * @param  array  $names  If `$names` is not `null` only build meta present in `$names`
-     * @param  string $joiner The join character
-     * @return string         The SQL constraints
+     * @return string         The SQL metas
      */
-    public function metas($type, $metas, $names = null, $joiner = ' ')
+    public function metas($type, $metas, $names = null)
     {
-        $result = '';
+        $result = [];
         $names = $names ? (array) $names : array_keys($metas);
         foreach ($names as $name) {
             $value = isset($metas[$name]) ? $metas[$name] : null;
             if ($value && $meta = $this->meta($type, $name, $value)) {
-                $result .= $joiner . $meta;
+                $result[] = $meta;
             }
         }
-        return $result;
+        return join(' ', $result);
     }
 
     /**
@@ -768,47 +572,18 @@ class Sql
     }
 
     /**
-     * Helper for building columns constraints
-     *
-     * @param  array  $constraints The array of constraints
-     * @param  string $joiner      The join character
-     * @return string              The SQL constraints
-     */
-    public function constraints($constraints, $joiner = ' ', $primary = false)
-    {
-        $result = '';
-        foreach ($constraints as $constraint) {
-            if (!isset($constraint['type'])) {
-                continue;
-            }
-            $name = $constraint['type'];
-            if ($meta = $this->constraint($name, $constraint, $schema)) {
-                $result .= $joiner . $meta;
-            }
-            if ($name === 'primary') {
-                $primary = false;
-            }
-        }
-        if ($primary) {
-            $result .= $joiner . $this->constraint('primary', ['column' => $primary]);
-        }
-        return $result;
-    }
-
-    /**
      * Build a SQL column constraint
      *
      * @param  string $name  The name of the meta to build.
      * @param  mixed  $value The value used for building the meta.
      * @return string        The SQL meta string.
      */
-    public function constraint($name, $value)
+    public function constraint($name, $value, $schemas = [])
     {
         $value += ['options' => []];
         $meta = isset($this->_constraints[$name]) ? $this->_constraints[$name] : null;
-        $template = isset($meta['template']) ? $meta['template'] : null;
-        if (!$template) {
-            return;
+        if (!($template = isset($meta['template']) ? $meta['template'] : null)) {
+            throw new SourceException("Invalid constraint template `'{$name}'`.", 1);
         }
 
         $data = [];
@@ -826,15 +601,19 @@ class Sql
                 case 'on':
                     $data[$name] = "ON {$value}";
                 break;
+                case 'constraint':
+                    $data[$name] = "CONSTRAINT " . $this->escape($value);
+                break;
                 case 'expr':
                     if (is_array($value)) {
-                        $data[$name] = $this->conditions($value);
+                        $data[$name] = $this->conditions($value, compact('schemas'));
                     } else {
                         $data[$name] = $value;
                     }
                 break;
-                case 'toColumn':
                 case 'column':
+                case 'primaryKey';
+                case 'foreignKey';
                     $data[$name] = join(', ', array_map([$this, 'escape'], (array) $value));
                 break;
             }

@@ -100,7 +100,7 @@ class Schema
         $this->_meta = $config['meta'];
 
         foreach ($config['fields'] as $key => $value) {
-            $this->_fields[$key] = $this->_normalizeField($value);
+            $this->_fields[$key] = $this->_initField($value);
         }
     }
 
@@ -110,7 +110,7 @@ class Schema
      * @param  array $field A field array
      * @return array A normalized field array
      */
-    protected function _normalizeField($field)
+    protected function _initField($field)
     {
         if (is_string($field)) {
             return ['type' => $field];
@@ -221,17 +221,20 @@ class Schema
     }
 
     /**
-     * Appends additional fields to the schema. Will not overwrite existing fields if any conflicts
-     * arise.
+     * Appends additional fields to the schema. Will overwrite existing fields if a
+     * conflicts arise.
      *
      * @param array $fields New schema data.
+     * @param array $meta   New meta data.
      */
     public function append($fields, $meta = [])
     {
         if ($this->_locked) {
             throw new SourceException("Schema cannot be modified.");
         }
-        $this->_fields += $fields;
+        foreach ($fields as $key => $value) {
+            $this->_fields[$key] = $this->_initField($value);
+        }
         $this->_meta += $meta;
     }
 
@@ -250,6 +253,122 @@ class Schema
         $this->_fields = $schema->fields() + $this->_fields;
         $this->_meta = $schema->meta() + $this->_meta;
     }
+
+    /**
+     * Format a value to as a valid datasource value.
+     *
+     * @param  string $name          The field name identifier.
+     * @param  mixed  $value         The value to format.
+     * @return mixed                 The formatted value.
+     * @throws chaos\SourceException If the adapter is missing.
+     */
+    public function export($name, $value)
+    {
+        if (!$this->_adapter) {
+            throw new SourceException("Missing data adapter for this schema.");
+        }
+        return $this->_adapter->cast('export', $this->type($name), $value);
+    }
+
+    // public function cast($object, $key, $data, $options = [])
+    // {
+    //     $defaults = [
+    //         'parent' => null,
+    //         'pathKey' => null,
+    //         'model' => null,
+    //         'wrap' => true,
+    //         'first' => false
+    //     ];
+    //     $options += $defaults;
+
+    //     $basePathKey = $options['pathKey'];
+    //     $model = (!$options['model'] && $object) ? $object->model() : $options['model'];
+    //     $classes = $this->_classes;
+
+    //     $fieldName = is_int($key) ? null : $key;
+    //     $pathKey = $basePathKey;
+
+    //     if ($fieldName) {
+    //         $pathKey = $basePathKey ? "{$basePathKey}.{$fieldName}" : $fieldName;
+    //     }
+
+    //     if ($data instanceof $classes['set'] || $data instanceof $classes['entity']) {
+    //         return $data;
+    //     }
+    //     if (is_object($data) && !$this->is('array', $pathKey)) {
+    //         return $data;
+    //     }
+    //     return $this->_castArray($object, $data, $pathKey, $options, $defaults);
+    // }
+
+    // protected function _castArray($object, $val, $pathKey, $options, $defaults)
+    // {
+    //     $isArray = $this->is('array', $pathKey) && (!$object instanceof $this->_classes['set']);
+    //     $isObject = ($this->type($pathKey) === 'object');
+    //     $valIsArray = is_array($val);
+    //     $numericArray = false;
+    //     $class = 'entity';
+
+    //     if (!$valIsArray && !$isArray) {
+    //         return $this->_castType($val, $pathKey);
+    //     }
+
+    //     if ($valIsArray) {
+    //         $numericArray = !$val || array_keys($val) === range(0, count($val) - 1);
+    //     }
+
+    //     if ($isArray || ($numericArray && !$isObject)) {
+    //         $val = $valIsArray ? $val : array($val);
+    //         $class = 'set';
+    //     }
+
+    //     if ($options['wrap']) {
+    //         $config = array(
+    //             'parent' => $options['parent'],
+    //             'model' => $options['model'],
+    //             'schema' => $this
+    //         );
+    //         $config += compact('pathKey') + array_diff_key($options, $defaults);
+
+    //         if (!$pathKey && $model = $options['model']) {
+    //             $exists = is_object($object) ? $object->exists() : false;
+    //             $config += array('class' => $class, 'exists' => $exists, 'defaults' => false);
+    //             $val = $model::create($val, $config);
+    //         } else {
+    //             $config['data'] = $val;
+    //             $val = $this->_instance($class, $config);
+    //         }
+    //     } elseif ($class === 'set') {
+    //         $val = $val ?: array();
+    //         foreach ($val as &$value) {
+    //             $value = $this->_castType($value, $pathKey);
+    //         }
+    //     }
+    //     return $val;
+    // }
+
+    // /**
+    //  * Casts a scalar (non-object/array) value to its corresponding database-native value or custom
+    //  * value object based on a handler assigned to `$field`'s data type.
+    //  *
+    //  * @param  mixed  $value The value to be cast.
+    //  * @param  string $field The name of the field that `$value` is or will be stored in. If it is a
+    //  *                nested field, `$field` should be the full dot-separated path to the
+    //  *                sub-object's field.
+    //  * @return mixed  Returns the result of `$value`, modified by a matching handler data type
+    //  *                handler, if available.
+    //  */
+    // protected function _castType($value, $field)
+    // {
+    //     if ($this->is('null', $field) && ($value === null || $value === "")) {
+    //         return null;
+    //     }
+    //     if (!is_scalar($value)) {
+    //         return $value;
+    //     }
+    //     $type = $this->type($field);
+    //     return isset($this->_handlers[$type]) ? $this->_handlers[$type]($value) : $value;
+    // }
 
     /**
      * Create the schema.
@@ -288,106 +407,6 @@ class Schema
         if (!isset($this->_name)) {
             throw new SourceException("Missing name for this schema.");
         }
-    }
-
-    public function cast($object, $key, $data, $options = [])
-    {
-        $defaults = [
-            'parent' => null,
-            'pathKey' => null,
-            'model' => null,
-            'wrap' => true,
-            'first' => false
-        ];
-        $options += $defaults;
-
-        $basePathKey = $options['pathKey'];
-        $model = (!$options['model'] && $object) ? $object->model() : $options['model'];
-        $classes = $this->_classes;
-
-        $fieldName = is_int($key) ? null : $key;
-        $pathKey = $basePathKey;
-
-        if ($fieldName) {
-            $pathKey = $basePathKey ? "{$basePathKey}.{$fieldName}" : $fieldName;
-        }
-
-        if ($data instanceof $classes['set'] || $data instanceof $classes['entity']) {
-            return $data;
-        }
-        if (is_object($data) && !$this->is('array', $pathKey)) {
-            return $data;
-        }
-        return $this->_castArray($object, $data, $pathKey, $options, $defaults);
-    }
-
-    protected function _castArray($object, $val, $pathKey, $options, $defaults)
-    {
-        $isArray = $this->is('array', $pathKey) && (!$object instanceof $this->_classes['set']);
-        $isObject = ($this->type($pathKey) === 'object');
-        $valIsArray = is_array($val);
-        $numericArray = false;
-        $class = 'entity';
-
-        if (!$valIsArray && !$isArray) {
-            return $this->_castType($val, $pathKey);
-        }
-
-        if ($valIsArray) {
-            $numericArray = !$val || array_keys($val) === range(0, count($val) - 1);
-        }
-
-        if ($isArray || ($numericArray && !$isObject)) {
-            $val = $valIsArray ? $val : array($val);
-            $class = 'set';
-        }
-
-        if ($options['wrap']) {
-            $config = array(
-                'parent' => $options['parent'],
-                'model' => $options['model'],
-                'schema' => $this
-            );
-            $config += compact('pathKey') + array_diff_key($options, $defaults);
-
-            if (!$pathKey && $model = $options['model']) {
-                $exists = is_object($object) ? $object->exists() : false;
-                $config += array('class' => $class, 'exists' => $exists, 'defaults' => false);
-                $val = $model::create($val, $config);
-            } else {
-                $config['data'] = $val;
-                $val = $this->_instance($class, $config);
-            }
-        } elseif ($class === 'set') {
-            $val = $val ?: array();
-            foreach ($val as &$value) {
-                $value = $this->_castType($value, $pathKey);
-            }
-        }
-        return $val;
-    }
-
-    /**
-     * Casts a scalar (non-object/array) value to its corresponding database-native value or custom
-     * value object based on a handler assigned to `$field`'s data type.
-     *
-     * @param  mixed  $value The value to be cast.
-     * @param  string $field The name of the field that `$value` is or will be stored in. If it is a
-     *                nested field, `$field` should be the full dot-separated path to the
-     *                sub-object's field.
-     * @return mixed  Returns the result of `$value`, modified by a matching handler data type
-     *                handler, if available.
-     */
-    protected function _castType($value, $field)
-    {
-        if ($this->is('null', $field) && ($value === null || $value === "")) {
-            return null;
-        }
-        if (!is_scalar($value)) {
-            return $value;
-        }
-        $type = $this->type($field);
-        return isset($this->_handlers[$type]) ? $this->_handlers[$type]($value) : $value;
     }
 
     /**

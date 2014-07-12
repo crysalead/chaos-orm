@@ -5,6 +5,9 @@ use set\Set;
 
 /**
  * PostgreSQL dialect
+ *
+ * - array_to_json(pg_array_result)
+ * - array_to_json(hstore_to_array(value))
  */
 class PostgreSqlDialect extends \chaos\source\database\sql\Sql
 {
@@ -34,13 +37,13 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Sql
      */
     protected $_constraints = [
         'primary' => ['template' => 'PRIMARY KEY ({:column})'],
-        'foreign_key' => [
-            'template' => 'FOREIGN KEY ({:column}) REFERENCES {:to} ({:toColumn}) {:on}'
+        'foreign key' => [
+            'template' => 'FOREIGN KEY ({:foreignKey}) REFERENCES {:to} ({:primaryKey}) {:on}'
         ],
         'unique' => [
             'template' => 'UNIQUE {:index} ({:column})'
         ],
-        'check' => ['template' => 'CHECK ({:expr})']
+        'check' => ['template' => '{:constraint} CHECK ({:expr})']
     ];
 
     /**
@@ -77,16 +80,49 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Sql
                 ':except all'     => ['type' => 'set'],
                 ':intersect'      => ['type' => 'set'],
                 ':intersect all'  => ['type' => 'set']
-            ],
-            'types' => [
-                'boolean' => [
-                    'core' => function($value, $params = []) { return $value === 't'; },
-                    'db' => function($value, $params = []) { return $value ? 't' : 'f'; }
-                ]
             ]
         ];
 
         $config = Set::merge($defaults, $config);
         parent::__construct($config);
+    }
+
+    /**
+     * Helper for creating columns
+     *
+     * @see    chaos\source\sql\Sql::column()
+     * @param  array $field A field array
+     * @return string The SQL column string
+     */
+    protected function _column($field)
+    {
+        extract($field);
+        if ($type === 'float' && $precision) {
+            $use = 'numeric';
+        }
+
+        $column = $this->escape($name);
+
+        if (isset($increment) && $increment) {
+            $result = [$column];
+            $result[] = 'serial NOT NULL';
+        } else {
+            $column .= ' ' . $use;
+
+            if ($precision) {
+                $precision = $use === 'numeric' ? ",{$precision}" : '';
+            }
+
+            if ($length && preg_match('/char|numeric|interval|bit|time/', $use)) {
+                $column .= "({$length}{$precision})";
+            }
+
+            $result = [$column];
+
+            $result[] = is_bool($null) ? ($null ? 'NULL' : 'NOT NULL') : '' ;
+            $result[] = $default ? 'DEFAULT ' . $this->value($default, $field) : '';
+        }
+
+        return join(' ', array_filter($result));
     }
 }

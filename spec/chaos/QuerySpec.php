@@ -9,9 +9,9 @@ use kahlan\plugin\Stub;
 
 describe("Query", function() {
 
-	before(function() {
+    before(function() {
 
-	});
+    });
 
 });
 

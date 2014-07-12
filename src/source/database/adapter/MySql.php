@@ -10,12 +10,52 @@ use set\Set;
 class MySql extends \chaos\source\database\Database
 {
     /**
+     * MySQL types and their associatied internal types.
+     *
+     * @var array
+     */
+     protected $_defaults = [
+        'boolean'            => 'boolean',
+        'tinyint'            => 'integer',
+        'smallint'           => 'integer',
+        'mediumint'          => 'integer',
+        'int'                => 'integer',
+        'bigint'             => 'integer',
+        'float'              => 'float',
+        'double'             => 'float',
+        'decimal'            => 'decimal',
+        'tinytext'           => 'string',
+        'char'               => 'string',
+        'varchar'            => 'string',
+        'time'               => 'string',
+        'date'               => 'datetime',
+        'datetime'           => 'datetime',
+        'tinyblob'           => 'string',
+        'mediumblob'         => 'string',
+        'blob'               => 'string',
+        'longblob'           => 'string',
+        'text'               => 'string',
+        'mediumtext'         => 'string',
+        'longtext'           => 'string',
+        'year'               => 'string',
+        'bit'                => 'string',
+        'geometry'           => 'string',
+        'point'              => 'string',
+        'multipoint'         => 'string',
+        'linestring'         => 'string',
+        'multilinestring'    => 'string',
+        'polygon'            => 'string',
+        'multipolygon'       => 'string',
+        'geometrycollection' => 'string'
+    ];
+
+    /**
      * Check for required PHP extension, or supported database feature.
      *
-     * @param  string $feature Test for support for a specific feature, i.e. `"transactions"`
-     *                or `"arrays"`.
-     * @return boolean Returns `true` if the particular feature (or if MySQL) support is enabled,
-     *         otherwise `false`.
+     * @param  string  $feature Test for support for a specific feature, i.e. `"transactions"`
+     *                          or `"arrays"`.
+     * @return boolean          Returns `true` if the particular feature (or if MySQL) support
+     *                          is enabled, otherwise `false`.
      */
     public static function enabled($feature = null)
     {
@@ -36,35 +76,53 @@ class MySql extends \chaos\source\database\Database
     /**
      * Constructs the MySQL adapter and sets the default port to 3306.
      *
-     * @param array $config Configuration options for this class. For additional configuration,
-     *        see `lithium\data\source\Database` and `lithium\data\Source`. Available options
-     *        defined by this class:
-     *        - `'database'`: The name of the database to connect to. Defaults to 'lithium'.
-     *        - `'host'`: The IP or machine name where MySQL is running, followed by a colon,
-     *          followed by a port number or socket. Defaults to `'localhost:3306'`.
-     *        - `'persistent'`: If a persistent connection (if available) should be made.
-     *          Defaults to true.
-     *        Typically, these parameters are set in `Connections::add()`, when adding the
-     *        adapter to the list of active connections.
+     * @param array $config Configuration options for this class. Available options
+     *                      defined by this class:
+     *                      - `'host'`: _string_ The IP or machine name where MySQL is running,
+     *                                  followed by a colon, followed by a port number or socket.
+     *                                  Defaults to `'localhost:3306'`.
      */
     public function __construct($config = [])
     {
         $defaults = [
             'host' => 'localhost:3306',
-            'encoding' => null,
             'classes' => [
                 'sql' => 'chaos\source\database\sql\dialect\MySqlDialect'
-            ]
+            ],
+            'handlers' => $this->_handlers(),
         ];
         $config = Set::merge($defaults, $config);
         parent::__construct($config);
+
+        $this->type('id',       ['use' => 'int']);
+        $this->type('serial',   ['use' => 'int', 'serial' => true]);
+        $this->type('string',   ['use' => 'varchar', 'length' => 255]);
+        $this->type('text',     ['use' => 'text']);
+        $this->type('integer',  ['use' => 'int']);
+        $this->type('boolean',  ['use' => 'boolean']);
+        $this->type('float',    ['use' => 'float']);
+        $this->type('decimal',  ['use' => 'decimal', 'precision' => 2]);
+        $this->type('date',     ['use' => 'date']);
+        $this->type('time',     ['use' => 'time']);
+        $this->type('datetime', ['use' => 'datetime']);
+        $this->type('binary',   ['use' => 'blob']);
+        $this->type('uuid',     ['use' => 'char', 'length' => 36]);
+
+        $this->format('id',       'intval');
+        $this->format('serial',   'intval');
+        $this->format('integer',  'intval');
+        $this->format('float',    'floatval');
+        $this->format('decimal',  'toDecimal');
+        $this->format('date',     'importDate',    'exportDate');
+        $this->format('datetime', 'importDate',    'exportDate');
+        $this->format('boolean',  'importBoolean', 'exportBoolean');
     }
 
     /**
      * Connects to the database using the options provided to the class constructor.
      *
-     * @return boolean Returns `true` if a database connection could be established, otherwise
-     *         `false`.
+     * @return boolean Returns `true` if a database connection could be established,
+     *                 otherwise `false`.
      */
     public function connect()
     {
@@ -103,16 +161,15 @@ class MySql extends \chaos\source\database\Database
     /**
      * Gets the column schema for a given MySQL table.
      *
-     * @param mixed $entity Specifies the table name for which the schema should be returned, or
-     *        the class name of the model object requesting the schema, in which case the model
-     *        class will be queried for the correct table name.
-     * @param array $fields Any schema data pre-defined by the model.
-     * @param array $meta
-     * @return array Returns an associative array describing the given table's schema, where the
-     *         array keys are the available fields, and the values are arrays describing each
-     *         field, containing the following keys:
-     *         - `'type'`: The field type name
-     * @filter This method can be filtered.
+     * @param  mixed $entity Specifies the table name for which the schema should be returned, or
+     *                       the class name of the model object requesting the schema, in which case
+     *                       the model class will be queried for the correct table name.
+     * @param  array $fields Any schema data pre-defined by the model.
+     * @param  array $meta
+     * @return array         Returns an associative array describing the given table's schema,
+     *                       where the array keys are the available fields, and the values are arrays
+     *                       describing each field, containing the following keys:
+     *                       - `'type'`: _string_ The field type name.
      */
     public function describe($entity,  $fields = [], array $meta = [])
     {
@@ -148,11 +205,63 @@ class MySql extends \chaos\source\database\Database
     }
 
     /**
+     * Converts database-layer column types to basic types.
+     *
+     * @param  string $real Real database-layer column type (i.e. `"varchar(255)"`)
+     * @return array        Column type (i.e. "string") plus 'length' when appropriate.
+     */
+    protected function _column($real)
+    {
+        if (is_array($real)) {
+            return $real['type'] . (isset($real['length']) ? "({$real['length']})" : '');
+        }
+
+        if (!preg_match('/(?P<type>\w+)(?:\((?P<length>[\d,]+)\))?/', $real, $column)) {
+            return $real;
+        }
+        $column = array_intersect_key($column, ['type' => null, 'length' => null]);
+
+        if (isset($column['length']) && $column['length']) {
+            $length = explode(',', $column['length']) + [null, null];
+            $column['length'] = $length[0] ? intval($length[0]) : null;
+            $length[1] ? $column['precision'] = intval($length[1]) : null;
+        }
+
+        switch (true) {
+            case in_array($column['type'], ['date', 'time', 'datetime', 'timestamp']):
+                return $column;
+            case ($column['type'] === 'tinyint' && $column['length'] == '1'):
+            case ($column['type'] === 'boolean'):
+                return ['type' => 'boolean'];
+            break;
+            case (strpos($column['type'], 'int') !== false):
+                $column['type'] = 'integer';
+            break;
+            case (strpos($column['type'], 'char') !== false || $column['type'] === 'tinytext'):
+                $column['type'] = 'string';
+            break;
+            case (strpos($column['type'], 'text') !== false):
+                $column['type'] = 'text';
+            break;
+            case (strpos($column['type'], 'blob') !== false || $column['type'] === 'binary'):
+                $column['type'] = 'binary';
+            break;
+            case preg_match('/float|double|decimal/', $column['type']):
+                $column['type'] = 'float';
+            break;
+            default:
+                $column['type'] = 'text';
+            break;
+        }
+        return $column;
+    }
+
+    /**
      * Gets or sets the encoding for the connection.
      *
-     * @param $encoding
-     * @return mixed If setting the encoding; returns true on success, else false.
-     *         When getting, returns the encoding.
+     * @param  $encoding
+     * @return mixed     If setting the encoding; returns true on success, else false.
+     *                   When getting, returns the encoding.
      */
     public function encoding($encoding = null)
     {
@@ -174,41 +283,14 @@ class MySql extends \chaos\source\database\Database
     }
 
     /**
-     * Retrieves database error message and error code.
-     *
-     * @return array
-     */
-    public function error()
-    {
-        if ($error = $this->_connection->errorInfo()) {
-            return [$error[1], $error[2]];
-        }
-    }
-
-    /**
-     * @todo Eventually, this will need to rewrite aliases for DELETE and UPDATE queries, same with
-     *       order().
-     * @param string $conditions
-     * @param string $context
-     * @param array $options
-     * @return void
-     */
-    public function conditions($conditions, $context, $options = [])
-    {
-        return parent::conditions($conditions, $context, $options);
-    }
-
-    /**
      * Execute a given query.
      *
-     * @see lithium\data\source\Database::renderCommand()
-     * @param string $sql The sql string to execute
-     * @param array $options Available options:
-     *        - 'buffered': If set to `false` uses mysql_unbuffered_query which
-     *          sends the SQL query query to MySQL without automatically fetching and buffering the
-     *          result rows as `mysql_query()` does (for less memory usage).
-     * @return resource Returns the result resource handle if the query is successful.
-     * @filter
+     * @param  string $sql     The sql string to execute
+     * @param  array  $options Available options:
+     *                         - `'buffered'`: If set to `false` uses mysql_unbuffered_query which
+     *                           sends the SQL query query to MySQL without automatically fetching and
+     *                           buffering the result rows as `mysql_query()` does (for less memory usage).
+     * @return object          Returns the result resource handle if the query is successful.
      */
     protected function _execute($sql, $options = [])
     {

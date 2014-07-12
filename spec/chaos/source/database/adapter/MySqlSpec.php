@@ -12,22 +12,29 @@ describe("MySql", function() {
     before(function() {
         global $gdic;
         $box = $gdic['spec'];
-        $this->adapter = $box->get('source.database.mysql');
+        $this->adapter = $box->get('source.database.postgresql');
     });
 
     describe("sources", function() {
 
         it("show sources", function() {
-            $schema = new Schema([
-                'name' => 'table1',
-                'adapter' =>  $this->adapter
-            ]);
-            $schema->create();
-            $sources = $this->adapter->sources();
-            print_r($sources);
-            //print_r($this->source->describe());
+            // $schema = new Schema([
+            //     'name' => 'table1',
+            //     'adapter' =>  $this->adapter,
+            //     'fields' => [
+            //         'id' => ['id']
+            //     ]
+            // ]);
+            // $schema->create();
+            // $sources = $this->adapter->sources();
+            // print_r($sources);
 
-            // $statement = $this->source->execute("SELECT * FROM authors LEFT JOIN tags ON authors.id = tags.author_id");
+            //print_r($this->adapter->describe());
+
+            $statement = $this->adapter->execute("SELECT row_to_json(aa) FROM aa");
+            //print_r($statement->fetchAll(PDO::FETCH_ASSOC));
+
+            // $statement = $this->adapter->execute("SELECT * FROM authors LEFT JOIN tags ON authors.id = tags.author_id");
             // print_r($statement->fetchAll(PDO::FETCH_NUM));
 
 
@@ -35,12 +42,12 @@ describe("MySql", function() {
 // $sql .= '"is_nullable" AS "null", "column_default" AS "default", ';
 // $sql .= '"character_maximum_length" AS "char_length"
 
-            //$statement = $this->source->execute("select * from INFORMATION_SCHEMA.COLUMNS where table_name = 'authors'");
+            $statement = $this->adapter->execute("select * from INFORMATION_SCHEMA.COLUMNS where table_name = 'bb'");
 
-            // $statement = $this->source->execute("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'chaos_test'");
-            // print_r($statement->fetchAll(PDO::FETCH_NUM));
+            // $statement = $this->adapter->execute("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'chaos_test'");
+            //print_r($statement->fetchAll(PDO::FETCH_ASSOC));
 
-            // print_r($this->source->sources());
+            // print_r($this->adapter->sources());
         });
 
     });

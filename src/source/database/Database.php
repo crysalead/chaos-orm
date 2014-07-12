@@ -13,6 +13,13 @@ use chaos\SourceException;
 abstract class Database extends \chaos\Source
 {
     /**
+     * Column type definitions.
+     *
+     * @var array
+     */
+    protected $_types = [];
+
+    /**
      * Specific value denoting whether or not table aliases should be used in DELETE and UPDATE queries.
      *
      * @var boolean
@@ -20,22 +27,39 @@ abstract class Database extends \chaos\Source
     protected $_alias = false;
 
     /**
-     * The SQL dialect instance
+     * The SQL dialect instance.
      *
      * @var object
      */
     protected $_sql = null;
 
     /**
+     * Type conversion definitions.
+     *
+     * @var array
+     */
+    protected $_handlers = [];
+
+    /**
+     * Import/export casting definitions.
+     *
+     * @var array
+     */
+    protected $_formatters = [];
+
+    /**
      * Creates the database object and set default values for it.
      *
      * Options defined:
-     *  - 'database' _string_ Name of the database to use. Defaults to `null`.
-     *  - 'host' _string_ Name/address of server to connect to. Defaults to 'localhost'.
-     *  - 'login' _string_ Username to use when connecting to server. Defaults to 'root'.
-     *  - 'password' _string_ Password to use when connecting to server. Defaults to `''`.
-     *  - 'persistent' _boolean_ If true a persistent connection will be attempted, provided the
-     *    adapter supports it. Defaults to `true`.
+     *  - `'dns'`       : _string_ The full dsn connection url. Defaults to `null`.
+     *  - `'database'`  : _string_ Name of the database to use. Defaults to `null`.
+     *  - `'host'`      : _string_ Name/address of server to connect to. Defaults to 'localhost'.
+     *  - `'login'`     : _string_ Username to use when connecting to server. Defaults to 'root'.
+     *  - `'password'`  : _string_ Password to use when connecting to server. Defaults to `''`.
+     *  - `'encoding'`  : _string_ The database character encoding.
+     *  - `'persistent'`: _boolean_ If true a persistent connection will be attempted, provided the
+     *                    adapter supports it. Defaults to `true`.
+     *  - `'sql'`       : _object_ A SQL dialect adapter
      *
      * @param  $config array Array of configuration options.
      * @return Database object.
@@ -54,13 +78,15 @@ abstract class Database extends \chaos\Source
             'encoding'   => null,
             'dsn'        => null,
             'options'    => [],
-            'sql'    => null
+            'sql'        => null,
+            'handlers'   => []
         ];
         $config = Set::merge($defaults, $config);
         parent::__construct($config);
 
         $this->_sql = $config['sql'];
         unset($this->_config['sql']);
+        $this->_handlers = $config['handlers'];
 
         if ($this->_sql === null) {
             $sql = $this->_classes['sql'];
@@ -156,6 +182,120 @@ abstract class Database extends \chaos\Source
         return $sources;
     }
 
+    /**
+     * Return default cast handlers
+     *
+     * @return array
+     */
+    protected function _handlers()
+    {
+        return [
+            'toDecimal' => function($value, $params = []) {
+                $params += ['precision' => 2];
+                return number_format($number, $params['precision']);
+            },
+            'importDate'     => function($value, $params = []) {
+                if (is_numeric($value)) {
+                    return new DateTime('@' . $value);
+                }
+                return DateTime::createFromFormat($this->_dateFormat, $value);
+            },
+            'exportDate' => function($value, $params = []) {
+                $params += ['format' => null];
+                $format = $params['format'];
+                if ($format) {
+                    if ($value instanceof DateTime) {
+                        return $value->format($format);
+                    } elseif(($time = strtotime($value)) !== false) {
+                        return date($format, $time);
+                    }
+                }
+                throw new Exception("Invalid date value: `{$value}`.");
+            },
+            'importBoolean' => function($value, $params = []) { return $value ? 1 : 0; },
+            'exportBoolean' => function($value, $params = []) { return !!$value; }
+        ];
+    }
+
+    /**
+     * Get/set an internal type definition
+     *
+     * @param  string $type   The type name.
+     * @param  array  $config The type definition.
+     * @return array          Return the type definition.
+     */
+    public function type($type, $config = null)
+    {
+        if ($config) {
+            $this->_types[$type] = $config;
+        }
+        if (!isset($this->_types[$type])) {
+            throw new SourceException("Column type `{$type}` does not exist.");
+        }
+        return $this->_types[$type];
+    }
+
+    /**
+     * Get/set an internal type casting definition
+     *
+     * @param  string   $type          The type name.
+     * @param  callable $importHandler The callable import handler.
+     * @param  callable $exportHandler The callable export handler. If not set use `$importHandler`.
+     */
+    public function format($type, $importHandler = null, $exportHandler = null)
+    {
+        switch(func_num_args()) {
+            case 1:
+                $handlers = [];
+                if (isset($this->_formatters['import'][$type])) {
+                    $handlers['import'] = $this->_formatters['import'][$type];
+                }
+                if (isset($this->_formatters['export'][$type])) {
+                    $handlers['export'] = $this->_formatters['export'][$type];
+                }
+                return $handlers + ['import' => 'strval', 'export' => 'strval'];
+            break;
+            case 2:
+                $exportHandler = $importHandler;
+            case 3:
+                $this->_format('import', $type, $importHandler);
+                $this->_format('export', $type, $exportHandler);
+            break;
+        }
+    }
+
+    /**
+     * Set an type format definition.
+     *
+     * @param  string   $mode    The format mode (i.e. `'import'` or `'export'`).
+     * @param  string   $type    The type name.
+     * @param  callable $handler The callable handler.
+     */
+    public function _format($mode, $type, $handler)
+    {
+        if (is_callable($handler)) {
+            $this->_formatters[$mode][$type] = $handler;
+            return;
+        }
+        if (!isset($this->_handlers[$handler])) {
+            throw new SourceException("Invalid cast handler `{$handler}`.");
+        }
+        $this->_formatters[$mode][$type] = $handler;
+    }
+
+    /**
+     * Cast a value according to a type definition.
+     *
+     * @param   string $mode  The format mode (i.e. `'import'` or `'export'`).
+     * @param   string $type  The type name.
+     * @param   mixed  $value The value to cast.
+     * @return  mixed         The casted value.
+     */
+    public function cast($mode, $type, $value) {
+        $formatter = isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : 'strval';
+        return $formatter($value);
+    }
+
     public function read($data = []) {
         $defaults = [
             'source' => null,
@@ -178,7 +318,7 @@ abstract class Database extends \chaos\Source
         foreach ($data['joins'] as $join) {
             $query .= $this->join($join);
         }
-        $query .= $this->where($data['joins']);
+        $query .= $this->where($data['where']);
         $query .= $this->group($data['group']);
         $query .= $this->having($data['having']);
         $query .= $this->order($data['order']);
@@ -229,31 +369,11 @@ abstract class Database extends \chaos\Source
             throw new SourceException("Passed schema is not a valid `{$this->_classes['schema']}` instance.");
         }
         $query = $this->sql()->statement('create table');
-        $query->table($source);
-            //->columns($schema->fields())
-            //->constraints($schema->meta());
+        $query->table($source)
+            ->columns($schema->fields())
+            ->constraints($schema->meta());
 
-
-        echo $query;
-
-        $columns = [];
-        $primary = null;
-
-        $source = $this->sql()->escape($source);
-
-        foreach ($schema->fields() as $name => $field) {
-            $field['name'] = $name;
-            if ($field['type'] === 'id') {
-                $primary = $name;
-            }
-            $columns[] = $this->column($field);
-        }
-        $columns = join(",\n", array_filter($columns));
-
-        $metas = $schema->meta() + ['table' => [], 'constraints' => []];
-
-        $constraints = $this->sql()->constraints($metas['constraints'], ",\n", $primary);
-        $table = $this->sql()->metas('table', $metas['table']);
+        echo $query->toString();
     }
 
     /**

@@ -1,26 +1,19 @@
 <?php
 namespace chaos\source\database\sql\statement;
 
-use RuntimeException;
+use chaos\SourceException;
 
 /**
  * SQL CRUD helper
  */
-class CreateTable
+class CreateTable extends Statement
 {
-    /**
-     * The generated SQL query.
-     *
-     * @var string
-     */
-    protected $_data = [];
-
     /**
      * Pointer to the dialect adapter.
      *
      * @var object
      */
-    protected $_adapter = null;
+    protected $_sql = null;
 
     /**
      * The SQL parts.
@@ -28,50 +21,130 @@ class CreateTable
      * @var string
      */
     protected $_parts = [
-        'createTable' => [],
-        'table'       => false,
-        'columns'     => false,
-        'constraints' => false,
-        'comment'     => false
+        'table'       => '',
+        'columns'     => [],
+        'constraints' => [],
+        'metas'       => []
     ];
 
-    /**
-     * Constructor
-     *
-     * @param  array $config The config array. The options is:
-     *                       - 'adapter' `object` a dialect adapter.
-     * @throws RuntimeException
-     */
-    public function __construct($config = [])
-    {
-        $defaults = ['adapter' => null];
-        $config += $defaults;
-        if (!$config['adapter']) {
-            throw new RuntimeException('Missing dialect adapter');
-        }
-        $this->_adapter = $config['adapter'];
-    }
+    protected $_primary = null;
 
-    public function __call($name, $params)
+    /**
+     * Set the table name to create
+     *
+     * @param  string $table The table name.
+     * @return object        Returns `$this`.
+     */
+    public function table($table)
     {
-        if (!isset($this->_parts[$name])) {
-            throw new RuntimeException("Invalid command {$name}");
-        }
-        $this->_parts[$name][] = $params;
+        $this->_parts['table'] = $this->sql()->escape($table);
         return $this;
     }
 
     /**
-     * Render the SQL statement
+     * Adds some columns to the query
+     *
+     * @param  array $columns An array of fields description.
+     * @return object         Returns `$this`.
      */
-    public function __toString()
+    public function columns($columns)
     {
-        foreach ($this->_parts as $key => $value) {
-            if (is_array($value)) {
-                $params = $value ? end($value) : [];
-                $query[] = call_user_func_array([$this->_adapter, $key], $params);
+        $this->_parts['columns'] += $columns;
+        return $this;
+    }
+
+    /**
+     * Adds some table meta to the query
+     *
+     * @param  array  $metas An array of metas for the table.
+     * @return object        Returns `$this`.
+     */
+    public function metas($metas)
+    {
+        $this->_parts['metas'] =  array_merge($this->_parts['metas'], $metas);
+        return $this;
+    }
+
+    /**
+     * Adds some constraints to the query
+     *
+     * @param  array  $constraints An array of constraints for columns.
+     * @return object              Returns `$this`.
+     */
+    public function constraints($constraints)
+    {
+        $this->_parts['constraints'] =  array_merge($this->_parts['constraints'], $constraints);
+        return $this;
+    }
+
+    public function export($name, $value)
+    {
+        if (!isset($this->_parts['columns'][$name]['type'])) {
+            throw new SourceException("Definition required for column `{$name}`.");
+        }
+        return $this->sql()->adapter()->cast('export', $this->_parts['columns'][$name]['type'], $value);
+    }
+
+    /**
+     * Helper for building columns definition
+     *
+     * @param  array  $columns     The columns.
+     * @param  array  $constraints The columns constraints.
+     * @return string              The SQL columns definition list.
+     */
+    protected function _definition($columns, $constraints)
+    {
+        $result = [];
+        $primary = null;
+
+        foreach ($columns as $name => $field) {
+            if ($field['type'] === 'serial') {
+                $primary = $name;
+            }
+            $field['name'] = $name;
+            $result[] = $this->sql()->column($field);
+        }
+
+        foreach ($constraints as $constraint) {
+            if (!isset($constraint['type'])) {
+                throw new SourceException("Missing contraint type.");
+            }
+            $name = $constraint['type'];
+            if ($meta = $this->sql()->constraint($name, $constraint, ['' => $this])) {
+                $result[] = $meta;
+            }
+            if ($name === 'primary') {
+                $primary = null;
             }
         }
+        if ($primary) {
+            $result[] = $this->sql()->constraint('primary', ['column' => $primary]);
+        }
+
+        return '(' . join(', ', array_filter($result)) . ')';
+    }
+
+    /**
+     * Render the SQL statement
+     *
+     * @return string The generated SQL string.
+     */
+    public function toString()
+    {
+        $query = ['CREATE TABLE'];
+
+        if (!$this->_parts['table']) {
+            throw new SourceException("Invalid CREATE TABLE statement missing table name.");
+        }
+
+        if (!$this->_parts['columns']) {
+            throw new SourceException("Invalid CREATE TABLE statement missing columns.");
+        }
+
+        $query[] = $this->_parts['table'];
+        $query[] = $this->_definition($this->_parts['columns'], $this->_parts['constraints']);
+        $query[] = $this->sql()->metas('table', $this->_parts['metas']);
+
         return join(' ', array_filter($query));
     }
 }
