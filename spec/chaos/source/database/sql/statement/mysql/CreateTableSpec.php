@@ -1,6 +1,7 @@
 <?php
 namespace spec\chaos\source\database\sql\statement\mysql;
 
+use chaos\SourceException;
 use chaos\source\database\sql\Sql;
 use kahlan\plugin\Stub;
 
@@ -58,9 +59,7 @@ describe("CreateTable", function() {
                 ->columns([
                     'email' => ['type' => 'string']
                 ])
-                ->constraints([
-                    ['type' => 'primary', 'column' => 'email']
-                ]);
+                ->constraint(['type' => 'primary', 'column' => 'email']);
 
             $expected  = 'CREATE TABLE `table1` (`email` varchar(255), PRIMARY KEY (`email`))';
             expect($this->create->toString())->toBe($expected);
@@ -72,9 +71,7 @@ describe("CreateTable", function() {
                     'firstname' => ['type' => 'string'],
                     'lastname' => ['type' => 'string']
                 ])
-                ->constraints([
-                    ['type' => 'primary', 'column' => ['firstname', 'lastname']]
-                ]);
+                ->constraint(['type' => 'primary', 'column' => ['firstname', 'lastname']]);
 
             $expected  = 'CREATE TABLE `table1` (`firstname` varchar(255), `lastname` varchar(255), PRIMARY KEY (`firstname`, `lastname`))';
             expect($this->create->toString())->toBe($expected);
@@ -87,13 +84,11 @@ describe("CreateTable", function() {
                     'population' => ['type' => 'integer'],
                     'name' => ['type' => 'string', 'length' => 255]
                 ])
-                ->constraints([
-                    [
-                        'type' => 'check',
-                        'expr' => [
-                            'population' => ['>' => '20'],
-                            'name' => 'Los Angeles'
-                        ]
+                ->constraint([
+                    'type' => 'check',
+                    'expr' => [
+                        'population' => ['>' => '20'],
+                        'name' => 'Los Angeles'
                     ]
                 ]);
 
@@ -108,13 +103,11 @@ describe("CreateTable", function() {
                 ->columns([
                     'population' => ['type' => 'integer']
                 ])
-                ->constraints([
-                    [
-                        'type' => 'check',
-                        'constraint' => 'pop',
-                        'expr' => [
-                            'population' => ['>' => '20']
-                        ]
+                ->constraint([
+                    'type' => 'check',
+                    'constraint' => 'pop',
+                    'expr' => [
+                        'population' => ['>' => '20']
                     ]
                 ]);
 
@@ -127,9 +120,7 @@ describe("CreateTable", function() {
                 ->columns([
                     'email' => ['type' => 'string']
                 ])
-                ->constraints([
-                    ['type' => 'unique', 'column' => 'email']
-                ]);
+                ->constraint(['type' => 'unique', 'column' => 'email']);
 
             $expected  = 'CREATE TABLE `table1` (`email` varchar(255), UNIQUE (`email`))';
             expect($this->create->toString())->toBe($expected);
@@ -141,9 +132,7 @@ describe("CreateTable", function() {
                     'firstname' => ['type' => 'string'],
                     'lastname' => ['type' => 'string']
                 ])
-                ->constraints([
-                    ['type' => 'unique', 'column' => ['firstname', 'lastname'] ]
-                ]);
+                ->constraint(['type' => 'unique', 'column' => ['firstname', 'lastname']]);
 
             $expected  = 'CREATE TABLE `table1` (`firstname` varchar(255), `lastname` varchar(255), UNIQUE (`firstname`, `lastname`))';
             expect($this->create->toString())->toBe($expected);
@@ -155,9 +144,7 @@ describe("CreateTable", function() {
                     'firstname' => ['type' => 'string'],
                     'lastname' => ['type' => 'string']
                 ])
-                ->constraints([
-                    ['type' => 'unique', 'column' => ['firstname', 'lastname'], 'index' => true ]
-                ]);
+                ->constraint(['type' => 'unique', 'column' => ['firstname', 'lastname'], 'index' => true ]);
 
             $expected  = 'CREATE TABLE `table1` (`firstname` varchar(255), `lastname` varchar(255), UNIQUE INDEX (`firstname`, `lastname`))';
             expect($this->create->toString())->toBe($expected);
@@ -169,9 +156,7 @@ describe("CreateTable", function() {
                     'firstname' => ['type' => 'string'],
                     'lastname' => ['type' => 'string']
                 ])
-                ->constraints([
-                    ['type' => 'unique', 'column' => ['firstname', 'lastname'], 'index' => true, 'key' => true ]
-                ]);
+                ->constraint(['type' => 'unique', 'column' => ['firstname', 'lastname'], 'index' => true, 'key' => true ]);
 
             $expected  = 'CREATE TABLE `table1` (`firstname` varchar(255), `lastname` varchar(255), UNIQUE KEY (`firstname`, `lastname`))';
             expect($this->create->toString())->toBe($expected);
@@ -183,14 +168,12 @@ describe("CreateTable", function() {
                     'id' => ['type' => 'id'],
                     'user_id' => ['type' => 'integer']
                 ])
-                ->constraints([
-                    [
-                        'type' => 'foreign key',
-                        'foreignKey' => 'user_id',
-                        'to' => 'user',
-                        'primaryKey' => 'id',
-                        'on' => 'DELETE CASCADE'
-                    ]
+                ->constraint([
+                    'type' => 'foreign key',
+                    'foreignKey' => 'user_id',
+                    'to' => 'user',
+                    'primaryKey' => 'id',
+                    'on' => 'DELETE CASCADE'
                 ]);
 
             $expected  = 'CREATE TABLE `table1` (`id` int, `user_id` int,';
@@ -207,7 +190,7 @@ describe("CreateTable", function() {
                     'published' => [
                         'type' => 'datetime',
                         'null' => false,
-                        'default' => (object) 'CURRENT_TIMESTAMP'
+                        'default' => [':raw' => 'CURRENT_TIMESTAMP']
                     ],
                     'decimal' => [
                         'type' => 'float',
@@ -234,20 +217,18 @@ describe("CreateTable", function() {
                     'collate' => 'utf8_unicode_ci',
                     'engine' => 'InnoDB'
                 ])
-                ->constraints([
-                    [
-                        'type' => 'check',
-                        'expr' => [
-                           'integer' => ['<' => 10]
-                        ]
-                    ],
-                    [
-                        'type' => 'foreign key',
-                        'foreignKey' => 'table_id',
-                        'to' => 'other_table',
-                        'primaryKey' => 'id',
-                        'on' => 'DELETE NO ACTION'
+                ->constraint([
+                    'type' => 'check',
+                    'expr' => [
+                       'integer' => ['<' => 10]
                     ]
+                ])
+                ->constraint([
+                    'type' => 'foreign key',
+                    'foreignKey' => 'table_id',
+                    'to' => 'other_table',
+                    'primaryKey' => 'id',
+                    'on' => 'DELETE NO ACTION'
                 ]);
 
             $expected = 'CREATE TABLE `table1` (';
@@ -267,9 +248,99 @@ describe("CreateTable", function() {
 
     });
 
+    describe("type", function() {
+
+        it("returns a column type", function() {
+
+            $this->create->table('table1')
+                ->columns([
+                    'population' => ['type' => 'integer'],
+                    'city' => ['type' => 'string', 'length' => 255, 'null' => false]
+                ]);
+
+            expect($this->create->type('population'))->toBe('integer');
+            expect($this->create->type('city'))->toBe('string');
+
+        });
+
+        it("throws an exception if the column name doesn't exist", function() {
+
+            $this->create->table('table1');
+
+            $closure = function() {
+                $this->create->type('somefieldname');
+            };
+
+            expect($closure)->toThrow(new SourceException("Definition required for column `somefieldname`."));
+
+        });
+
+    });
+
+    describe("toString", function() {
+
+        it("throws an exception if no table name are set", function() {
+
+            $closure = function() {
+                $this->create->toString();
+            };
+
+            expect($closure)->toThrow(new SourceException("Invalid CREATE TABLE statement missing table name."));
+
+        });
+
+        it("throws an exception if no column definitions are set", function() {
+
+            $closure = function() {
+                $this->create->table('table1')->toString();
+            };
+
+            expect($closure)->toThrow(new SourceException("Invalid CREATE TABLE statement missing columns."));
+
+        });
 
 
+        it("throws an exception a column type is undefined", function() {
+
+            $closure = function() {
+                $this->create->table('table1')
+                    ->columns([
+                        'somefieldname' => ['type' => 'invalid'],
+                    ])->toString();
+            };
+
+            expect($closure)->toThrow(new SourceException("Column type `'invalid'` does not exist."));
+
+        });
+
+        it("throws an exception a constraint type is undefined", function() {
+
+            $closure = function() {
+                $this->create->table('table1')
+                    ->columns([
+                        'name' => ['type' => 'string'],
+                    ])
+                    ->constraint(['type' => 'invalid'])->toString();
+            };
+
+            expect($closure)->toThrow(new SourceException("Invalid constraint template `'invalid'`."));
+
+        });
+
+        it("throws an exception a constraint is defined with no type", function() {
+
+            $closure = function() {
+                $this->create->table('table1')
+                    ->columns([
+                        'name' => ['type' => 'string'],
+                    ])
+                    ->constraint(['params' => 'someparams'])->toString();
+            };
+
+            expect($closure)->toThrow(new SourceException("Missing contraint type."));
+
+        });
+
+    });
 
 });
-
-?>

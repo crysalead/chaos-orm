@@ -66,23 +66,29 @@ class CreateTable extends Statement
     }
 
     /**
-     * Adds some constraints to the query
+     * Adds a constraint to the query
      *
-     * @param  array  $constraints An array of constraints for columns.
+     * @param  array  $constraint  An constraint array definition for columns.
      * @return object              Returns `$this`.
      */
-    public function constraints($constraints)
+    public function constraint($constraint)
     {
-        $this->_parts['constraints'] =  array_merge($this->_parts['constraints'], $constraints);
+        $this->_parts['constraints'][] =  $constraint;
         return $this;
     }
 
-    public function export($name, $value)
+    /**
+     * Return the normalized type of a column
+     *
+     * @param  string $name The name of the column.
+     * @return string       Returns the normalized column type.
+     */
+    public function type($name)
     {
         if (!isset($this->_parts['columns'][$name]['type'])) {
             throw new SourceException("Definition required for column `{$name}`.");
         }
-        return $this->sql()->adapter()->cast('export', $this->_parts['columns'][$name]['type'], $value);
+        return $this->_parts['columns'][$name]['type'];
     }
 
     /**

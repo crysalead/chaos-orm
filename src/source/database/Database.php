@@ -8,7 +8,7 @@ use set\Set;
 use chaos\SourceException;
 
 /**
- * Base PDO adapter
+ * PDO driver adapter base class
  */
 abstract class Database extends \chaos\Source
 {
@@ -210,7 +210,7 @@ abstract class Database extends \chaos\Source
                         return date($format, $time);
                     }
                 }
-                throw new Exception("Invalid date value: `{$value}`.");
+                throw new SourceException("Invalid date value: `" . print_r($value, true) . "`.");
             },
             'importBoolean' => function($value, $params = []) { return $value ? 1 : 0; },
             'exportBoolean' => function($value, $params = []) { return !!$value; }
@@ -230,7 +230,7 @@ abstract class Database extends \chaos\Source
             $this->_types[$type] = $config;
         }
         if (!isset($this->_types[$type])) {
-            throw new SourceException("Column type `{$type}` does not exist.");
+            throw new SourceException("Column type `'{$type}'` does not exist.");
         }
         return $this->_types[$type];
     }
@@ -280,7 +280,7 @@ abstract class Database extends \chaos\Source
         if (!isset($this->_handlers[$handler])) {
             throw new SourceException("Invalid cast handler `{$handler}`.");
         }
-        $this->_formatters[$mode][$type] = $handler;
+        $this->_formatters[$mode][$type] = $this->_handlers[$handler];
     }
 
     /**

@@ -4,11 +4,6 @@ namespace chaos\source;
 abstract class Result implements \Iterator
 {
 	/**
-	 * Contains the cached result set.
-	 */
-	protected $_cache = null;
-
-	/**
 	 * The current position of the iterator.
 	 */
 	protected $_iterator = 0;
@@ -75,7 +70,7 @@ abstract class Result implements \Iterator
 	public function valid()
 	{
 		if (!$this->_init) {
-			$this->_valid = $this->_fetch();
+			$this->_valid = $this->fetch();
 		}
 		return $this->_valid;
 	}
@@ -100,7 +95,7 @@ abstract class Result implements \Iterator
 	public function current()
 	{
 		if (!$this->_init) {
-			$this->_fetch();
+			$this->fetch();
 		}
 		$this->_started = true;
 		return $this->_current;
@@ -114,26 +109,17 @@ abstract class Result implements \Iterator
 	public function key()
 	{
 		if (!$this->_init) {
-			$this->_fetch();
+			$this->fetch();
 		}
 		$this->_started = true;
 		return $this->_key;
 	}
 
 	/**
-	 * Fetches the previous element from the cache.
-	 *
-	 * @return mixed The previous result (or `false` if there is none).
+	 * Do nothing.
 	 */
 	public function prev()
 	{
-		if (!$this->_cache) {
-			return;
-		}
-		if (isset($this->_cache[--$this->_iterator - 1])) {
-			$this->_key = $this->_iterator - 1;
-			return $this->_current = $this->_cache[$this->_iterator - 1];
-		}
 		return false;
 	}
 
@@ -147,7 +133,7 @@ abstract class Result implements \Iterator
 		if ($this->_started === false) {
 			return $this->current();
 		}
-		$this->_valid = $this->_fetch();
+		$this->_valid = $this->fetch();
 		if (!$this->_valid) {
 			$this->_key = null;
 			$this->_current = false;
@@ -160,25 +146,10 @@ abstract class Result implements \Iterator
 	 *
 	 * @return boolean Return `true` on success or `false` otherwise.
 	 */
-	protected function _fetch()
+	protected function fetch()
 	{
 		$this->_init = true;
-		return $this->_fetchFromCache() || $this->_fetchFromResource();
-	}
-
-	/**
-	 * Returns the result from the primed cache.
-	 *
-	 * @return boolean Return `true` on success or `false` if it has not been cached yet.
-	 */
-	protected function _fetchFromCache()
-	{
-		if ($this->_iterator >= count($this->_cache)) {
-			return false;
-		}
-		$this->_key = $this->_iterator;
-		$this->_current = $this->_cache[$this->_iterator++];
-		return true;
+		return $this->_fetch();
 	}
 
 	/**
@@ -198,5 +169,5 @@ abstract class Result implements \Iterator
 		$this->close();
 	}
 
-	abstract protected function _fetchFromResource();
+	abstract protected function _fetch();
 }

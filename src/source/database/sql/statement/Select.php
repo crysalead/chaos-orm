@@ -9,6 +9,11 @@ use chaos\SourceException;
 class Select extends Statement
 {
     /**
+     * Subquery alias
+     */
+    protected $_alias = null;
+
+    /**
      * The SQL parts.
      *
      * @var string
@@ -46,7 +51,7 @@ class Select extends Statement
     public function from($sources)
     {
         if (!$sources) {
-            throw new SourceException("A `FROM` statement require at least one table.");
+            throw new SourceException("A `FROM` statement require at least one non empty table.");
         }
         $names = $this->sql()->names(is_array($sources) ? $sources : func_get_args(), false);
         $this->_parts['from'] += array_merge($this->_parts['from'], $names);
@@ -56,15 +61,27 @@ class Select extends Statement
     /**
      * Adds a join to the query
      *
-     * @param  string|array $joins The joins.
+     * @param  string|array $join A join definition.
      * @return string              Formatted `JOIN` clause.
      */
-    public function join($join)
+    public function join($join = null, $on = [], $type = 'LEFT')
     {
-        $defaults = ['type' => 'LEFT'];
-        //$join += $defaults;
+        if (!$join) {
+            return $this;
+        }
 
-        return '';
+        $sql = [strtoupper($type), 'JOIN'];
+        $name = $this->sql()->names(is_array($join) ? $join : [$join]);
+        $sql[] = reset($name);
+
+        if ($on) {
+            $sql[] = 'ON';
+            $sql[] = $this->sql()->conditions($on);
+        }
+
+        $this->_parts['joins'][] = join(' ', $sql);
+
+        return $this;
     }
 
     /**
@@ -101,9 +118,12 @@ class Select extends Statement
      * @param  string|array $fields The fields.
      * @return object                   Returns `$this`.
      */
-    public function group($fields)
+    public function group($fields = null)
     {
-        $this->_parts['group'][] = $this->_sort($fields);
+        if (!$fields) {
+            return $this;
+        }
+        $this->_parts['group'][] = $this->_sort($fields, false);
         return $this;
     }
 
@@ -113,8 +133,11 @@ class Select extends Statement
      * @param  string|array $fields The fields.
      * @return object                   Returns `$this`.
      */
-    public function order($fields)
+    public function order($fields = null)
     {
+        if (!$fields) {
+            return $this;
+        }
         $this->_parts['order'][] = $this->_sort($fields);
         return $this;
     }
@@ -137,9 +160,6 @@ class Select extends Statement
             $fields = [$fields => $direction];
         }
 
-        if (!is_array($fields) || !$fields) {
-            return '';
-        }
         $result = [];
 
         foreach ($fields as $column => $dir) {
@@ -149,7 +169,7 @@ class Select extends Statement
             }
             $dir = preg_match('/^(asc|desc)$/i', $dir) ? " {$dir}" : $direction;
 
-            $column = $this->name($column);
+            $column = $this->sql()->escape($column);
             $result[] = "{$column}{$dir}";
         }
         return $fields = join(', ', $result);
@@ -158,18 +178,35 @@ class Select extends Statement
     /**
      * Adds a limit statement to the query
      *
-     * @param  integer $offset The offset value.
      * @param  integer $limit  The limit value.
+     * @param  integer $offset The offset value.
      * @return object          Returns `$this`.
      */
-    public function limit($offset, $limit)
+    public function limit($limit = 0, $offset = 0)
     {
         if (!$limit) {
-            $this->_parts['limit'] = '';
             return $this;
         }
-        $offset = $offset ?: '';
-        $this->_parts['limit'] = "LIMIT {$limit}{$offset}";
+        if ($offset) {
+            $limit .= " OFFSET {$offset}";
+        }
+        $this->_parts['limit'] = $limit;
+        return $this;
+    }
+
+    /**
+     * If called with a valid alias, the generated select statement
+     * will be generated as a subquery
+     *
+     * @param  string $alias The alias to use for a subquery.
+     * @return object        Returns `$this`.
+     */
+    public function alias($alias = null)
+    {
+        if (!func_num_args()) {
+            return $this->_alias;
+        }
+        $this->_alias = $alias;
         return $this;
     }
 
@@ -200,7 +237,11 @@ class Select extends Statement
         $query[] = $this->_prefix('ORDER BY', join(', ', $this->_parts['order']));
         $query[] = $this->_prefix('LIMIT', $this->_parts['limit']);
 
-        return join(' ', array_filter($query));
+        $sql = join(' ', array_filter($query));
+        if ($this->_alias) {
+            return "({$sql}) AS " . $this->sql()->escape($this->_alias);
+        }
+        return $sql;
     }
 
     protected function _prefix($prefix, $sql) {

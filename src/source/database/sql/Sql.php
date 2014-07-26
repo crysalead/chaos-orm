@@ -208,7 +208,7 @@ class Sql
     {
         $sql = [];
         foreach ($names as $key => $value) {
-            if (!is_array($value)) {
+            if (is_string($value)) {
                 $value = ($value === '*' && $star) ? '*' : $this->escape($value);
                 if (!is_numeric($key)) {
                     $name = $this->escape($key);
@@ -219,6 +219,10 @@ class Sql
                     $name = $prefix ? "{$prefix}.{$name}" : $name;
                     $sql[$name] = $name;
                 }
+                continue;
+            }
+            if (!is_array($value)) {
+                $sql[] = (string) $value;
                 continue;
             }
             $op = key($value);
@@ -275,7 +279,7 @@ class Sql
      * @param  mixed  $conditions The data for the operator.
      * @return string              Returns a SQL string.
      */
-    protected function _operator($operator, $conditions, &$states)
+    protected function _operator($operator, $conditions, $states)
     {
         $config = $this->_operators[$operator];
         if (!isset($this->_operators[$operator])) {
@@ -303,26 +307,31 @@ class Sql
      * @param  mixed  $value  The data value.
      * @return array          Returns a array of SQL string.
      */
-    public function _conditions($conditions, &$states)
+    protected function _conditions($conditions, $states)
     {
         $parts = [];
         foreach ($conditions as $key => $value) {
             $operator = strtolower($key);
             if (isset($this->_formatters[$operator])) {
-                $parts[] = $this->format($operator, $value, $states['key'], $states['schema']);
+                $parts[] = $this->format($operator, $value, $this->_type($states));
             } elseif (isset($this->_operators[$operator])) {
                 $parts[] = $this->_operator($operator, $value, $states);
             } elseif (is_numeric($key)) {
                 if (is_array($value)) {
                     $parts = array_merge($parts, $this->_conditions($value, $states));
                 } else {
-                    $parts[] = $this->value($value, $states['key'], $states['schema']);
+                    $parts[] = $this->value($value, $this->_type($states));
                 }
             } else {
                 $parts[] = $this->_key($key, $value, $states);
             }
         }
         return $parts;
+    }
+
+    protected function _type($states)
+    {
+        return ($states['key'] && $states['schema']) ? $states['schema']->type($states['key']) : null;
     }
 
     /**
@@ -350,7 +359,8 @@ class Sql
                 return $this->_operator($operator, $conditions, $states);
             }
         }
-        return "{$escaped} = {$this->value($value, $key, $schema)}";
+        $type = $this->_type($states);
+        return "{$escaped} = {$this->value($value, $type)}";
     }
 
     /**
@@ -358,22 +368,23 @@ class Sql
      *
      * @param  string $operator The format operator.
      * @param  mixed  $value    The value to format.
+     * @param  string $type     The value type.
      * @return string           Returns a SQL string.
      */
-    protected function format($operator, $value, $key = null, $schema = null)
+    public function format($operator, $value, $type = null)
     {
         switch ($operator) {
             case ':key':
                 return $this->escape($value);
             break;
             case ':value':
-                return $this->value($value, $key, $schema);
+                return $this->value($value, $type);
             break;
             case ':raw':
                 return (string) $value;
             break;
         }
-        return $this->value($value, $key, $schema);
+        return $this->value($value, $type);
     }
 
     /**
@@ -442,13 +453,14 @@ class Sql
     /**
      * Converts a given value into the proper type based on a given schema definition.
      *
-     * @param mixed $value The value to be converted. Arrays will be recursively converted.
-     * @return mixed value with converted type
+     * @param  mixed  $value The value to be converted. Arrays will be recursively converted.
+     * @param  string $type  The value type.
+     * @return mixed         The formatted value.
      */
-    public function value($value, $key = null, $schema = null)
+    public function value($value, $type = null)
     {
-        if ($schema) {
-            $value = $schema->export($key, $value);
+        if ($type && $adapter = $this->adapter()) {
+            $value = $adapter->cast('export', $type, $value);
         }
         switch (true) {
             case is_null($value):
@@ -459,8 +471,6 @@ class Sql
                 return $this->quote($value);
             case is_array($value):
                 return '{' . join(', ', $value) . '}';
-            case $value instanceof stdClass:
-                return $value->scalar;
         }
         return (string) $value;
     }
@@ -565,7 +575,7 @@ class Sql
         $meta += ['keyword' => '', 'escape' => false, 'join' => ' '];
         extract($meta);
         if ($escape === true) {
-            $value = $this->value($value, ['type' => 'string']);
+            $value = $this->value($value);
         }
         $result = $keyword . $join . $value;
         return $result !== ' ' ? $result : '';
@@ -583,7 +593,7 @@ class Sql
         $value += ['options' => []];
         $meta = isset($this->_constraints[$name]) ? $this->_constraints[$name] : null;
         if (!($template = isset($meta['template']) ? $meta['template'] : null)) {
-            throw new SourceException("Invalid constraint template `'{$name}'`.", 1);
+            throw new SourceException("Invalid constraint template `'{$name}'`.");
         }
 
         $data = [];

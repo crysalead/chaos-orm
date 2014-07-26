@@ -2,7 +2,6 @@
 namespace spec\chaos\source\database\sql;
 
 use chaos\source\database\sql\Sql;
-use chaos\source\database\sql\SqlException;
 use kahlan\plugin\Stub;
 
 describe("Sql", function() {
@@ -101,26 +100,26 @@ describe("Sql", function() {
 
         it("generates a BETWEEN/NOT BETWEEN expression", function() {
             $part = $this->sql->conditions([
-                ':between' => [[':key' => 'score'], 90, 100]
+                ':between' => [[':key' => 'score'], [90, 100]]
             ]);
             expect($part)->toBe('"score" BETWEEN 90 AND 100');
 
             $part = $this->sql->conditions([
-                ':not between' => [[':key' => 'score'], 90, 100]
+                ':not between' => [[':key' => 'score'], [90, 100]]
             ]);
             expect($part)->toBe('"score" NOT BETWEEN 90 AND 100');
         });
 
         it("generates a subquery IN expression", function() {
             $part = $this->sql->conditions([
-                ':in' => [[':key' => 'score'], 1, 2, 3, 4, 5]
+                ':in' => [[':key' => 'score'], [1, 2, 3, 4, 5]]
             ]);
             expect($part)->toBe('"score" IN (1, 2, 3, 4, 5)');
         });
 
         it("generates a subquery NOT IN expression", function() {
             $part = $this->sql->conditions([
-                ':not in' => [[':key' => 'score'], 1, 2, 3, 4, 5]
+                ':not in' => [[':key' => 'score'], [1, 2, 3, 4, 5]]
             ]);
             expect($part)->toBe('"score" NOT IN (1, 2, 3, 4, 5)');
         });
@@ -170,5 +169,3 @@ describe("Sql", function() {
     });
 
 });
-
-?>

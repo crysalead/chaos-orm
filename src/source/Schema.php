@@ -254,22 +254,6 @@ class Schema
         $this->_meta = $schema->meta() + $this->_meta;
     }
 
-    /**
-     * Format a value to as a valid datasource value.
-     *
-     * @param  string $name          The field name identifier.
-     * @param  mixed  $value         The value to format.
-     * @return mixed                 The formatted value.
-     * @throws chaos\SourceException If the adapter is missing.
-     */
-    public function export($name, $value)
-    {
-        if (!$this->_adapter) {
-            throw new SourceException("Missing data adapter for this schema.");
-        }
-        return $this->_adapter->cast('export', $this->type($name), $value);
-    }
-
     // public function cast($object, $key, $data, $options = [])
     // {
     //     $defaults = [

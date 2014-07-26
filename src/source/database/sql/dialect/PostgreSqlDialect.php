@@ -120,7 +120,14 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Sql
             $result = [$column];
 
             $result[] = is_bool($null) ? ($null ? 'NULL' : 'NOT NULL') : '' ;
-            $result[] = $default ? 'DEFAULT ' . $this->value($default, $field) : '';
+            if ($default) {
+                if (is_array($default)) {
+                    list($operator, $default) = each($default);
+                } else {
+                    $operator = ':value';
+                }
+                $result[] = 'DEFAULT ' . $this->format($operator, $default, $type);
+            }
         }
 
         return join(' ', array_filter($result));

@@ -162,6 +162,29 @@ describe("Sql", function() {
 
     describe("column", function() {
 
+        context("with a integer column", function() {
+
+            it("generates an interger column", function() {
+                $data = [
+                    'name' => 'fieldname',
+                    'type' => 'integer'
+                ];
+                $result = $this->sql->column($data);
+                expect($result)->toBe('`fieldname` int');
+            });
+
+            it("generates an interger column with the correct length", function() {
+                $data = [
+                    'name' => 'fieldname',
+                    'type' => 'integer',
+                    'length' => 11
+                ];
+                $result = $this->sql->column($data);
+                expect($result)->toBe('`fieldname` int(11)');
+            });
+
+        });
+
         context("with a string column", function() {
 
             it("generates a varchar column", function() {
@@ -260,7 +283,7 @@ describe("Sql", function() {
                 $data = [
                     'name' => 'created',
                     'type' => 'datetime',
-                    'default' => (object) 'CURRENT_TIMESTAMP'
+                    'default' => [':raw' => 'CURRENT_TIMESTAMP']
                 ];
                 $result = $this->sql->column($data);
                 expect($result)->toBe('`created` datetime DEFAULT CURRENT_TIMESTAMP');
@@ -326,11 +349,11 @@ describe("Sql", function() {
                 $closure = function() {
                     $data = [
                         'name' => 'fieldname',
-                        'type' => 'badtype'
+                        'type' => 'invalid'
                     ];
                     $this->sql->column($data);
                 };
-                expect($closure)->toThrow(new SourceException("Column type `badtype` does not exist."));
+                expect($closure)->toThrow(new SourceException("Column type `'invalid'` does not exist."));
             });
 
         });
@@ -351,50 +374,43 @@ describe("Sql", function() {
 
         });
 
+        context("with a default column value", function() {
+
+            it("sets up the default value", function() {
+                $data = [
+                    'name' => 'fieldname',
+                    'type' => 'integer',
+                    'length' => 11,
+                    'default' => 1
+                ];
+                $result = $this->sql->column($data);
+                expect($result)->toBe('`fieldname` int(11) DEFAULT 1');
+            });
+
+            it("casts the default value to an integer", function() {
+                $data = [
+                    'name' => 'fieldname',
+                    'type' => 'integer',
+                    'length' => 11,
+                    'default' => '1'
+                ];
+                $result = $this->sql->column($data);
+                expect($result)->toBe('`fieldname` int(11) DEFAULT 1');
+            });
+
+            it("casts the default value to an string", function() {
+                $data = [
+                    'name' => 'fieldname',
+                    'type' => 'string',
+                    'length' => 64,
+                    'default' => 1
+                ];
+                $result = $this->sql->column($data);
+                expect($result)->toBe("`fieldname` varchar(64) DEFAULT '1'");
+            });
+
+        });
+
     });
 
 });
-
-/*
-    public function testBuildColumnCastDefaultValue() {
-        $data = array(
-            'name' => 'fieldname',
-            'type' => 'integer',
-            'length' => 11,
-            'default' => 1
-        );
-        $result = $this->_db->column($data);
-        $expected = "`fieldname` int(11) DEFAULT 1";
-        $this->assertEqual($expected, $result);
-
-        $data = array(
-            'name' => 'fieldname',
-            'type' => 'integer',
-            'length' => 11,
-            'default' => '1'
-        );
-        $result = $this->_db->column($data);
-        $expected = "`fieldname` int(11) DEFAULT 1";
-        $this->assertEqual($expected, $result);
-
-        $data = array(
-            'name' => 'fieldname',
-            'type' => 'string',
-            'length' => 64,
-            'default' => 1
-        );
-        $result = $this->_db->column($data);
-        $expected = "`fieldname` varchar(64) DEFAULT '1'";
-        $this->assertEqual($expected, $result);
-
-        $data = array(
-            'name' => 'fieldname',
-            'type' => 'text',
-            'default' => 15
-        );
-        $result = $this->_db->column($data);
-        $expected = "`fieldname` text DEFAULT '15'";
-        $this->assertEqual($expected, $result);
-    }
-*/
-?>

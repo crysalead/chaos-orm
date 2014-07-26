@@ -3,6 +3,11 @@ namespace chaos\source\mongo;
 
 use MongoGridFSFile;
 
+/**
+ * This class is a wrapper around the `PDOStatement` returned and can be used to iterate over it.
+ *
+ * @link http://php.net/manual/de/class.pdostatement.php The PDOStatement class.
+ */
 class Result extends \chaos\source\Result
 {
     /**
