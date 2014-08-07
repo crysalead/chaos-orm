@@ -18,11 +18,11 @@ class Schema
     protected $_name = null;
 
     /**
-     * The datasource adpater
+     * The connection to the datasource
      *
      * @var object
      */
-    protected $_adapter = null;
+    protected $_connection = null;
 
     /**
      * Is the schema is locked
@@ -63,7 +63,6 @@ class Schema
      *                  - `'model'`     : the model to use to box the loaded data (default to '`null`').
      *                  - `'default'`   : the default value (default to '`null`').
      *                  - `'null'`      : allow null value (default to `'null'`).
-
      *                  - `'length'`    : the length of the data (default to `'null'`).
      *                  - `'precision'` : the precision (for decimals) (default to `'null'`).
      *                  - `'use'`       : the database type to override the associated type for
@@ -84,7 +83,7 @@ class Schema
     {
         $defaults = [
             'name' => null,
-            'adapter' => null,
+            'connection' => null,
             'locked' => true,
             'fields' => [],
             'handlers' => [],
@@ -93,7 +92,7 @@ class Schema
         $config = Set::merge($defaults, $config);
 
         $this->_name = $config['name'];
-        $this->_adapter = $config['adapter'];
+        $this->_connection = $config['connection'];
         $this->_locked = $config['locked'];
         $this->_fields = $config['fields'];
         $this->_handlers = $config['handlers'];
@@ -113,14 +112,30 @@ class Schema
     protected function _initField($field)
     {
         if (is_string($field)) {
-            return ['type' => $field];
-        }
-        if (isset($field[0]) && !isset($field['type'])) {
+            $field = ['type' => $field];
+        } elseif (isset($field[0]) && !isset($field['type'])) {
             $field['type'] = $field[0];
             unset($field[0]);
             return $field;
         }
+        $type = $field['type'];
+        if (isset($this->_handlers[$type])) {
+            $field['format'] = $this->_handlers[$type];
+        }
         return $field;
+    }
+
+    /**
+     * Return the schema connection.
+     *
+     * @throws chaos\SourceException If no connection is defined.
+     */
+    public function connection()
+    {
+        if (!$this->_connection) {
+            throw new SourceException("Missing data connection for this schema.");
+        }
+        return $this->_connection;
     }
 
     /**
@@ -254,143 +269,91 @@ class Schema
         $this->_meta = $schema->meta() + $this->_meta;
     }
 
-    // public function cast($object, $key, $data, $options = [])
-    // {
-    //     $defaults = [
-    //         'parent' => null,
-    //         'pathKey' => null,
-    //         'model' => null,
-    //         'wrap' => true,
-    //         'first' => false
-    //     ];
-    //     $options += $defaults;
-
-    //     $basePathKey = $options['pathKey'];
-    //     $model = (!$options['model'] && $object) ? $object->model() : $options['model'];
-    //     $classes = $this->_classes;
-
-    //     $fieldName = is_int($key) ? null : $key;
-    //     $pathKey = $basePathKey;
-
-    //     if ($fieldName) {
-    //         $pathKey = $basePathKey ? "{$basePathKey}.{$fieldName}" : $fieldName;
-    //     }
-
-    //     if ($data instanceof $classes['set'] || $data instanceof $classes['entity']) {
-    //         return $data;
-    //     }
-    //     if (is_object($data) && !$this->is('array', $pathKey)) {
-    //         return $data;
-    //     }
-    //     return $this->_castArray($object, $data, $pathKey, $options, $defaults);
-    // }
-
-    // protected function _castArray($object, $val, $pathKey, $options, $defaults)
-    // {
-    //     $isArray = $this->is('array', $pathKey) && (!$object instanceof $this->_classes['set']);
-    //     $isObject = ($this->type($pathKey) === 'object');
-    //     $valIsArray = is_array($val);
-    //     $numericArray = false;
-    //     $class = 'entity';
-
-    //     if (!$valIsArray && !$isArray) {
-    //         return $this->_castType($val, $pathKey);
-    //     }
-
-    //     if ($valIsArray) {
-    //         $numericArray = !$val || array_keys($val) === range(0, count($val) - 1);
-    //     }
-
-    //     if ($isArray || ($numericArray && !$isObject)) {
-    //         $val = $valIsArray ? $val : array($val);
-    //         $class = 'set';
-    //     }
-
-    //     if ($options['wrap']) {
-    //         $config = array(
-    //             'parent' => $options['parent'],
-    //             'model' => $options['model'],
-    //             'schema' => $this
-    //         );
-    //         $config += compact('pathKey') + array_diff_key($options, $defaults);
-
-    //         if (!$pathKey && $model = $options['model']) {
-    //             $exists = is_object($object) ? $object->exists() : false;
-    //             $config += array('class' => $class, 'exists' => $exists, 'defaults' => false);
-    //             $val = $model::create($val, $config);
-    //         } else {
-    //             $config['data'] = $val;
-    //             $val = $this->_instance($class, $config);
-    //         }
-    //     } elseif ($class === 'set') {
-    //         $val = $val ?: array();
-    //         foreach ($val as &$value) {
-    //             $value = $this->_castType($value, $pathKey);
-    //         }
-    //     }
-    //     return $val;
-    // }
-
-    // /**
-    //  * Casts a scalar (non-object/array) value to its corresponding database-native value or custom
-    //  * value object based on a handler assigned to `$field`'s data type.
-    //  *
-    //  * @param  mixed  $value The value to be cast.
-    //  * @param  string $field The name of the field that `$value` is or will be stored in. If it is a
-    //  *                nested field, `$field` should be the full dot-separated path to the
-    //  *                sub-object's field.
-    //  * @return mixed  Returns the result of `$value`, modified by a matching handler data type
-    //  *                handler, if available.
-    //  */
-    // protected function _castType($value, $field)
-    // {
-    //     if ($this->is('null', $field) && ($value === null || $value === "")) {
-    //         return null;
-    //     }
-    //     if (!is_scalar($value)) {
-    //         return $value;
-    //     }
-    //     $type = $this->type($field);
-    //     return isset($this->_handlers[$type]) ? $this->_handlers[$type]($value) : $value;
-    // }
-
     /**
-     * Create the schema.
+     * Cast data according to the schema definition.
      *
-     * @return boolean
-     * @throws chaos\SourceException If no adapter is connected or the schema name is missing.
+     * @param  array  $key     The field name.
+     * @param  array  $data    Some data to cast.
+     * @param  array  $options Options for the casting.
+     * @return object          The casted data.
      */
-    public function create()
+    public function cast($key, $data, $options = [])
     {
-        $this->_adapterCheck();
-        return $this->_adapter->createSchema($this->_name, $this);
+        $defaults = ['pathKey' => null, 'asContent' => false, 'exists' => false];
+        $options += $defaults;
+
+        $pathKey = $options['pathKey'];
+
+        if (!$pathKey && !$key) {
+            return $this->_autobox($data, $options);
+        }
+
+        is_int($key) ? $options['asContent'] = true : $pathKey = $pathKey ? "{pathKey}.{$key}" : $key;
+
+        if (!isset($this->_fields[$pathKey])) {
+            return $data;
+        }
+
+        $field = $this->_fields[$pathKey];
+
+        if (!$field['array'] || $options['asContent']) {
+            return $this->_cast($field, $data, $options['asContent']);
+        }
+
+        $data = is_array($data) ? $data :[$data];
+        $options['class'] = 'set';
+        $options['pathKey'] = $pathKey;
+        return $this->_autobox($data, $options);
     }
 
     /**
-     * Drop the schema
+     * Autobox some data into an object.
      *
-     * @return boolean
-     * @throws chaos\SourceException If no adapter is connected or the schema name is missing.
+     * @param  array  $data    Some data to autobox.
+     * @param  array  $options Options for the autoboxing.
+     * @return object          The autoboxed object.
      */
-    public function drop($method, $params = [])
+    protected function _autobox($data, $options = [])
     {
-        $this->_adapterCheck();
-        return $this->_adapter->dropSchema($this->_name, $this);
+        if ($data instanceof $this->_classes['set'] || $data instanceof $this->_classes['entity']) {
+            return $data;
+        }
+        $defaults = [
+            'parent' => null,
+            'pathKey' => null,
+            'model' => null,
+            'class' => 'entity',
+            'schema' => $this
+        ];
+        $options += $defaults;
+        if (!$model = $options['model']) {
+            return $this->_instance($options['class'], $options + ['data' => $data]);
+        }
+        return $model::create($data, $options + ['defaults' => false]);
     }
 
     /**
-     * Check if the schema is correctly connected to a data source and has a valid name.
+     * Casting helper
      *
-     * @throws chaos\SourceException If no adapter is connected or the schema name is missing.
+     * @param  array  $field     The field properties which define the casting.
+     * @param  array  $data      Some data to cast.
+     * @param  array  $asContent Cast as if it was a element of the field
+     *                           (unused if the field properties doesn't correspond to an array).
+     * @return mixed             The casted data.
      */
-    protected function _adapterCheck()
+    protected function _cast($field, $data, $asContent = false)
     {
-        if (!$this->_adapter) {
-            throw new SourceException("Missing data adapter for this schema.");
+        if ($asContent && is_array($data)) {
+            $result = [];
+            foreach ($data as $key => $value) {
+                $result[] = $this->_cast($field, $value);
+            }
+            return $result;
         }
-        if (!isset($this->_name)) {
-            throw new SourceException("Missing name for this schema.");
+        if ($field['null'] && ($data === null || $data === '')) {
+            return null;
         }
+        return isset($field['format']) ? $field['format']($data) : $data;
     }
 
     /**
@@ -398,7 +361,7 @@ class Schema
      */
     public function reset() {
         $this->_name = null;
-        $this->_adapter = null;
+        $this->_connection = null;
         $this->_meta = [];
         $this->_fields = [];
         $this->_locked = true;

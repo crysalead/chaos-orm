@@ -10,8 +10,29 @@ use chaos\SourceException;
 /**
  * PDO driver adapter base class
  */
-abstract class Database extends \chaos\Source
+abstract class Database
 {
+    /**
+     * Default entity and set classes used by subclasses of `Source`.
+     *
+     * @var array
+     */
+    protected $_classes = [];
+
+    /**
+     * Stores configuration information for object instances at time of construction.
+     *
+     * @var array
+     */
+    protected $_config = [];
+
+    /**
+     * Stores a connection to a remote resource.
+     *
+     * @var mixed
+     */
+    protected $_connection = null;
+
     /**
      * Column type definitions.
      *
@@ -68,8 +89,12 @@ abstract class Database extends \chaos\Source
     {
         $defaults = [
             'classes' => [
-                'result' => 'chaos\source\database\Result'
+                'cursor' => 'chaos\source\database\Cursor',
+                'schema' => 'chaos\source\Schema'
             ],
+            'connection' => null,
+            'connect' => true,
+            'meta' => ['key' => 'id', 'locked' => true],
             'persistent' => true,
             'host'       => 'localhost',
             'login'      => 'root',
@@ -82,7 +107,11 @@ abstract class Database extends \chaos\Source
             'handlers'   => []
         ];
         $config = Set::merge($defaults, $config);
-        parent::__construct($config);
+        $this->_config = $config + $defaults;
+
+        $this->_classes = $this->_config['classes'] + $this->_classes;
+        $this->_connection = $this->_config['connection'];
+        unset($this->_config['connection']);
 
         $this->_sql = $config['sql'];
         unset($this->_config['sql']);
@@ -92,6 +121,28 @@ abstract class Database extends \chaos\Source
             $sql = $this->_classes['sql'];
             $this->_sql = new $sql(['adapter' => $this]);
         }
+
+        if ($this->_config['connect']) {
+            $this->connect();
+        }
+    }
+
+    /**
+     * When not supported, delegate the call to the connection.
+     *
+     * @param string $string
+     */
+    public function __call($method, $params = []) {
+        return call_user_func_array([$this->_connection, $method], $params);
+    }
+
+    /**
+     * Return the source configuration.
+     *
+     * @return array.
+     */
+    public function config() {
+        return $this->_config;
     }
 
     /**
@@ -122,7 +173,7 @@ abstract class Database extends \chaos\Source
         try {
             $this->_connection = new PDO($dsn, $config['login'], $config['password'], $options);
         } catch (PDOException $e) {
-            $this->_connectError($e);
+            $this->_exception($e);
         }
 
         if ($config['encoding']) {
@@ -133,12 +184,41 @@ abstract class Database extends \chaos\Source
     }
 
     /**
-     * Manage connection error
+     * Returns the SQL dialect instance.
+     *
+     * @return object.
+     */
+    public function sql() {
+        return $this->_sql;
+    }
+
+    /**
+     * Returns the pdo connection instance.
+     *
+     * @return mixed
+     */
+    public function driver() {
+        return $this->_connection;
+    }
+
+    /**
+     * Checks the connection status of this data source.
+     *
+     * @return boolean Returns a boolean indicating whether or not the connection is currently active.
+     *                 This value may not always be accurate, as the connection could have timed out or
+     *                 otherwise been dropped by the remote resource during the course of the request.
+     */
+    public function connected() {
+        return !!$this->_connection;
+    }
+
+    /**
+     * PDOException wrapper
      *
      * @param  PDOException $e A PDOException.
      * @throws chaos\SourceException
      */
-    protected function _connectError($e)
+    protected function _exception($e)
     {
         $config = $this->_config;
         $code = $e->getCode();
@@ -152,15 +232,6 @@ abstract class Database extends \chaos\Source
             break;
         }
         throw new SourceException($msg, $code, $e);
-    }
-
-    /**
-     * Returns the SQL dialect instance.
-     *
-     * @return object.
-     */
-    public function sql() {
-        return $this->_sql;
     }
 
     /**
@@ -271,7 +342,7 @@ abstract class Database extends \chaos\Source
      * @param  string   $type    The type name.
      * @param  callable $handler The callable handler.
      */
-    public function _format($mode, $type, $handler)
+    protected function _format($mode, $type, $handler)
     {
         if (is_callable($handler)) {
             $this->_formatters[$mode][$type] = $handler;
@@ -296,43 +367,6 @@ abstract class Database extends \chaos\Source
         return $formatter($value);
     }
 
-    public function read($data = []) {
-        $defaults = [
-            'source' => null,
-            'fields' => [],
-            'alias' => null,
-            'joins' => [],
-            'conditions' => [],
-            'group' => [],
-            'having' => [],
-            'order' => [],
-            'offset' => null,
-            'limit' => null,
-            'comment' => null
-        ];
-
-        $data += $defaults;
-
-        $query  = $this->select($data['fields']);
-        $query .= $this->from($data['source'], $data['alias']);
-        foreach ($data['joins'] as $join) {
-            $query .= $this->join($join);
-        }
-        $query .= $this->where($data['where']);
-        $query .= $this->group($data['group']);
-        $query .= $this->having($data['having']);
-        $query .= $this->order($data['order']);
-        $query .= $this->limit($data['limit']);
-        $query .= $this->comment($data['comment']);
-    }
-
-    public function update($data) {
-    }
-
-    public function delete($data) {
-
-    }
-
     /**
      * Find records with custom SQL query.
      *
@@ -355,53 +389,6 @@ abstract class Database extends \chaos\Source
      */
     public function lastInsertId($source = null, $field = null) {
         return $this->_connection->lastInsertId();
-    }
-
-    /**
-     * Create a database-native table
-     *
-     * @param string $name A table name.
-     * @param object $schema A `Schema` instance.
-     * @return boolean `true` on success, `true` otherwise
-     */
-    public function createSchema($source, $schema) {
-        if (!$schema instanceof $this->_classes['schema']) {
-            throw new SourceException("Passed schema is not a valid `{$this->_classes['schema']}` instance.");
-        }
-        $query = $this->sql()->statement('create table');
-        $query->table($source)
-            ->columns($schema->fields())
-            ->constraints($schema->meta());
-
-        echo $query->toString();
-    }
-
-    /**
-     * Drop a table
-     *
-     * @param string $name The table name to drop.
-     * @param boolean $soft With "soft dropping", the function will retrun `true` even if the
-     *                table doesn't exists.
-     * @return boolean `true` on success, `false` otherwise
-     */
-    public function dropSchema($source, $soft = true) {
-        $source = $this->escape($source);
-        $exists = $soft ? 'IF EXISTS ' : '';
-        return !!$this->execute("DROP TABLE {$exists}{$source}");
-    }
-
-    public function create($data) {
-        $defaults = [
-            'source' => null,
-            'fields' => [],
-            'values' => [],
-            'comment' => null
-        ];
-
-        $data += $defaults;
-
-        $query  = $this->insert($data['source'], $data['fields'], $data['values']);
-        $query .= $this->comment($data['comment']);
     }
 
     /**

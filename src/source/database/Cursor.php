@@ -10,7 +10,7 @@ use PDOException;
  *
  * @link http://php.net/manual/de/class.pdostatement.php The PDOStatement class.
  */
-class Result extends \chaos\source\Result
+class Cursor extends \chaos\source\Cursor
 {
 	/**
 	 * Fetches the result from the resource.

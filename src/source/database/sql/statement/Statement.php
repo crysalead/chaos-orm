@@ -39,11 +39,20 @@ class Statement
         $this->_sql = $config['sql'];
     }
 
-    public function sql($adapter = null) {
+    public function sql($adapter = null)
+    {
         if ($adapter !== null) {
             $this->_sql = $adapter;
         }
         return $this->_sql;
+    }
+
+    public function data($name, $value = null)
+    {
+        if (func_num_args() === 2) {
+            return $this->_parts[$name] = $value;
+        }
+        return isset($this->_parts[$name]) ? $this->_parts[$name] : null;
     }
 
     public function __call($name, $params)

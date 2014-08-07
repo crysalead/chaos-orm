@@ -475,32 +475,6 @@ class Sql
         return (string) $value;
     }
 
-
-    // protected function cast($mode, $type, $value, $params = [])
-    // {
-    //     if (!isset($this->_handlers[$mode])) {
-    //         throw new SourceException("Invalid mode `{$mode}`.");
-    //     }
-    //     $handlers = $this->_handlers[$mode];
-
-    //     if (!isset($this->_column[$type])) {
-    //         throw new SourceException("Invalid column type : `{$type}`.");
-    //     }
-
-    //     $params += $this->_column[$type];
-    //     $func = $this->_handlers[$type];
-
-    //     if ($func instanceof Closure) {
-    //         return $func($value, $params);
-    //     }
-
-    //     if (!isset($func[$mode])) {
-    //         throw new SourceException("Invalid mode `{$mode}` for type `{$type}`.");
-    //     }
-
-    //     return $func[$mode]($value, $params);
-    // }
-
     /**
      * Generate a database-native column schema string
      *
