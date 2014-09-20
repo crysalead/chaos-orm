@@ -1,16 +1,9 @@
 <?php
 namespace chaos\source\database;
 
-use PDO;
-use PDOStatement;
-use PDOException;
+use chaos\SourceException;
 
-/**
- * This class is a wrapper around the `PDOStatement` returned and can be used to iterate over it.
- *
- * @link http://php.net/manual/de/class.pdostatement.php The PDOStatement class.
- */
-class Schema extends \chaos\source\Schema
+class Schema extends \chaos\model\Schema
 {
 	/**
      * Create the schema.
@@ -20,11 +13,11 @@ class Schema extends \chaos\source\Schema
      */
     public function create()
     {
-        if (!isset($this->_name)) {
-            throw new SourceException("Missing name for this schema.");
+        if (!isset($this->_source)) {
+            throw new SourceException("Missing table name (source) for this schema.");
         }
         $query = $this->connection()->sql()->statement('create table');
-        $query->table($source)
+        $query->table($this->_source)
             ->columns($schema->fields())
             ->constraints($schema->meta());
 
@@ -37,13 +30,13 @@ class Schema extends \chaos\source\Schema
      * @return boolean
      * @throws chaos\SourceException If no connection is defined or the schema name is missing.
      */
-    public function drop($method, $params = [])
+    public function drop()
     {
-        if (!isset($this->_name)) {
-            throw new SourceException("Missing name for this schema.");
+        if (!isset($this->_source)) {
+            throw new SourceException("Missing table name (source) for this schema.");
         }
         $query = $this->connection()->sql()->statement('drop table');
-        $query->table($source);
+        $query->table($this->_source);
 
         return $this->connection()->execute((string) $query);
     }

@@ -174,9 +174,9 @@ class MongoDb
      * @param  array $fields Fields to be parsed.
      * @return array         Parsed fields array.
      */
-    protected function execute($request)
+    protected function execute($query)
     {
-        $query = $this->_mapper->map($request->get());
+        $query = $this->_mapper->map($query);
 
         $this->_connection->command($query, null, $hash);
 

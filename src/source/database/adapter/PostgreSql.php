@@ -68,11 +68,10 @@ class PostgreSql extends \chaos\source\database\Database {
             return extension_loaded('pdo_pgsql');
         }
         $features = [
-            'arrays' => false,
+            'arrays' => true,
             'transactions' => true,
             'booleans' => true,
             'schema' => true,
-            'relationships' => true,
             'sources' => true
         ];
         return isset($features[$feature]) ? $features[$feature] : null;

@@ -383,7 +383,6 @@ abstract class Database
 
     /**
      * Get the last insert id from the database.
-     * Abstract. Must be defined by child class.
      *
      * @param $query lithium\data\model\Query $context The given query.
      */

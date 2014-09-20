@@ -3,10 +3,13 @@
     "description": "DataMapper ORM for PHP 5.4+.",
     "keywords": ["DataMapper", "ORM", "Model"],
     "license": "MIT",
-        "require": {
+    "require": {
         "php": ">=5.4",
+        "crysalead/box": "dev-master",
+        "crysalead/set": "dev-master",
         "crysalead/string": "dev-master",
-        "crysalead/set": "dev-master"
+        "crysalead/inflector": "dev-master",
+        "crysalead/collection": "dev-master"
     },
     "require-dev": {
         "php": ">=5.4",

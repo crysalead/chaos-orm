@@ -1,8 +1,18 @@
 <?php
 namespace chaos\source;
 
-abstract class Response implements \Iterator
+abstract class Cursor implements \Iterator
 {
+    /**
+     * The optionnal bound data.
+     */
+    protected $_data = [];
+
+    /**
+     * The bound resource.
+     */
+    protected $_resource = null;
+
     /**
      * Contains the current element of the result set.
      */
@@ -31,6 +41,38 @@ abstract class Response implements \Iterator
      * If the result resource has been initialized
      */
     protected $_key = null;
+
+    /**
+     * The constructor
+     *
+     * @param array $config
+     */
+    public function __construct($config = [])
+    {
+        $defaults = [
+            'data'   => [],
+            'resource' => null
+        ];
+        $config += $defaults;
+        $this->_resource = $config['resource'];
+        $this->_data = $config['data'];
+    }
+
+    /**
+     * Returns the bound data.
+     */
+    public function data()
+    {
+        return $this->_data;
+    }
+
+    /**
+     * Returns the bound resource.
+     */
+    public function resource()
+    {
+        return $this->_resource;
+    }
 
     /**
      * Checks if current position is valid.
@@ -110,7 +152,33 @@ abstract class Response implements \Iterator
     protected function fetch()
     {
         $this->_init = true;
-        return $this->_fetch();
+        return $this->_data ? $this->_fetchArray() : $this->_fetchResource();
+    }
+
+    /**
+     * Fetches the result from the data array.
+     *
+     * @return boolean Return `true` on success or `false` otherwise.
+     */
+    protected function _fetchArray()
+    {
+        if (key($this->_data) === null) {
+            return false;
+        }
+        $this->_current = current($this->_data);
+        $this->_key = key($this->_data);
+        next($this->_data);
+        return true;
+    }
+
+    /**
+     * Close the resource.
+     */
+    public function close()
+    {
+        unset($this->_resource);
+        $this->_resource = null;
+        $this->_data = [];
     }
 
     /**
@@ -121,5 +189,5 @@ abstract class Response implements \Iterator
         $this->close();
     }
 
-    abstract protected function _fetch();
+    abstract protected function _fetchResource();
 }
