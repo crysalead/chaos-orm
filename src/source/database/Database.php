@@ -130,10 +130,12 @@ abstract class Database
     /**
      * When not supported, delegate the call to the connection.
      *
-     * @param string $string
+     * @param string $name   The name of the matcher.
+     * @param array  $params The parameters to pass to the matcher.
      */
-    public function __call($method, $params = []) {
-        return call_user_func_array([$this->_connection, $method], $params);
+    public function __call($name, $params = [])
+    {
+        return call_user_func_array([$this->_connection, $name], $params);
     }
 
     /**
@@ -141,7 +143,8 @@ abstract class Database
      *
      * @return array.
      */
-    public function config() {
+    public function config()
+    {
         return $this->_config;
     }
 

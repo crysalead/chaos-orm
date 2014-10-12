@@ -152,9 +152,9 @@ class Schema
     }
 
     /**
-     * Gets the connection object to which this meta instance is bound.
+     * Gets the connection object to which this schema is bound.
      *
-     * @return object    Returns a datasource instance.
+     * @return object    Returns a connection instance.
      * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
      */
     public function connection() {

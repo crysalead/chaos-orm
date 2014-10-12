@@ -3,6 +3,7 @@ namespace chaos\source\database\model;
 
 use set\Set;
 use chaos\SourceException;
+use chaos\model\Relationship;
 
 /**
  * The `Crud` trait implements all methods to perform CRUD database operations.
@@ -48,8 +49,9 @@ trait Crud {
     public static function find($options = [])
     {
         return new Query([
-            'model' => get_called_class(),
-            'query' => Set::merge(static::$_query, $options)
+            'model'      => get_called_class(),
+            'connection' => static::connection(),
+            'query'      => Set::merge(static::$_query, $options)
         ]);
     }
 
@@ -185,7 +187,7 @@ trait Crud {
         $defaults = ['with' => false];
         $options += $defaults;
 
-        if (!$with = static::_with($options['with'])) {
+        if (!$with = Relationship::with($options['with'])) {
             return true;
         }
 

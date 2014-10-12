@@ -55,6 +55,12 @@ class Statement
         return isset($this->_parts[$name]) ? $this->_parts[$name] : null;
     }
 
+    /**
+     * Throws an error for invalid clauses.
+     *
+     * @param string $name   The name of the matcher.
+     * @param array  $params The parameters to pass to the matcher.
+     */
     public function __call($name, $params)
     {
         throw new SourceException("Invalid clause `{$name}` for `" . get_called_class() . "`");

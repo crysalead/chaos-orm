@@ -21,6 +21,13 @@ class Model implements \ArrayAccess, \Iterator
     protected static $_schemas = [];
 
     /**
+     * MUST BE re-defined in sub-classes which require a different connection.
+     *
+     * @var object The connection instance.
+     */
+    protected static $_connection = null;
+
+    /**
      * If this record is chained off of another, contains the origin object.
      *
      * @var object
@@ -78,15 +85,15 @@ class Model implements \ArrayAccess, \Iterator
     public function __construct($config = [])
     {
         $defaults = [
-            'data'   => [],
-            'exists' => false,
-            'parent' => null,
-            'rootPath'   => ''
+            'exists'   => false,
+            'parent'   => null,
+            'rootPath' => '',
+            'data'     => []
         ];
         $config += $defaults;
         $this->_exists = $config['exists'];
         $this->_parent = $config['parent'];
-        $this->rootPath = $config['rootPath'];
+        $this->_rootPath = $config['rootPath'];
         $this->set($this->_data);
         $this->_data = $this->_updated;
     }
@@ -182,20 +189,20 @@ class Model implements \ArrayAccess, \Iterator
      * Ps: it allow to use scalar datas for relations. Indeed, on form submission relations datas are
      * provided by a select input which generally provide such kind of array:
      *
-     * {{{
-     * [
+     * ```php
+     * $array = [
      *     'id' => 3
      *     'comments' => [
      *         '5', '6', '9
      *     ]
      * ];
-     * }}}
+     * ```
      *
      * To avoid painfull pre-processing, this function will automagically manage such relation
      * array by reformating it into the following on autoboxing:
      *
-     * {{{
-     * [
+     * ```php
+     * $array = [
      *     'id' => 3
      *     'comments' => [
      *         ['id' => '5'],
@@ -203,7 +210,7 @@ class Model implements \ArrayAccess, \Iterator
      *         ['id' => '9']
      *     ],
      * ];
-     * }}}
+     * ```
      *
      * @param string $offset  The field name.
      * @param mixed  $data   The value.
@@ -459,7 +466,7 @@ class Model implements \ArrayAccess, \Iterator
      */
     protected function _validates()
     {
-        if (!$with = $this->_with($options['with'])) {
+        if (!$with = Relationship::with($options['with'])) {
             return true;
         }
         foreach ($with as $field => $value) {
@@ -498,21 +505,22 @@ class Model implements \ArrayAccess, \Iterator
     {
         $defaults = [
             'classes' => [
-                'schema' => 'chaos\model\Schema'
+                'schema'       => 'chaos\model\Schema',
+                'relationship' => 'chaos\model\Relationship'
             ]
         ];
         $config = Set::merge($defaults, $config);
-        $this->_classes = $config['classes'];
+        static::$_classes = $config['classes'];
     }
 
     /**
      * Instantiates a new record or document object, initialized with any data passed in. For example:
      *
-     * {{{
+     * ```php
      * $post = Posts::create(['title' => 'New post']);
      * echo $post->title; // echoes 'New post'
      * $success = $post->save();
-     * }}}
+     * ```
      *
      * Note that while this method creates a new object, there is no effect on the database until
      * the `save()` method is called.
@@ -520,11 +528,11 @@ class Model implements \ArrayAccess, \Iterator
      * In addition, this method can be used to simulate loading a pre-existing object from the
      * database, without actually querying the database:
      *
-     * {{{
+     * ```php
      * $post = Posts::create(['id' => $id, 'moreData' => 'foo'], ['exists' => true]);
      * $post->title = 'New title';
      * $success = $post->save();
-     * }}}
+     * ```
      *
      * This will create an update query against the object with an ID matching `$id`. Also note that
      * only the `title` field will be updated.
@@ -580,6 +588,20 @@ class Model implements \ArrayAccess, \Iterator
     }
 
     /**
+     * Gets the connection object to which this model is bound.
+     *
+     * @return object    Returns a connection instance.
+     * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
+     */
+    public static function connection() {
+        if (!static::$_connection) {
+            $class = get_called_class();
+            throw new SourceException("Error, missing connection for `{$class}`.");
+        }
+        return static::$_connection;
+    }
+
+    /**
      * Returns the schema of this instance.
      *
      * @return object
@@ -590,7 +612,10 @@ class Model implements \ArrayAccess, \Iterator
         if (isset(static::$_schemas[$class])) {
             return static::$_schemas[$class];
         }
-        $config += static::_meta() + ['classes' => ['entity' => $class]];
+        $config += static::_meta() + [
+            'connection' => static::connection(),
+            'classes'    => ['entity' => $class]
+        ];
         $class = static::_classes['schema'];
         $schema = static::$_schemas[$class] = new $class($config);
         static::_schema($schema);
@@ -637,7 +662,7 @@ class Model implements \ArrayAccess, \Iterator
      * This function called once for initializing the model's schema.
      *
      * Example of schema initialization:
-     * {{{
+     * ```php
      * $schema->add('id', ['type' => 'id']);
      *
      * $schema->add('title', ['type' => 'string', 'default' => true]);
@@ -671,7 +696,7 @@ class Model implements \ArrayAccess, \Iterator
      *     'key'         => ['id' => 'post_id'],
      *     'constraints' => ['{:to}.enabled' => true]
      * ]);
-     * }}}
+     * ```
      *
      */
     protected static function _schema($schema)

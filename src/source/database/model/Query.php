@@ -6,10 +6,31 @@ use set\Set;
 use chaos\SourceException;
 
 /**
- * The Select Query.
+ * The Query wrapper.
  */
 class Query implements IteratorAggregate
 {
+    /**
+     * The connection to the datasource.
+     *
+     * @var object
+     */
+    protected $_connection = null;
+
+    /**
+     * The fully namespaced model class name.
+     *
+     * @var string
+     */
+    protected $_model = null;
+
+    /**
+     * The statement instance.
+     *
+     * @var string
+     */
+    protected $_statement = null;
+
     /**
      * The type.
      *
@@ -33,11 +54,11 @@ class Query implements IteratorAggregate
     protected $_paths = [];
 
     /**
-     * Map beetween generated aliases and corresponding entities.
+     * Map beetween generated aliases and corresponding models.
      *
      * @var array
      */
-    protected $_entities = [];
+    protected $_models = [];
 
     /**
      * Array containing mappings of relationship and field names, which allow database results to
@@ -48,46 +69,72 @@ class Query implements IteratorAggregate
     protected $_map = [];
 
     /**
-     * Array containing all information necessary to perform a query and hydrate result.
-     *
-     * - `'query'`   _object_ : The current select statement.
-     * - `'map'`     _array_  : Array containing mappings of relationship and field names, which
-     *                          allow database results to be mapped to the correct objects.
-     * - `'aliases'` _array_  : Array of counter representing the number of identical models in a
-     *                          query for building results to be mapped to the correct objects.
-     * - `'paths'`   _array_  : Map beetween generated aliases and corresponding relation paths.
-     * - `'models'`  _array_  : Map beetween generated aliases and corresponding models.
-     *
-     * @var array
+     * The relations to load
      */
-    protected $_query = [
-        'conditions' => [],
-        'fields'     => [],
-        'order'      => [],
-        'limit'      => null,
-        'page'       => null,
-        'with'       => []
-    ];
+    protected $_with = [];
 
     /**
      * Creates a new record object with default values.
      *
      * @param array $config Possible options are:
-     *                      - `'data'`   _array_  : The entiy class.
-     *                      - `'parent'` _object_ : The parent instance.
-     *                      - `'exists'` _boolean_: The class dependencies.
-     *
+     *                      - `'type'`       _string_ : The type of query.
+     *                      - `'connection'` _object_ : The connection instance.
+     *                      - `'model'`      _string_ : The model class.
+     *                      - `'query'`      _array_  : The query data.
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'type' => 'all',
-            'query' => [],
+            'type'       => 'all',
+            'connection' => null,
+            'model'      => null,
+            'query'      => [],
         ];
         $config = Set::merge($defaults, $config);
         $this->_type = $config['type'];
+        $this->_model = $config['model'];
         $this->_entity = $config['entity'];
         $this->_fieldName = $config['fieldName'];
+        $this->_statement = $this->connection()->sql()->statement('select');
+    }
+
+    /**
+     * Gets the connection object to which this query is bound.
+     *
+     * @return object    Returns a connection instance.
+     * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
+     */
+    public function connection() {
+        if (!$this->_connection) {
+            throw new SourceException("Error, missing connection for this query.");
+        }
+        return $this->_connection;
+    }
+
+    /**
+     * When not supported, delegate the call to the sql statement.
+     *
+     * @param  string $name   The name of the matcher.
+     * @param  array  $params The parameters to pass to the matcher.
+     * @return object         Returns `$this`.
+     */
+    public function __call($name, $params = [])
+    {
+        if (method_exists($this->_model, $scope = 'scope' . ucfirst($name))) {
+            array_unshift($params, $this);
+            call_user_func_array([$this->_model, $scope], $params);
+        } else {
+            call_user_func_array([$this->_statement, $name], $params);
+        }
+        return  $this;
+    }
+
+    public function with($relations)
+    {
+        if (is_string($relations)) {
+            $relations = func_get_args();
+        }
+        $this->_with = $relations;
     }
 
     public function getIterator()
@@ -102,14 +149,18 @@ class Query implements IteratorAggregate
 
     public function all()
     {
-        $with = $this->__query['with'];
-        if (is_array($with)) {
-            $with = Set::normalize($with);
-        }
+        return $this->_get();
     }
 
     public function first()
     {
+        $result = $this->_get();
+        return is_object($result) ? $data->rewind() : $result;
+    }
+
+    protected function _get() {
+        $with = Set::normalize($this->_with);
+        $result = $this->connection()->execute((string) $this->_statement);
     }
 
     public function count()
@@ -141,7 +192,7 @@ class Query implements IteratorAggregate
         if ($relpath === null) {
             $class = is_object($this->_entity) ? get_class($this->_entity) : $this->_entity;
             $source = Conventions::get('source');
-            $this->_entities[$alias] = $source($class);
+            $this->_models[$alias] = $source($class);
         }
 
         $relpath = (string) $relpath;

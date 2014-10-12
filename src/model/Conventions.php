@@ -8,7 +8,7 @@ use chaos\SourceException;
 class Conventions
 {
     /**
-     * An array of convention rules
+     * An array of naming convention rules
      *
      * @var array
      */
