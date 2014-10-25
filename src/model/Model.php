@@ -3,6 +3,7 @@ namespace chaos\model;
 
 use set\Set;
 use chaos\SourceException;
+use chaos\model\collection\Collection;
 
 class Model implements \ArrayAccess, \Iterator
 {
@@ -11,7 +12,12 @@ class Model implements \ArrayAccess, \Iterator
      *
      * @var array
      */
-    protected static $_classes = [];
+    protected static $_classes = [
+        'entity'       => 'chaos\model\Model',
+        'set'          => 'chaos\model\collection\Collection',
+        'schema'       => 'chaos\model\Schema',
+        'relationship' => 'chaos\model\Relationship'
+    ];
 
     /**
      * Stores model's schema.
@@ -26,6 +32,13 @@ class Model implements \ArrayAccess, \Iterator
      * @var object The connection instance.
      */
     protected static $_connection = null;
+
+    /**
+     * MUST BE re-defined in sub-classes which require some different conventions.
+     *
+     * @var object A naming conventions.
+     */
+    protected static $_conventions = null;
 
     /**
      * If this record is chained off of another, contains the origin object.
@@ -74,6 +87,18 @@ class Model implements \ArrayAccess, \Iterator
     protected $_errors = [];
 
     /**
+     * Workaround to allow consistent `unset()` in `foreach`.
+     *
+     * Note: the edge effet of this behavior is the following:
+     * {{{
+     *   $entity = new Model(['data' => [ 'a' => '1', 'b' => '2', 'c' => '3']]);
+     *   unset($entity['a']);
+     *   $entity->next();   // returns 2 instead of 3 when no `skipNext`
+     * }}}
+     */
+    protected $_skipNext = false;
+
+    /**
      * Creates a new record object with default values.
      *
      * @param array $config Possible options are:
@@ -94,6 +119,7 @@ class Model implements \ArrayAccess, \Iterator
         $this->_exists = $config['exists'];
         $this->_parent = $config['parent'];
         $this->_rootPath = $config['rootPath'];
+        $this->_data = $config['data'];
         $this->set($this->_data);
         $this->_data = $this->_updated;
     }
@@ -128,9 +154,9 @@ class Model implements \ArrayAccess, \Iterator
      * @return array     the primary key value.
      * @throws Exception Throws a `chaos\SourceException` if no primary key has been defined.
      */
-    public function key()
+    public function primaryKey()
     {
-        if (!$key = static::schema()->key()) {
+        if (!$key = static::schema()->primaryKey()) {
             $class = get_called_class();
             throw new SourceException("No primary key has been defined for `{$class}`'s schema.");
         }
@@ -162,8 +188,8 @@ class Model implements \ArrayAccess, \Iterator
         if (isset($options['exists'])) {
             $this->_exists = $options['exists'];
         }
-        if ($id && $key = static::schema()->key()) {
-            $data[$key] = $id;
+        if ($id && $pk = static::schema()->primaryKey()) {
+            $data[$pk] = $id;
         }
         $this->_data = $this->_updated = $data + $this->_updated;
         return $this;
@@ -216,7 +242,7 @@ class Model implements \ArrayAccess, \Iterator
      * @param mixed  $data   The value.
      * @param array  $options An options array.
      */
-    protected function _set($name, $data, $options)
+    protected function _set($name, $data, $options = [])
     {
         $defaults = [
             'parent'   => $this,
@@ -258,12 +284,33 @@ class Model implements \ArrayAccess, \Iterator
     }
 
     /**
-     * Returns the previous data or a previous field value.
+     * Returns a string representation of the instance.
+     *
+     * @return string
+     */
+    public function title()
+    {
+        return $this->title ?: $this->name;
+    }
+
+    /**
+     * Access the data fields of the record.
+     *
+     * @param  string $options Options.
+     * @return mixed Entire data array.
+     */
+    public function data()
+    {
+        return $this->to('array');
+    }
+
+    /**
+     * Returns the former data or a previous field value.
      *
      * @param  string $field A field name or `null` to retreive all data.
      * @return mixed
      */
-    public function previous($field = null)
+    public function former($field = null)
     {
         if (!$this->_exists) {
             return;
@@ -282,7 +329,8 @@ class Model implements \ArrayAccess, \Iterator
      *                       If no field is given returns an array of all modified fields and their
      *                       original values.
      */
-    public function modified($field = null) {
+    public function modified($field = null)
+    {
         $result = [];
         $fields = $field ? [$field] : array_keys($this->_updated);
 
@@ -316,7 +364,8 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function &offsetGet($offset)
     {
-        return $this->get($offset);
+        $result = $this->get($offset);
+        return $result;
     }
 
     /**
@@ -352,6 +401,100 @@ class Model implements \ArrayAccess, \Iterator
     }
 
     /**
+     * Returns the key of the current item.
+     *
+     * @return scalar Scalar on success or `null` on failure.
+     */
+    public function key()
+    {
+        return key($this->_updated);
+    }
+
+    /**
+     * Returns the current item.
+     *
+     * @return mixed The current item or `false` on failure.
+     */
+    public function current()
+    {
+        return current($this->_updated);
+    }
+
+    /**
+     * Moves backward to the previous item.  If already at the first item,
+     * moves to the last one.
+     *
+     * @return mixed The current item after moving or the last item on failure.
+     */
+    public function prev()
+    {
+        $value = prev($this->_updated);
+        return key($this->_updated) !== null ? $value : null;
+    }
+
+    /**
+     * Move forwards to the next item.
+     *
+     * @return The current item after moving or `false` on failure.
+     */
+    public function next()
+    {
+        $value = $this->_skipNext ? current($this->_updated) : next($this->_updated);
+        $this->_skipNext = false;
+        return key($this->_updated) !== null ? $value : null;
+    }
+
+    /**
+     * Alias to `::rewind()`.
+     *
+     * @return mixed The current item after rewinding.
+     */
+    public function first()
+    {
+        return $this->rewind();
+    }
+
+    /**
+     * Rewinds to the first item.
+     *
+     * @return mixed The current item after rewinding.
+     */
+    public function rewind()
+    {
+        return reset($this->_updated);
+    }
+
+    /**
+     * Moves forward to the last item.
+     *
+     * @return mixed The current item after moving.
+     */
+    public function end()
+    {
+        end($this->_updated);
+        return current($this->_updated);
+    }
+
+    /**
+     * Checks if current position is valid.
+     *
+     * @return boolean `true` if valid, `false` otherwise.
+     */
+    public function valid()
+    {
+        return key($this->_updated) !== null;
+    }
+
+    /**
+     * Counts the items of the object.
+     *
+     * @return integer Returns the number of items in the collection.
+     */
+    public function count() {
+        return count($this->_updated);
+    }
+
+    /**
      * Overloading for reading inaccessible properties.
      *
      * @param  string $name Property name.
@@ -359,7 +502,8 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function &__get($name)
     {
-        return $this->get($name);
+        $result = $this->get($name);
+        return $result;
     }
 
     /**
@@ -382,7 +526,7 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function __isset($name)
     {
-        return array_key_exists($offset, $this->_updated);
+        return array_key_exists($name, $this->_updated);
     }
 
     /**
@@ -392,27 +536,7 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function __unset($name)
     {
-        unset($this->_updated[$offset]);
-    }
-
-    /**
-     * Returns a string representation of the instance.
-     *
-     * @return string
-     */
-    public function title()
-    {
-        return $this->title ?: $this->name;
-    }
-
-    /**
-     * Returns a string representation of the instance.
-     *
-     * @return string Returns the generated title of the object.
-     */
-    public function __toString()
-    {
-        return (string) $this->title();
+        unset($this->_updated[$name]);
     }
 
     /**
@@ -466,7 +590,8 @@ class Model implements \ArrayAccess, \Iterator
      */
     protected function _validates()
     {
-        if (!$with = Relationship::with($options['with'])) {
+        $relationship = static::$_classes['relationship'];
+        if (!$with = $relationship::with($options['with'])) {
             return true;
         }
         foreach ($with as $field => $value) {
@@ -496,6 +621,42 @@ class Model implements \ArrayAccess, \Iterator
     }
 
     /**
+     * Returns a string representation of the instance.
+     *
+     * @return string Returns the generated title of the object.
+     */
+    public function __toString()
+    {
+        return (string) $this->title();
+    }
+
+    /**
+     * Converts the data in the record set to a different format, i.e. an array.
+     *
+     * @param string $format  Currently only `array`.
+     * @param array  $options Options for converting:
+     *                        - `'indexed'` _boolean_: Allows to control how converted data of nested collections
+     *                        is keyed. When set to `true` will force indexed conversion of nested collection
+     *                        data. By default `false` which will only index the root level.
+     * @return mixed
+     */
+    public function to($format, $options = [])
+    {
+        switch ($format) {
+            case 'array':
+                $result = Collection::toArray($this->_updated, $options);
+            break;
+            case 'string':
+                $result = $this->__toString();
+            break;
+            default:
+                $result = $this;
+            break;
+        }
+        return $result;
+    }
+
+    /**
      * Configures the model.
      *
      * @param array $config Possible options are:
@@ -507,10 +668,15 @@ class Model implements \ArrayAccess, \Iterator
             'classes' => [
                 'schema'       => 'chaos\model\Schema',
                 'relationship' => 'chaos\model\Relationship'
-            ]
+            ],
+            'connection'  => null,
+            'conventions' => null
         ];
         $config = Set::merge($defaults, $config);
+
         static::$_classes = $config['classes'];
+        static::$_connection = $config['connection'];
+        static::$_conventions = $config['conventions'] ?: new Conventions();
     }
 
     /**
@@ -548,7 +714,7 @@ class Model implements \ArrayAccess, \Iterator
         $defaults = [
             'type' => 'entity',
             'exists' => false,
-            'class' => null
+            'model' => get_called_class()
         ];
         $options += $defaults;
         $options['defaults'] = !$options['exists'];
@@ -557,8 +723,7 @@ class Model implements \ArrayAccess, \Iterator
             $data = Set::merge(Set::expand(static::schema()->defaults()), $data);
         }
 
-        $class = isset($options['class']) ? $options['class'] : $this->_classes[$options['type']];
-
+        $class = isset($options['model']) ? $options['model'] : static::$_classes[$options['type']];
         $options = ['data' => $data] + $options;
         return new $class($options);
     }
@@ -612,11 +777,12 @@ class Model implements \ArrayAccess, \Iterator
         if (isset(static::$_schemas[$class])) {
             return static::$_schemas[$class];
         }
-        $config += static::_meta() + [
-            'connection' => static::connection(),
-            'classes'    => ['entity' => $class]
+        $config = static::_meta() + [
+            'classes'     => ['entity' => $class] + static::$_classes,
+            'connection'  => static::$_connection,
+            'conventions' => static::$_conventions
         ];
-        $class = static::_classes['schema'];
+        $class = $config['classes']['schema'];
         $schema = static::$_schemas[$class] = new $class($config);
         static::_schema($schema);
         return $schema;
@@ -708,7 +874,14 @@ class Model implements \ArrayAccess, \Iterator
      */
     public static function reset()
     {
-        static::$_classes = [];
+        static::$_classes = [
+            'entity'       => 'chaos\model\Model',
+            'set'          => 'chaos\model\collection\Collection',
+            'schema'       => 'chaos\model\Schema',
+            'relationship' => 'chaos\model\Relationship'
+        ];
         static::$_schemas = [];
+        static::$_connection = null;
+        static::$_conventions = null;
     }
 }

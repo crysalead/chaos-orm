@@ -10,9 +10,7 @@ use kahlan\plugin\Stub;
 describe("MySql", function() {
 
     before(function() {
-        global $gdic;
-        $box = $gdic['spec'];
-        $this->adapter = $box->get('source.database.postgresql');
+        $this->adapter = box('chaos.spec')->get('source.database.postgresql');
     });
 
     describe("sources", function() {

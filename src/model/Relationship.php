@@ -53,7 +53,7 @@ class Relationship
      *
      * @param array $config The relationship's configuration, which defines how the two models in
      *                      question are bound. The available options are:
-     *                      - `'fieldName'`   _string_ : The name of the field used when accessing the related
+     *                      - `'name'`   _string_ : The name of the field used when accessing the related
      *                                                   data in a result set. For example, in the case of `Posts hasMany Comments`, the
      *                                                   field name defaults to `'comments'`, so comment data is accessed (assuming
      *                                                   `$post = Posts::first()`) as `$post->comments`.
@@ -83,12 +83,14 @@ class Relationship
      *                      - `'strategy'`    _closure_: An anonymous function used by an instantiating class,
      *                                                   such as a database object, to provide additional, dynamic configuration, after
      *                                                   the `Relationship` instance has finished configuring itself.
+     *                      - `'conventions'` _object_ : The naming conventions instance.
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'fieldName'        => null,
-            'key'         => [],
+            'name'        => null,
+            'correlate'   => null,
+            'key'         => null,
             'type'        => null,
             'from'        => null,
             'to'          => null,
@@ -98,21 +100,30 @@ class Relationship
             'link'        => static::LINK_KEY,
             'fields'      => true,
             'constraints' => [],
-            'strategy'    => null
+            'strategy'    => null,
+            'conventions' => null
         ];
         $config += $defaults;
 
-        foreach (['fieldName', 'type', 'from', 'to', 'key'] as $value) {
+        foreach (['name', 'type', 'from', 'to', 'key'] as $value) {
             if (!$config[$value]) {
                 throw new SourceException("Error, `'{$value}'` option can't be empty.");
             }
         }
-        $this->_config = $config;
+
+        $config['conventions'] = $config['conventions'] ?: new Conventions();
+
+        $formatter = $config['conventions']->get('fieldName');
 
         if ($this->through() && !$this->using()) {
-            $fieldName = Conventions::get('fieldName');
-            $this->_config['using'] = $fieldName($this->to());
+            $config['using'] = $formatter($this->to());
         }
+
+        if (!$this->correlate()) {
+            $config['correlate'] = $formatter($this->from());
+        }
+
+        $this->_config = $config;
     }
 
     /**
@@ -249,9 +260,9 @@ class Relationship
 
         return [
             static::LINK_EMBEDDED => function($entity, $rel, $options) use ($normalize) {
-                $fieldName = $rel->fieldName();
+                $name = $rel->name();
                 $to = $rel->to();
-                return $normalize($entity->{$fieldName}, $rel);
+                return $normalize($entity->{$name}, $rel);
             },
             static::LINK_CONTAINED => function($entity, $rel, $options) use ($normalize) {
                 return $normalize($rel->hasMany() ? $entity->parent()->parent() : $entity->parent(), $rel);
@@ -271,11 +282,11 @@ class Relationship
     public function validates($entity, $options = [])
     {
         $defaults = ['with' => false];
-        $fieldName = $this->fieldName();
-        if (!isset($entity->{$fieldName})) {
+        $name = $this->name();
+        if (!isset($entity->{$name})) {
             return [true];
         }
-        return (array) $entity->{$fieldName}->validates($options + $defaults);
+        return (array) $entity->{$name}->validates($options + $defaults);
     }
 
     /**
@@ -291,18 +302,18 @@ class Relationship
             return true;
         }
 
-        $fieldName = $this->fieldName();
-        if (!isset($entity->{$fieldName})) {
+        $name = $this->name();
+        if (!isset($entity->{$name})) {
             return true;
         }
-        $related = $entity->{$fieldName};
+        $related = $entity->{$name};
 
         $result = false;
         switch ($this->type()){
             case 'hasManyThrough':
                 $relThrough = $entity::relation($this->through());
-                $association = $through->query($entity);
-                $middle = $through->to();
+                $association = $relThrough->query($entity);
+                $middle = $relThrough->to();
                 $using = $this->using();
                 $relTo = $middle::relation($using);
                 $strategy = '_' . $this->mode();

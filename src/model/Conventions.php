@@ -3,6 +3,7 @@ namespace chaos\model;
 
 use Iterator;
 use set\Set;
+use inflector\Inflector;
 use chaos\SourceException;
 
 class Conventions
@@ -12,7 +13,7 @@ class Conventions
      *
      * @var array
      */
-    protected static $_conventions = null;
+    protected $_conventions = null;
 
     /**
      * Configures the schema class.
@@ -22,29 +23,29 @@ class Conventions
      *                                                 primary or foreign key as well as for table/collection names
      *                                                 from an entity class name.
      */
-    public static function config($config = [])
+    public function config($config = [])
     {
         $defaults = [
             'conventions' => [
                 'source' => function($class) {
-                    $basename = $substr(strrchr($class, '\\'), 1);
+                    $basename = substr(strrchr($class, '\\'), 1);
                     return Inflector::underscore(Inflector::singularize($basename));
                 },
-                'primaryKey' => function($class) {
+                'primaryKey' => function() {
                     return 'id';
                 },
                 'foreignKey' => function($class) {
-                    $basename = $substr(strrchr($class, '\\'), 1);
+                    $basename = substr(strrchr($class, '\\'), 1);
                     return Inflector::underscore(Inflector::singularize($basename)). '_id';
                 },
                 'fieldName' => function($class) {
-                    $basename = $substr(strrchr($class, '\\'), 1);
+                    $basename = substr(strrchr($class, '\\'), 1);
                     return Inflector::underscore(Inflector::singularize($basename));
                 }
             ]
         ];
         $config = Set::merge($defaults, $config);
-        static::$_conventions = $config['conventions'];
+        $this->_conventions = $config['conventions'];
     }
 
     /**
@@ -54,28 +55,17 @@ class Conventions
      * @return Closure
      * @throws Exception       Throws a `chaos\SourceException` if no rule has been found.
      */
-    public static function get($name = null)
+    public function get($name = null)
     {
-        if (!isset(static::$_conventions)) {
-            static::config();
+        if (!isset($this->_conventions)) {
+            $this->config();
         }
         if (!$name) {
-            return static::$_conventions;
+            return $this->_conventions;
         }
-        if (!isset(static::$_conventions[$name])) {
+        if (!isset($this->_conventions[$name])) {
             throw new SourceException("Error, convention for `'{$name}'` doesn't exists.");
         }
-        return static::$_conventions[$name];
-    }
-
-    /**
-     * Reset the class.
-     */
-    public static function reset($init = true)
-    {
-        static::$_conventions = null;
-        if ($init) {
-            static::config();
-        }
+        return $this->_conventions[$name];
     }
 }

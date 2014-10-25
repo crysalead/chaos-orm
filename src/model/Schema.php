@@ -40,7 +40,7 @@ class Schema
      *
      * @var string
      */
-    protected $_key = null;
+    protected $_primaryKey = null;
 
     /**
      * The meta.
@@ -88,36 +88,35 @@ class Schema
      * Configures the meta for use.
      *
      * @param array $config Possible options are:
-     *                      - `'connection'` _object_ : The connection instance.
-     *                      - `'source'`     _string_ : The source name.
-     *                      - `'locked'`     _boolean_: set the ability to dynamically add/remove fields (defaults to `false`).
-     *                      - `'classes'`    _array_  : The class dependencies.
-     *                      - `'key'`        _array_  : The primary key.
-     *                      - `'fields'`     _array_  : array of field definition where keys are field names and values are arrays
-     *                                                  with the following keys. All properties are optionnal except the `'type'`:
-     *                                                  - `'type'`       _string_ : the type of the field.
-     *                                                  - `'default'`    _mixed_  : the default value (default to '`null`').
-     *                                                  - `'null'`       _boolean_: allow null value (default to `'null'`).
-     *                                                  - `'length'`     _integer_: the length of the data (default to `'null'`).
-     *                                                  - `'precision'`  _integer_: the precision (for decimals) (default to `'null'`).
-     *                                                  - `'use'`        _string_ : the database type to override the associated type for
-     *                                                                              this type (default to `'null'`).
-     *                                                  - `'serial'`     _string_ : autoincremented field (default to `'null'`).
-     *                                                  - `'primary'`    _boolead_: primary key (default to `'null'`).
-     *                                                  - `'unique'`     _boolead_: unique key (default to `'null'`).
-     *                                                  - `'foreignKey'` _string_ : foreign key (default to `'null'`).
-     *                      - `'meta'`       _array_  : array of meta definitions for the schema. The definitions are related to
-     *                                                  the datasource. For the MySQL adapter the following options are available:
-     *                                                  - `'charset'`    _string_: the charset value to use for the table.
-     *                                                  - `'collate'`    _string_: the collate value to use for the table.
-     *                                                  - `'engine'`     _stirng_: the engine value to use for the table.
-     *                                                  - `'tablespace'` _string_: the tablespace value to use for the table.
-     *                      - `'handlers'`   _array_  : casting handlers.
+     *                      - `'connection'`  _object_ : The connection instance.
+     *                      - `'source'`      _string_ : The source name.
+     *                      - `'locked'`      _boolean_: set the ability to dynamically add/remove fields (defaults to `false`).
+     *                      - `'classes'`     _array_  : The class dependencies.
+     *                      - `'primaryKey'`  _array_  : The primary key.
+     *                      - `'fields'`      _array_  : array of field definition where keys are field names and values are arrays
+     *                                                   with the following keys. All properties are optionnal except the `'type'`:
+     *                                                   - `'type'`       _string_ : the type of the field.
+     *                                                   - `'default'`    _mixed_  : the default value (default to '`null`').
+     *                                                   - `'null'`       _boolean_: allow null value (default to `'null'`).
+     *                                                   - `'length'`     _integer_: the length of the data (default to `'null'`).
+     *                                                   - `'precision'`  _integer_: the precision (for decimals) (default to `'null'`).
+     *                                                   - `'use'`        _string_ : the database type to override the associated type for
+     *                                                                               this type (default to `'null'`).
+     *                                                   - `'serial'`     _string_ : autoincremented field (default to `'null'`).
+     *                                                   - `'primary'`    _boolead_: primary key (default to `'null'`).
+     *                                                   - `'unique'`     _boolead_: unique key (default to `'null'`).
+     *                                                   - `'foreignKey'` _string_ : foreign key (default to `'null'`).
+     *                      - `'meta'`        _array_  : array of meta definitions for the schema. The definitions are related to
+     *                                                   the datasource. For the MySQL adapter the following options are available:
+     *                                                   - `'charset'`    _string_: the charset value to use for the table.
+     *                                                   - `'collate'`    _string_: the collate value to use for the table.
+     *                                                   - `'engine'`     _stirng_: the engine value to use for the table.
+     *                                                   - `'tablespace'` _string_: the tablespace value to use for the table.
+     *                      - `'handlers'`    _array_  : casting handlers.
+     *                      - `'conventions'` _object_ : The naming conventions instance.
      */
     public function __construct($config = [])
     {
-        $conventions = Conventions::get();
-
         $defaults = [
             'classes'      => [
                 'entity'       => 'chaos\model\Model',
@@ -125,6 +124,7 @@ class Schema
                 'relationship' => 'chaos\model\Relationship'
             ],
             'connection'   => null,
+            'conventions'  => null,
             'locked'       => true,
             'fields'       => [],
             'meta'         => [],
@@ -132,19 +132,23 @@ class Schema
         ];
 
         $config = Set::merge($defaults, $config);
-        $config += [
-            'source' => $conventions['source']($config['classes']['entity']),
-            'key'    => $conventions['primaryKey']()
-        ];
 
         $this->_classes = $config['classes'];
         $this->_connection = $config['connection'];
-        $this->_source = $config['source'];
         $this->_locked = $config['locked'];
-        $this->_key = $config['key'];
-        $this->_fields = $config['fields'];
         $this->_meta = $config['meta'];
         $this->_handlers = $config['handlers'];
+        $this->_conventions = $config['conventions'] ?: new Conventions();
+
+        $formatters = $this->_conventions->get();
+        $config += [
+            'source'     => $formatters['source']($config['classes']['entity']),
+            'primaryKey' => $formatters['primaryKey']()
+        ];
+
+        $this->_fields = $config['fields'];
+        $this->_source = $config['source'];
+        $this->_primaryKey = $config['primaryKey'];
 
         foreach ($config['fields'] as $key => $value) {
             $this->_fields[$key] = $this->_initField($value);
@@ -225,33 +229,40 @@ class Schema
     /**
      * Get/set the primary key of this schema
      *
-     * @param  string $key The name or the primary key or `null` to get the defined one.
+     * @param  string $primaryKey The name or the primary key or `null` to get the defined one.
      * @return string
      */
-    public function key($key = null)
+    public function primaryKey($primaryKey = null)
     {
-        if ($key) {
-            $this->_key = $key;
+        if ($primaryKey) {
+            $this->_primaryKey = $primaryKey;
         }
-        return $this->_key;
+        return $this->_primaryKey;
     }
 
     /**
      * Returns a schema field attribute/attributes or all fields.
      *
-     * @param  array $name A field name. If `null` returns all fields.
-     * @param  array $key  An attribute name. If `null` returns all attributes.
+     * @param  array $name       A field name. If `null` returns all fields.
+     * @param  array $attribute  An attribute name. If `null` returns all attributes.
      * @return mixed
      */
-    public function fields($name = null, $key = null)
+    public function fields($name = null, $attribute = null)
     {
         if (!$name) {
-            return $this->_fields;
+            if (!$attribute) {
+                return $this->_fields;
+            }
+            $result = [];
+            foreach ($this->_fields as $key => $value) {
+                $result[$key] = $this->fields($name, $attribute);
+            }
+            return $result;
         }
         $field = isset($this->_fields[$name]) ? $this->_fields[$name] : null;
 
-        if ($field && $key) {
-            return isset($field[$key]) ? $field[$key] : null;
+        if ($field && $attribute) {
+            return isset($field[$attribute]) ? $field[$attribute] : null;
         }
         return $field;
     }
@@ -262,7 +273,7 @@ class Schema
      * @param  string $name The field name.
      * @return array  The type value or `null` if not found.
      */
-    public function type($name)
+    public function type($name = null)
     {
         return $this->fields($name, 'type');
     }
@@ -273,7 +284,7 @@ class Schema
      * @param  string $name The field name.
      * @return array  The default value or `null` if not found.
      */
-    public function defaults($name)
+    public function defaults($name = null)
     {
         return $this->fields($name, 'default');
     }
@@ -436,13 +447,14 @@ class Schema
      */
     protected function _relationship($name, $config = [])
     {
+        $conventions = $this->conventions;
         $from = $config['from'];
 
-        if (!isset($config['key'])) {
-            $foreignKey = Conventions::get('foreignKey');
-            $config['key'][$this->key()] = $foreignKey($from);
+        if (!isset($config['primaryKey'])) {
+            $foreignKey = $this->_conventions->get('foreignKey');
+            $config['primaryKey'][$this->primaryKey()] = $foreignKey($from);
         }
-        $config += compact('name', 'from');
+        $config += compact('name', 'from', 'conventions');
         $relationship = $this->_classes['relationship'];
         return new $relationship($config);
     }
@@ -459,21 +471,28 @@ class Schema
     {
         $defaults = [
             'parent'    => null,
-            'rootPath'  => null,
             'type'      => 'entity',
-            'class'     => $this->_classes['entity'],
+            'model'     => $this->_classes['entity'],
             'schema'    => $this,
             'exists'    => false
         ];
         $options += $defaults;
 
-        $path = $options['rootPath'] ? "{$options['rootPath']}.{$name}" : $name;
+        $options['rootPath'] = $name;
 
-        if (!isset($this->_field[$path]) && !isset($this->_relations[$path])) {
-            return $data;
+        $model = $options['model'];
+
+        if ($name === null) {
+            return $model::create($data, $options);
         }
 
-        $meta = isset($this->_field[$path]) ? $this->_field[$path] : $this->_relations[$path];
+        if (isset($this->_field[$name])) {
+            $meta = $this->_field[$name];
+        } elseif (isset($this->_relations[$name])) {
+            $meta = $this->_relations[$name];
+        } else {
+            return $data;
+        }
 
         if (!$meta['array']) {
             return $this->cast($meta, $data);
@@ -484,9 +503,6 @@ class Schema
         }
 
         $options['type'] = 'set';
-        $options['rootPath'] = $path;
-
-        $model = $options['class'];
         return $model::create($data, $options);
     }
 
@@ -504,7 +520,7 @@ class Schema
         if ($asContent && is_array($data)) {
             $result = [];
             foreach ($data as $key => $value) {
-                $result[] = $this->_cast($field, $value);
+                $result[] = $this->cast($field, $value);
             }
             return $result;
         }
@@ -512,30 +528,6 @@ class Schema
             return null;
         }
         return isset($field['format']) ? $field['format']($data) : $data;
-    }
-
-    /**
-     * Helper for `offsetSet`.
-     *
-     * @param  string $offset  The field name.
-     * @param  string $to      The model class name to use for autoboxing.
-     * @param  string $primary The primary key.
-     * @param  string $value   The value to autobox.
-     * @return object
-     */
-    protected function _autobox($key, $data, $options = [])
-    {
-        if (!$rel = $this->relation($name)) {
-            return $data;
-        }
-        if (is_object($data)) {
-            return $data;
-        }
-        if (is_scalar($data) && $key = $this->key()) {
-            $data = [$key => $data];
-        }
-        $model = $options['class'];
-        return $model::create($data, $options);
     }
 
 }

@@ -2,16 +2,14 @@
 namespace spec\chaos\source\database\sql\statement\mysql;
 
 use chaos\SourceException;
-use chaos\source\Schema;
+use chaos\model\Schema;
 use chaos\source\database\sql\Sql;
 use kahlan\plugin\Stub;
 
 describe("Sql", function() {
 
     beforeEach(function() {
-        global $gdic;
-        $box = $gdic['spec'];
-        $this->adapter = $box->get('source.database.mysql');
+        $this->adapter = box('chaos.spec')->get('source.database.mysql');
         $this->sql = $this->adapter->sql();
     });
 

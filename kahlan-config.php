@@ -4,9 +4,7 @@ use chaos\source\database\adapter\MySql;
 use chaos\source\database\adapter\PostgreSql;
 use chaos\source\database\adapter\Sqlite3;
 
-global $gdic;
-
-$box = $gdic['spec'] = new Box();
+$box = box('chaos.spec', new Box());
 
 $box->factory('source.database.mysql', function() {
     return new MySql([

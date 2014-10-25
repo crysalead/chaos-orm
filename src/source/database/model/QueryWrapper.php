@@ -8,7 +8,7 @@ use chaos\SourceException;
 /**
  * The Query wrapper.
  */
-class Query implements IteratorAggregate
+class QueryWrapper implements IteratorAggregate
 {
     /**
      * The connection to the datasource.
@@ -104,7 +104,8 @@ class Query implements IteratorAggregate
      * @return object    Returns a connection instance.
      * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
      */
-    public function connection() {
+    public function connection()
+    {
         if (!$this->_connection) {
             throw new SourceException("Error, missing connection for this query.");
         }

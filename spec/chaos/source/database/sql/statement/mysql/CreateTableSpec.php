@@ -8,9 +8,7 @@ use kahlan\plugin\Stub;
 describe("CreateTable", function() {
 
     beforeEach(function() {
-        global $gdic;
-        $box = $gdic['spec'];
-        $this->adapter = $box->get('source.database.mysql');
+        $this->adapter = box('chaos.spec')->get('source.database.mysql');
         $this->create = $this->adapter->sql()->statement('create table');
     });
 
