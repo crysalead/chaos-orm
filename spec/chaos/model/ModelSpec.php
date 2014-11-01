@@ -5,6 +5,7 @@ use stdClass;
 use DateTime;
 use InvalidArgumentException;
 use kahlan\plugin\Stub;
+use chaos\SourceException;
 use chaos\model\Model;
 use chaos\model\Schema;
 
@@ -14,7 +15,7 @@ describe("Model", function() {
         Model::reset();
     });
 
-	describe("__construct", function() {
+	describe("->__construct()", function() {
 
         it("loads the data", function() {
 
@@ -34,7 +35,7 @@ describe("Model", function() {
 
     });
 
-    describe("exists", function() {
+    describe("->exists()", function() {
 
         it("returns the exists value", function() {
 
@@ -45,7 +46,7 @@ describe("Model", function() {
 
     });
 
-    describe("parent", function() {
+    describe("->parent()", function() {
 
         it("sets a parent", function() {
 
@@ -66,7 +67,7 @@ describe("Model", function() {
 
     });
 
-    describe("rootPath", function() {
+    describe("->rootPath()", function() {
 
         it("returns the root path", function() {
 
@@ -77,7 +78,7 @@ describe("Model", function() {
 
     });
 
-    describe("primaryKey", function() {
+    describe("->primaryKey()", function() {
 
         it("returns the entity's primary key value", function() {
 
@@ -90,9 +91,26 @@ describe("Model", function() {
 
         });
 
+        it("throws an exception if the schema has no primary key defined", function() {
+            $schema = new Schema(['primaryKey' => null]);
+
+            Model::config(compact('schema'));
+
+            $closure = function() {
+                $entity = new Model(['data' => [
+                    'id'      => 123,
+                    'title'   => 'Hello',
+                    'body'    => 'World'
+                ]]);
+                $entity->primaryKey();
+            };
+            expect($closure)->toThrow(new SourceException("No primary key has been defined for `chaos\model\Model`'s schema."));
+
+        });
+
     });
 
-    describe("sync", function() {
+    describe("->sync()", function() {
 
         it("syncs an entity to its persisted value", function() {
 
@@ -146,19 +164,7 @@ describe("Model", function() {
 
     });
 
-    describe("schema", function() {
-
-        it("returns the model", function() {
-
-            $entity = new Model();
-            $schema = $entity->schema();
-            expect($schema)->toBeAnInstanceOf('chaos\model\Schema');
-
-        });
-
-    });
-
-    describe("sets", function() {
+    describe("->set()", function() {
 
         it("sets an array of values", function() {
 
@@ -179,13 +185,14 @@ describe("Model", function() {
 
     });
 
-    describe("__set", function() {
+    describe("->__set()", function() {
 
         it("sets value", function() {
 
             $entity = new Model();
             $entity->hello = 'world';
             expect($entity->hello)->toBe('world');
+
         });
 
         it("sets a value using a dedicated method", function() {
@@ -205,7 +212,183 @@ describe("Model", function() {
 
     });
 
-    describe("offsetExists", function() {
+    describe("->get()", function() {
+
+        it("returns `null` for undefined fields", function() {
+
+            $entity = new Model();
+            expect($entity->foo)->toBe(null);
+
+        });
+
+        it("returns all raw datas with no parameter", function() {
+
+            $date = time();
+            $entity = new Model(['data' => [
+                'title'   => 'Hello',
+                'body'    => 'World',
+                'created' => $date
+            ]]);
+            expect($entity->get())->toBe([
+                'title'   => 'Hello',
+                'body'    => 'World',
+                'created' => $date
+            ]);
+
+        });
+
+        it("gets a value using a dedicated method", function() {
+
+            $entity = Stub::create([
+                'extends' => 'chaos\model\Model',
+                'methods' => ['getHello']
+            ]);
+            Stub::on($entity)->method('getHello', function($value = null) {
+                return 'boy';
+            });
+
+            expect($entity->hello)->toBe('boy');
+
+        });
+
+    });
+
+    describe("->__get()", function() {
+
+        it("gets value", function() {
+
+            $entity = new Model();
+            $entity->hello = 'world';
+            expect($entity->hello)->toBe('world');
+        });
+
+        it("throws an exception if the field name is not valid", function() {
+
+           $closure = function() {
+                $entity = new Model();
+                $empty = '';
+                $entity->{$empty};
+            };
+            expect($closure)->toThrow(new SourceException("Field name can't be empty."));
+
+        });
+
+    });
+
+    describe("->loaded()", function() {
+
+        it("returns `loaded` data", function() {
+
+            $entity = new Model(['data' => [
+                'title'   => 'Hello',
+                'body'    => 'World'
+            ]]);
+
+            $entity->set([
+                'title'   => 'Good Bye',
+                'body'    => 'Folks'
+            ]);
+
+            expect($entity->loaded('title'))->toBe('Hello');
+            expect($entity->loaded('body'))->toBe('World');
+
+        });
+
+        it("returns all `loaded` data with no parameter", function() {
+
+            $entity = new Model(['data' => [
+                'title'   => 'Hello',
+                'body'    => 'World'
+            ]]);
+
+            $entity->set([
+                'title'   => 'Good Bye',
+                'body'    => 'Folks'
+            ]);
+
+            expect($entity->loaded())->toBe([
+                'title'   => 'Hello',
+                'body'    => 'World'
+            ]);
+
+        });
+
+    });
+
+    describe("->modified()", function() {
+
+        it("returns a boolean indicating if a field has been modified", function() {
+
+            $entity = new Model(['data' => [
+                'loaded'   => 'loaded'
+            ]]);
+
+            expect($entity->modified('loaded'))->toBe(false);
+            expect($entity->modified('modified'))->toBe(false);
+
+            $entity->modified = 'modified';
+
+            expect($entity->modified('loaded'))->toBe(false);
+            expect($entity->modified('modified'))->toBe(true);
+
+            $entity->loaded = 'modified';
+
+            expect($entity->modified('loaded'))->toBe(true);
+
+        });
+
+        it("returns `false` if a field has been updated with a same scalar value", function() {
+
+            $entity = new Model(['data' => [
+                'loaded'   => 'loaded'
+            ]]);
+
+            $entity->loaded = 'loaded';
+
+            expect($entity->modified('loaded'))->toBe(false);
+
+        });
+
+        it("returns `false` if a field has been updated with a similar object value", function() {
+
+            $entity = new Model(['data' => [
+                'loaded'   => (object) 'loaded'
+            ]]);
+
+            $entity->loaded = (object) 'loaded';
+
+            expect($entity->modified('loaded'))->toBe(false);
+
+        });
+
+        it("delegates the job for values which has a `modified()` method", function() {
+
+            $child = new Model(['data' => [
+                'loaded'   => 'loaded'
+            ]]);
+
+            $entity = new Model(['data' => ['child' => $child]]);
+            expect($entity->modified('child'))->toBe(false);
+
+            $child->loaded = 'modified';
+            expect($entity->modified('child'))->toBe(true);
+
+        });
+
+        it("returns all modified field names with no parameter", function() {
+
+            $entity = new Model();
+
+            $entity->modified1 = 'modified';
+            $entity->modified2 = 'modified';
+
+            expect($entity->modified())->toBe(['modified1', 'modified2']);
+
+        });
+
+    });
+
+    describe("->offsetExists()", function() {
 
         it("returns true if a element exist", function() {
 
@@ -227,7 +410,7 @@ describe("Model", function() {
 
     });
 
-    describe("offsetSet/offsetGet", function() {
+    describe("->offsetSet/offsetGet()", function() {
 
         it("allows array access", function() {
 
@@ -244,6 +427,15 @@ describe("Model", function() {
             $entity['mykey'] = 'foo';
             expect($entity['mykey'])->toBe('foo');
             expect($entity)->toHaveLength(1);
+
+        });
+
+        it("throws an exception for invalid key", function() {
+            $closure = function() {
+                $entity = new Model();
+                $entity[] = 'foo';
+            };
+            expect($closure)->toThrow(new SourceException("Field name can't be empty."));
 
         });
 
@@ -276,8 +468,7 @@ describe("Model", function() {
                 $entity['child'] = [
                     'id'      => 1,
                     'title'   => 'child record',
-                    'enabled' => true,
-                    'created' => time()
+                    'enabled' => true
                 ];
                 $child = $entity['child'];
                 expect($child)->toBeAnInstanceOf($child);
@@ -290,7 +481,7 @@ describe("Model", function() {
 
     });
 
-    describe("offsetUnset", function() {
+    describe("->offsetUnset()", function() {
 
         it("unsets items", function() {
 
@@ -298,19 +489,17 @@ describe("Model", function() {
                 'id'      => 1,
                 'title'   => 'test record',
                 'body'    => 'test body',
-                'enabled' => true,
-                'created' => time()
+                'enabled' => true
             ];
 
             $entity = new Model(compact('data'));
             unset($entity['body']);
             unset($entity['enabled']);
 
-            expect($entity)->toHaveLength(3);
+            expect($entity)->toHaveLength(2);
             expect($entity->data())->toBe([
                 'id'      => 1,
-                'title'   => 'test record',
-                'created' => time()
+                'title'   => 'test record'
             ]);
 
         });
@@ -404,7 +593,7 @@ describe("Model", function() {
 
     });
 
-    describe("key", function() {
+    describe("->key()", function() {
 
         it("returns current key", function() {
 
@@ -425,7 +614,7 @@ describe("Model", function() {
 
     });
 
-    describe("current", function() {
+    describe("->current()", function() {
 
         it("returns the current value", function() {
 
@@ -438,7 +627,7 @@ describe("Model", function() {
 
     });
 
-    describe("next", function() {
+    describe("->next()", function() {
 
         it("returns the next value", function() {
 
@@ -454,7 +643,7 @@ describe("Model", function() {
 
     });
 
-    describe("prev", function() {
+    describe("->prev()", function() {
 
         it("navigates through collection", function() {
 
@@ -479,7 +668,7 @@ describe("Model", function() {
 
     });
 
-    describe("first/rewind/end", function() {
+    describe("->first/rewind/end()", function() {
 
         it("returns respectively the first and the last item of the collection", function() {
 
@@ -499,7 +688,7 @@ describe("Model", function() {
 
     });
 
-    describe("valid", function() {
+    describe("->valid()", function() {
 
         it("returns true only when the collection is valid", function() {
 
@@ -518,7 +707,7 @@ describe("Model", function() {
 
     });
 
-    describe("count", function() {
+    describe("->count()", function() {
 
         it("returns 0 on empty", function() {
 
@@ -544,7 +733,124 @@ describe("Model", function() {
 
     });
 
-    describe("reset", function() {
+    describe("->__toString()", function() {
+
+        it("returns the title field", function() {
+
+            $data = [
+                'id'      => 1,
+                'title'   => 'test record',
+                'body'    => 'test body',
+                'enabled' => true,
+                'null'    => null,
+                'onject'  => new stdClass()
+            ];
+            $entity = new Model(compact('data'));
+            expect((string) $entity)->toBe('test record');
+
+        });
+
+    });
+
+    describe("::schema()", function() {
+
+        it("returns the model", function() {
+
+            $entity = new Model();
+            $schema = $entity->schema();
+            expect($schema)->toBeAnInstanceOf('chaos\model\Schema');
+
+        });
+
+    });
+
+    describe("::conventions()", function() {
+
+        it("sets/gets a conventions", function() {
+
+            $conventions = Stub::create();
+            Model::conventions($conventions);
+            expect(Model::conventions())->toBe($conventions);
+
+        });
+
+    });
+
+    describe("::connection()", function() {
+
+        it("sets/gets a connection", function() {
+
+            $connection = Stub::create();
+            Model::connection($connection);
+            expect(Model::connection())->toBe($connection);
+
+        });
+
+    });
+
+    describe("::find()", function() {
+
+        it("throws an exception", function() {
+            $closure = function() {
+                Model::find();
+            };
+            expect($closure)->toThrow(new SourceException("The `find()` method is not supported by `chaos\model\Model`."));
+
+        });
+
+    });
+
+    describe("::update()", function() {
+
+        it("throws an exception", function() {
+            $closure = function() {
+                Model::update(['enabled' => true]);
+            };
+            expect($closure)->toThrow(new SourceException("The `update()` method is not supported by `chaos\model\Model`."));
+
+        });
+
+    });
+
+    describe("::remove()", function() {
+
+        it("throws an exception", function() {
+            $closure = function() {
+                Model::remove();
+            };
+            expect($closure)->toThrow(new SourceException("The `remove()` method is not supported by `chaos\model\Model`."));
+
+        });
+
+    });
+
+    describe("->save()", function() {
+
+        it("throws an exception", function() {
+            $closure = function() {
+                $entity = new Model();
+                $entity->save();
+            };
+            expect($closure)->toThrow(new SourceException("The `save()` method is not supported by `chaos\model\Model`."));
+
+        });
+
+    });
+
+    describe("->delete()", function() {
+
+        it("throws an exception", function() {
+            $closure = function() {
+                $entity = new Model();
+                $entity->delete();
+            };
+            expect($closure)->toThrow(new SourceException("The `delete()` method is not supported by `chaos\model\Model`."));
+
+        });
+
+    });
+
+    describe("::reset()", function() {
 
         it("resets the class", function() {
 

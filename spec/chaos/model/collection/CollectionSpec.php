@@ -8,7 +8,7 @@ use chaos\model\collection\Collection;
 
 describe("Collection", function() {
 
-	describe("__construct", function() {
+	describe("->__construct()", function() {
 
         it("loads the data", function() {
 
@@ -20,7 +20,7 @@ describe("Collection", function() {
 
     });
 
-    describe("exists", function() {
+    describe("->exists()", function() {
 
         it("returns the exists value", function() {
 
@@ -31,7 +31,7 @@ describe("Collection", function() {
 
     });
 
-    describe("parent", function() {
+    describe("->parent()", function() {
 
         it("sets a parent", function() {
 
@@ -52,7 +52,7 @@ describe("Collection", function() {
 
     });
 
-    describe("rootPath", function() {
+    describe("->rootPath()", function() {
 
         it("returns the root path", function() {
 
@@ -63,7 +63,7 @@ describe("Collection", function() {
 
     });
 
-    describe("model", function() {
+    describe("->model()", function() {
 
         it("returns the model", function() {
 
@@ -74,7 +74,7 @@ describe("Collection", function() {
 
     });
 
-    describe("meta", function() {
+    describe("->meta()", function() {
 
         it("returns the meta attributes", function() {
 
@@ -85,7 +85,7 @@ describe("Collection", function() {
 
     });
 
-    describe("cursor", function() {
+    describe("->cursor()", function() {
 
         it("returns the cursor attribute", function() {
 
@@ -97,7 +97,7 @@ describe("Collection", function() {
 
     });
 
-    describe("invoke", function() {
+    describe("->invoke()", function() {
 
         beforeEach(function() {
             $this->collection = new Collection();
@@ -125,7 +125,7 @@ describe("Collection", function() {
 
     });
 
-    describe("each", function() {
+    describe("->each()", function() {
 
         it("applies a filter on a collection", function() {
 
@@ -140,7 +140,7 @@ describe("Collection", function() {
 
     });
 
-    describe("find", function() {
+    describe("->find()", function() {
 
         it("extracts items from a collection according a filter", function() {
 
@@ -159,7 +159,7 @@ describe("Collection", function() {
 
     });
 
-    describe("map", function() {
+    describe("->map()", function() {
 
         it("applies a Closure to a copy of all data in the collection", function() {
 
@@ -174,7 +174,7 @@ describe("Collection", function() {
 
     });
 
-    describe("reduce", function() {
+    describe("->reduce()", function() {
 
         it("reduces a collection down to a single value", function() {
 
@@ -188,7 +188,7 @@ describe("Collection", function() {
 
     });
 
-    describe("slice", function() {
+    describe("->slice()", function() {
 
         it("extracts a slice of items", function() {
 
@@ -202,7 +202,7 @@ describe("Collection", function() {
 
     });
 
-    describe("sort", function() {
+    describe("->sort()", function() {
 
         it("sorts a collection", function() {
 
@@ -241,7 +241,7 @@ describe("Collection", function() {
 
     });
 
-    describe("offsetExists", function() {
+    describe("->offsetExists()", function() {
 
         it("returns true if a element exist", function() {
 
@@ -263,7 +263,7 @@ describe("Collection", function() {
 
     });
 
-    describe("offsetSet/offsetGet", function() {
+    describe("->offsetSet/offsetGet()", function() {
 
         it("allows array access", function() {
 
@@ -317,7 +317,7 @@ describe("Collection", function() {
 
     });
 
-    describe("offsetUnset", function() {
+    describe("->offsetUnset()", function() {
 
         it("unsets items", function() {
 
@@ -403,7 +403,7 @@ describe("Collection", function() {
 
     });
 
-    describe("keys", function() {
+    describe("->keys()", function() {
 
         it("returns the item keys", function() {
 
@@ -418,7 +418,7 @@ describe("Collection", function() {
 
     });
 
-    describe("values", function() {
+    describe("->values()", function() {
 
         it("returns the item values", function() {
 
@@ -433,7 +433,7 @@ describe("Collection", function() {
 
     });
 
-    describe("raw", function() {
+    describe("->raw()", function() {
 
         it("returns the raw data", function() {
 
@@ -449,7 +449,7 @@ describe("Collection", function() {
 
     });
 
-    describe("key", function() {
+    describe("->key()", function() {
 
         it("returns current key", function() {
 
@@ -469,7 +469,7 @@ describe("Collection", function() {
 
     });
 
-    describe("current", function() {
+    describe("->current()", function() {
 
         it("returns the current value", function() {
 
@@ -481,7 +481,7 @@ describe("Collection", function() {
 
     });
 
-    describe("next", function() {
+    describe("->next()", function() {
 
         it("returns the next value", function() {
 
@@ -493,7 +493,7 @@ describe("Collection", function() {
 
     });
 
-    describe("prev", function() {
+    describe("->prev()", function() {
 
         it("navigates through collection", function() {
 
@@ -511,7 +511,7 @@ describe("Collection", function() {
 
     });
 
-    describe("first/rewind/end", function() {
+    describe("->first/rewind/end()", function() {
 
         it("returns respectively the first and the last item of the collection", function() {
 
@@ -525,7 +525,7 @@ describe("Collection", function() {
 
     });
 
-    describe("valid", function() {
+    describe("->valid()", function() {
 
         it("returns true only when the collection is valid", function() {
 
@@ -539,7 +539,7 @@ describe("Collection", function() {
 
     });
 
-    describe("count", function() {
+    describe("->count()", function() {
 
         it("returns 0 on empty", function() {
 
@@ -557,7 +557,7 @@ describe("Collection", function() {
 
     });
 
-    describe("merge", function() {
+    describe("->merge()", function() {
 
         it("merges two collection", function() {
 
@@ -581,7 +581,7 @@ describe("Collection", function() {
 
     });
 
-    describe("data", function() {
+    describe("->data()", function() {
 
         it("calls `toArray()`", function() {
 
@@ -596,7 +596,7 @@ describe("Collection", function() {
 
     });
 
-    describe("toArray", function() {
+    describe("::toArray()", function() {
 
         it("converts a collection to an array", function() {
 

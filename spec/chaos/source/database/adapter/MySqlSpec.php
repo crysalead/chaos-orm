@@ -13,7 +13,7 @@ describe("MySql", function() {
         $this->adapter = box('chaos.spec')->get('source.database.postgresql');
     });
 
-    describe("sources", function() {
+    describe("->sources()", function() {
 
         it("show sources", function() {
             // $schema = new Schema([

@@ -13,7 +13,7 @@ describe("Sql", function() {
         $this->sql = $this->adapter->sql();
     });
 
-    describe("meta", function() {
+    describe("->meta()", function() {
 
         context("with table", function() {
 
@@ -60,7 +60,7 @@ describe("Sql", function() {
 
     });
 
-    describe("constraint", function() {
+    describe("->constraint()", function() {
 
         context("with `'primary'`", function() {
 
@@ -158,7 +158,7 @@ describe("Sql", function() {
 
     });
 
-    describe("column", function() {
+    describe("->column()", function() {
 
         context("with a integer column", function() {
 

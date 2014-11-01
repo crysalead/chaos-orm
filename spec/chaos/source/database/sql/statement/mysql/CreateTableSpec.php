@@ -12,7 +12,7 @@ describe("CreateTable", function() {
         $this->create = $this->adapter->sql()->statement('create table');
     });
 
-    describe("create a table", function() {
+    describe("->table()", function() {
 
         it("generates a CREATE table statement with specific metas", function() {
             $this->create->table('table1')
@@ -246,7 +246,7 @@ describe("CreateTable", function() {
 
     });
 
-    describe("type", function() {
+    describe("->type()", function() {
 
         it("returns a column type", function() {
 
@@ -275,7 +275,7 @@ describe("CreateTable", function() {
 
     });
 
-    describe("toString", function() {
+    describe("->toString()", function() {
 
         it("throws an exception if no table name are set", function() {
 

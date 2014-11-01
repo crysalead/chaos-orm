@@ -57,18 +57,18 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     protected $_cursor = null;
 
     /**
-     * The items contained in the collection at loading step.
+     * Loaded items on construct.
      *
      * @var array
      */
-    protected $_data = [];
+    protected $_loaded = [];
 
     /**
      * The items contained in the collection.
      *
      * @var array
      */
-    protected $_updated = [];
+    protected $_data = [];
 
     /**
      * Indicates whether the current position is valid or not.
@@ -138,11 +138,11 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         $this->_model = $config['model'];
         $this->_meta = $config['meta'];
         $this->_cursor = $config['cursor'];
-        $this->_data = $config['data'];
-        foreach ($this->_data as $key => $value) {
+        $this->_loaded = $config['data'];
+        foreach ($this->_loaded as $key => $value) {
             $this[$key] = $value;
         }
-        $this->_data = $this->_updated;
+        $this->_loaded = $this->_data;
     }
 
     /**
@@ -242,7 +242,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function offsetExists($offset)
     {
         $this->offsetGet($offset);
-        return array_key_exists($offset, $this->_updated);
+        return array_key_exists($offset, $this->_data);
     }
 
     /**
@@ -253,10 +253,10 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetGet($offset)
     {
-        while (!array_key_exists($offset, $this->_updated) && $this->_populate()) {}
+        while (!array_key_exists($offset, $this->_data) && $this->_populate()) {}
 
-        if (array_key_exists($offset, $this->_updated)) {
-            return $this->_updated[$offset];
+        if (array_key_exists($offset, $this->_data)) {
+            return $this->_data[$offset];
         }
         return null;
     }
@@ -283,8 +283,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function offsetUnset($offset)
     {
         $this->offsetGet($offset);
-        $this->_skipNext = $offset === key($this->_updated);
-        unset($this->_updated[$offset]);
+        $this->_skipNext = $offset === key($this->_data);
+        unset($this->_data[$offset]);
     }
 
     /**
@@ -297,7 +297,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function merge($collection, $preserveKeys = false) {
         foreach($collection as $key => $value) {
-            $preserveKeys ? $this->_updated[$key] = $value : $this->_updated[] = $value;
+            $preserveKeys ? $this->_data[$key] = $value : $this->_data[] = $value;
         }
         return $this;
     }
@@ -310,7 +310,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function keys()
     {
         $this->offsetGet(null);
-        return array_keys($this->_updated);
+        return array_keys($this->_data);
     }
 
     /**
@@ -321,7 +321,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function values()
     {
         $this->offsetGet(null);
-        return array_values($this->_updated);
+        return array_values($this->_data);
     }
 
     /**
@@ -332,7 +332,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function raw()
     {
         $this->offsetGet(null);
-        return $this->_updated;
+        return $this->_data;
     }
 
     /**
@@ -349,7 +349,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         if (!$this->_valid) {
             return;
         }
-        $key = key($this->_updated);
+        $key = key($this->_data);
         return (is_array($key) && !$full) ? reset($key) : $key;
     }
 
@@ -366,7 +366,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         if (!$this->_valid) {
             return false;
         }
-        return current($this->_updated);
+        return current($this->_data);
     }
 
     /**
@@ -377,8 +377,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function prev()
     {
-        $value = prev($this->_updated);
-        return key($this->_updated) !== null ? $value : null;
+        $value = prev($this->_data);
+        return key($this->_data) !== null ? $value : null;
     }
 
     /**
@@ -394,9 +394,9 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         if (!$this->_started) {
             $this->rewind();
         }
-        $value = $this->_skipNext ? current($this->_updated) : next($this->_updated);
+        $value = $this->_skipNext ? current($this->_data) : next($this->_data);
         $this->_skipNext = false;
-        $this->_valid = key($this->_updated) !== null;
+        $this->_valid = key($this->_data) !== null;
 
         if (!$this->_valid) {
             $this->_valid = $this->_populate() !== null;
@@ -420,9 +420,9 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function rewind()
     {
         $this->_started = true;
-        reset($this->_updated);
-        $this->_valid = !empty($this->_updated) || $this->_populate() !== null;
-        return current($this->_updated);
+        reset($this->_data);
+        $this->_valid = !empty($this->_data) || $this->_populate() !== null;
+        return current($this->_data);
     }
 
     /**
@@ -432,8 +432,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function end()
     {
-        end($this->_updated);
-        return current($this->_updated);
+        end($this->_data);
+        return current($this->_data);
     }
 
     /**
@@ -455,7 +455,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * @return integer Returns the number of items in the collection.
      */
     public function count() {
-        return count($this->_updated);
+        return count($this->_data);
     }
 
     /**
@@ -468,7 +468,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function find($closure, $options = [])
     {
         $this->offsetGet(null);
-        $data = array_filter($this->_updated, $closure);
+        $data = array_filter($this->_data, $closure);
         return new static(compact('data'));
     }
 
@@ -482,8 +482,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function each($closure)
     {
         $this->offsetGet(null);
-        foreach ($this->_updated as $key => $val) {
-            $this->_updated[$key] = $closure($val, $key, $this);
+        foreach ($this->_data as $key => $val) {
+            $this->_data[$key] = $closure($val, $key, $this);
         }
         return $this;
     }
@@ -499,7 +499,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function map($closure, $options = [])
     {
         $this->offsetGet(null);
-        $data = array_map($closure, $this->_updated);
+        $data = array_map($closure, $this->_data);
         return new static(compact('data'));
     }
 
@@ -514,7 +514,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function reduce($closure, $initial = false)
     {
         $this->offsetGet(null);
-        return array_reduce($this->_updated, $closure, $initial);
+        return array_reduce($this->_data, $closure, $initial);
     }
 
     /**
@@ -531,7 +531,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function slice($offset, $length = null, $preserveKeys = true) {
         $this->offsetGet(null);
-        $data = array_slice($this->_updated, $offset, $length, $preserveKeys);
+        $data = array_slice($this->_data, $offset, $length, $preserveKeys);
         return new static(compact('data'));
     }
 
@@ -555,7 +555,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         if (!is_callable($sorter)) {
             throw new InvalidArgumentException("The passed parameter is not a valid sort function.");
         }
-        $data = $this->_updated;
+        $data = $this->_data;
         $closure === null ? $sorter($data) : $sorter($data, $closure);
         return new static(compact('data'));
     }
@@ -594,7 +594,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
             $data = $model::schema()->cast(null, $data, $options);
         }
 
-        return $offset !== null ? $this->_updated[$offset] = $data : $this->_updated[] = $data;
+        return $offset !== null ? $this->_data[$offset] = $data : $this->_data[] = $data;
     }
 
     /**

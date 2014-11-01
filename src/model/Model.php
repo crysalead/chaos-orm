@@ -64,11 +64,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     protected $_exists = false;
 
     /**
-     * Associative array of the model's fields and values.
+     * Loaded data on construct.
      *
      * @var array
      */
-    protected $_data = [];
+    protected $_loaded = [];
 
     /**
      * Contains the values of updated fields. These values will be persisted to the backend data
@@ -76,7 +76,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @var array
      */
-    protected $_updated = [];
+    protected $_data = [];
 
     /**
      * The list of validation errors associated with this object, where keys are field names, and
@@ -119,9 +119,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $this->_exists = $options['exists'];
         $this->_parent = $options['parent'];
         $this->_rootPath = $options['rootPath'];
-        $this->_data = $options['data'];
-        $this->set($this->_data);
-        $this->_data = $this->_updated;
+        $this->_loaded = $options['data'];
+        $this->set($this->_loaded);
+        $this->_loaded = $this->_data;
     }
 
     /**
@@ -191,7 +191,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if ($id && $pk = static::schema()->primaryKey()) {
             $data[$pk] = $id;
         }
-        $this->_data = $this->_updated = $data + $this->_updated;
+        $this->_loaded = $this->_data = $data + $this->_data;
         return $this;
     }
 
@@ -260,7 +260,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if (method_exists($this, $method)) {
             $data = $this->$method($name);
         }
-        return $this->_updated[$name] = static::schema()->cast($name, $data, $options);
+        return $this->_data[$name] = static::schema()->cast($name, $data, $options);
     }
 
     /**
@@ -271,14 +271,14 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function get($name = null)
     {
         if (!$name) {
-            return $this->_updated;
+            return $this->_data;
         }
         $method = 'get' . ucwords(str_replace('_', ' ', $name));
         if (method_exists($this, $method)) {
             return  $this->$method($name);
         }
-        if (array_key_exists($name, $this->_updated)) {
-            return $this->_updated[$name];
+        if (array_key_exists($name, $this->_data)) {
+            return $this->_data[$name];
         }
         if ($relation = static::relation($name)) {
             return $relation->get($this);
@@ -309,20 +309,17 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the former data or a previous field value.
+     * Returns the loaded data or a previous field value.
      *
      * @param  string $field A field name or `null` to retreive all data.
      * @return mixed
      */
-    public function former($field = null)
+    public function loaded($field = null)
     {
-        if (!$this->_exists) {
-            return;
-        }
         if (!$field) {
-            return $this->_data;
+            return $this->_loaded;
         }
-        return isset($this->_data[$field]) ? $this->_data[$field] : null;
+        return isset($this->_loaded[$field]) ? $this->_loaded[$field] : null;
     }
 
     /**
@@ -336,27 +333,26 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function modified($field = null)
     {
         $result = [];
-        $fields = $field ? [$field] : array_keys($this->_updated);
+        $fields = $field ? [$field] : array_keys($this->_data);
 
         foreach ($fields as $key) {
-            if (!isset($this->_data[$key])) {
-                if (isset($this->_updated[$key])) {
+            if (!isset($this->_loaded[$key])) {
+                if (isset($this->_data[$key])) {
                     $result[$key] = null;
                 }
                 continue;
             }
             $modified = false;
-            $value = $this->_updated[$key];
+            $value = $this->_data[$key];
             if (method_exists($value, 'modified')) {
-                $modified = $value->modified();
-                $modified = $modified === true || (is_array($modified) && in_array(true, $modified, true));
+                $modified = !empty($value->modified());
             } elseif (is_object($value)) {
-                $modified = $this->_data[$key] != $value;
+                $modified = $this->_loaded[$key] != $value;
             } else {
-                $modified = $this->_data[$key] !== $value;
+                $modified = $this->_loaded[$key] !== $value;
             }
             if ($modified) {
-                $result[$key] = $this->_data[$key];
+                $result[$key] = $this->_loaded[$key];
             }
         }
         return $field ? !empty($result) : array_keys($result);
@@ -393,7 +389,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetExists($offset)
     {
-        return array_key_exists($offset, $this->_updated);
+        return array_key_exists($offset, $this->_data);
     }
 
     /**
@@ -413,7 +409,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function key()
     {
-        return key($this->_updated);
+        return key($this->_data);
     }
 
     /**
@@ -423,7 +419,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function current()
     {
-        return current($this->_updated);
+        return current($this->_data);
     }
 
     /**
@@ -434,8 +430,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function prev()
     {
-        $value = prev($this->_updated);
-        return key($this->_updated) !== null ? $value : null;
+        $value = prev($this->_data);
+        return key($this->_data) !== null ? $value : null;
     }
 
     /**
@@ -445,9 +441,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function next()
     {
-        $value = $this->_skipNext ? current($this->_updated) : next($this->_updated);
+        $value = $this->_skipNext ? current($this->_data) : next($this->_data);
         $this->_skipNext = false;
-        return key($this->_updated) !== null ? $value : null;
+        return key($this->_data) !== null ? $value : null;
     }
 
     /**
@@ -467,7 +463,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function rewind()
     {
-        return reset($this->_updated);
+        return reset($this->_data);
     }
 
     /**
@@ -477,8 +473,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function end()
     {
-        end($this->_updated);
-        return current($this->_updated);
+        end($this->_data);
+        return current($this->_data);
     }
 
     /**
@@ -488,7 +484,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function valid()
     {
-        return key($this->_updated) !== null;
+        return key($this->_data) !== null;
     }
 
     /**
@@ -497,7 +493,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @return integer Returns the number of items in the collection.
      */
     public function count() {
-        return count($this->_updated);
+        return count($this->_data);
     }
 
     /**
@@ -508,6 +504,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function &__get($name)
     {
+        if (!$name) {
+            throw new SourceException("Field name can't be empty.");
+        }
         $result = $this->get($name);
         return $result;
     }
@@ -532,7 +531,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function __isset($name)
     {
-        return array_key_exists($name, $this->_updated);
+        return array_key_exists($name, $this->_data);
     }
 
     /**
@@ -542,8 +541,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function __unset($name)
     {
-        $this->_skipNext = $name === key($this->_updated);
-        unset($this->_updated[$name]);
+        $this->_skipNext = $name === key($this->_data);
+        unset($this->_data[$name]);
     }
 
     /**
@@ -651,7 +650,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     {
         switch ($format) {
             case 'array':
-                $result = Collection::toArray($this->_updated, $options);
+                $result = Collection::toArray($this->_data, $options);
             break;
             case 'string':
                 $result = $this->__toString();
@@ -819,7 +818,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function relation($name)
     {
-         return static::schema()->relation($type);
+         return static::schema()->relation($name);
     }
 
     /**

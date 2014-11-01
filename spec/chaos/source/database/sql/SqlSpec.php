@@ -10,7 +10,7 @@ describe("Sql", function() {
         $this->sql = new Sql();
     });
 
-    describe("names", function() {
+    describe("->names()", function() {
 
         context("with star enabled", function() {
 
@@ -66,7 +66,7 @@ describe("Sql", function() {
 
     });
 
-    describe("conditions", function() {
+    describe("->conditions()", function() {
 
         it("generates a equal expression", function() {
             $part = $this->sql->conditions([

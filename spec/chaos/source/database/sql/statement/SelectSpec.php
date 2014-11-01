@@ -12,7 +12,7 @@ describe("Select", function() {
         $this->select =  $this->sql->statement('select');
     });
 
-    describe("select", function() {
+    describe("->select()", function() {
 
         it("generates a SELECT statement", function() {
             $this->select->from('table');
@@ -21,7 +21,7 @@ describe("Select", function() {
 
     });
 
-    describe("from", function() {
+    describe("->from()", function() {
 
         it("throws an exeception if the table source is empty", function() {
             $closure = function() {
@@ -47,7 +47,7 @@ describe("Select", function() {
 
     });
 
-    describe("join", function() {
+    describe("->join()", function() {
 
         it("generates a `LEFT JOIN` statement", function() {
             $this->select->from('table')->join('table2');
@@ -89,7 +89,7 @@ describe("Select", function() {
 
     });
 
-    describe("where", function() {
+    describe("->where()", function() {
 
         it("generates a `WHERE` statement", function() {
             $this->select->from('table')->where([true]);
@@ -98,7 +98,7 @@ describe("Select", function() {
 
     });
 
-    describe("group", function() {
+    describe("->group()", function() {
 
         it("generates a `GROUP BY` statement", function() {
             $this->select->from('table')->group('field');
@@ -120,7 +120,7 @@ describe("Select", function() {
 
     });
 
-    describe("having", function() {
+    describe("->having()", function() {
 
         it("generates a `GROUP` statement", function() {
             $this->select->from('table')->group('field')->having([true]);
@@ -129,7 +129,7 @@ describe("Select", function() {
 
     });
 
-    describe("order", function() {
+    describe("->order()", function() {
 
         it("generates a `ORDER BY` statement", function() {
             $this->select->from('table')->order('field');
@@ -161,7 +161,7 @@ describe("Select", function() {
 
     });
 
-    describe("limit", function() {
+    describe("->limit()", function() {
 
         it("generates a `LIMIT` statement", function() {
             $this->select->from('table')->limit(50);
@@ -181,7 +181,7 @@ describe("Select", function() {
 
     });
 
-    describe("alias", function() {
+    describe("->alias()", function() {
 
         it("sets the alias", function() {
             $this->select->from('table2')->alias('t2');
@@ -203,7 +203,7 @@ describe("Select", function() {
 
     });
 
-    describe("toString" , function() {
+    describe("->toString()" , function() {
 
         it("throws an exception if no source is defined", function() {
             $closure = function() {
@@ -214,7 +214,7 @@ describe("Select", function() {
 
     });
 
-    describe("_toString" , function() {
+    describe("->__toString()" , function() {
 
         it("casts object to string query", function() {
             $this->select->from('table');

@@ -7,7 +7,7 @@ use chaos\model\Conventions;
 
 describe("Conventions", function() {
 
-	describe("__construct", function() {
+	describe("->__construct()", function() {
 
 		it("sets up default primary key", function() {
 
@@ -37,7 +37,7 @@ describe("Conventions", function() {
 
 	});
 
-	describe("add/apply", function() {
+	describe("->add/apply()", function() {
 
 		it("adds a convention", function() {
 
@@ -51,7 +51,7 @@ describe("Conventions", function() {
 
 	});
 
-	describe("get", function() {
+	describe("->get()", function() {
 
 		it("gets all conventions", function() {
 
