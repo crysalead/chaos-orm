@@ -10,11 +10,12 @@ describe("Collection", function() {
 
 	describe("__construct", function() {
 
-        it("loads the data variable", function() {
+        it("loads the data", function() {
 
             $collection = new Collection(['data' => ['foo']]);
             expect($collection[0])->toBe('foo');
             expect($collection)->toHaveLength(1);
+
         });
 
     });
@@ -22,18 +23,31 @@ describe("Collection", function() {
     describe("exists", function() {
 
         it("returns the exists value", function() {
+
             $collection = new Collection(['exists' => true]);
             expect($collection->exists())->toBe(true);
+
         });
 
     });
 
     describe("parent", function() {
 
+        it("sets a parent", function() {
+
+            $parent = Stub::create();
+            $collection = new Collection();
+            $collection->parent($parent);
+            expect($collection->parent())->toBe($parent);
+
+        });
+
         it("returns the parent", function() {
-            $parent = new Collection();
+
+            $parent = Stub::create();
             $collection = new Collection(['parent' => $parent]);
             expect($collection->parent())->toBe($parent);
+
         });
 
     });
@@ -41,8 +55,10 @@ describe("Collection", function() {
     describe("rootPath", function() {
 
         it("returns the root path", function() {
+
             $collection = new Collection(['rootPath' => 'items']);
             expect($collection->rootPath())->toBe('items');
+
         });
 
     });
@@ -50,8 +66,10 @@ describe("Collection", function() {
     describe("model", function() {
 
         it("returns the model", function() {
+
             $collection = new Collection(['model' => 'chaos\model\Model']);
             expect($collection->model())->toBe('chaos\model\Model');
+
         });
 
     });
@@ -59,8 +77,10 @@ describe("Collection", function() {
     describe("meta", function() {
 
         it("returns the meta attributes", function() {
+
             $collection = new Collection(['meta' => ['page' => 5, 'limit' => 10]]);
             expect($collection->meta())->toBe(['page' => 5, 'limit' => 10]);
+
         });
 
     });
@@ -68,9 +88,11 @@ describe("Collection", function() {
     describe("cursor", function() {
 
         it("returns the cursor attribute", function() {
+
             $cursor = Stub::create();
             $collection = new Collection(['cursor' => $cursor]);
             expect($collection->cursor())->toBe($cursor);
+
         });
 
     });
@@ -269,7 +291,7 @@ describe("Collection", function() {
 
             afterEach(function() {
                 $model = $this->model;
-                $model::reset();
+                Model::reset();
             });
 
             it("autoboxes setted data", function() {
@@ -288,6 +310,7 @@ describe("Collection", function() {
                 expect($entity)->toBeAnInstanceOf($this->model);
                 expect($entity->parent())->toBe($collection);
                 expect($entity->rootPath())->toBe(null);
+
             });
 
         });

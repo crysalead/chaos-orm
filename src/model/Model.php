@@ -5,7 +5,7 @@ use set\Set;
 use chaos\SourceException;
 use chaos\model\collection\Collection;
 
-class Model implements \ArrayAccess, \Iterator
+class Model implements \ArrayAccess, \Iterator, \Countable
 {
     /**
      * Class dependencies.
@@ -101,13 +101,13 @@ class Model implements \ArrayAccess, \Iterator
     /**
      * Creates a new record object with default values.
      *
-     * @param array $config Possible options are:
+     * @param array $options Possible options are:
      *                      - `'data'`   _array_  : The entiy class.
      *                      - `'parent'` _object_ : The parent instance.
      *                      - `'exists'` _boolean_: The class dependencies.
      *
      */
-    public function __construct($config = [])
+    public function __construct($options = [])
     {
         $defaults = [
             'exists'   => false,
@@ -115,20 +115,30 @@ class Model implements \ArrayAccess, \Iterator
             'rootPath' => '',
             'data'     => []
         ];
-        $config += $defaults;
-        $this->_exists = $config['exists'];
-        $this->_parent = $config['parent'];
-        $this->_rootPath = $config['rootPath'];
-        $this->_data = $config['data'];
+        $options += $defaults;
+        $this->_exists = $options['exists'];
+        $this->_parent = $options['parent'];
+        $this->_rootPath = $options['rootPath'];
+        $this->_data = $options['data'];
         $this->set($this->_data);
         $this->_data = $this->_updated;
     }
 
     /**
-     * Get/set the parent.
+     * A flag indicating whether or not this instance has been persisted somehow.
      *
-     * @param object $parent
-     * @param array  $config
+     * @return boolean `True` if the record was read from or saved to the data-source, Otherwise `false`.
+     */
+    public function exists()
+    {
+        return $this->_exists;
+    }
+
+    /**
+     * Gets/sets the parent.
+     *
+     * @param  object $parent The parent instance to set or `null` to get the current one.
+     * @return object
      */
     public function parent($parent = null)
     {
@@ -164,16 +174,6 @@ class Model implements \ArrayAccess, \Iterator
     }
 
     /**
-     * A flag indicating whether or not this instance has been persisted somehow.
-     *
-     * @return boolean `True` if the record was read from or saved to the data-source, Otherwise `false`.
-     */
-    public function exists()
-    {
-        return $this->_exists;
-    }
-
-    /**
      * Automatically called after an entity is saved. Updates the object's internal state
      * to reflect the corresponding database record.
      *
@@ -204,7 +204,7 @@ class Model implements \ArrayAccess, \Iterator
     public function set($data = [], $options = [])
     {
         foreach ($data as $name => $value) {
-            $this->_set($name, $value);
+            $this->_set($name, $value, $options);
         }
         return $this;
     }
@@ -239,14 +239,18 @@ class Model implements \ArrayAccess, \Iterator
      * ```
      *
      * @param string $offset  The field name.
-     * @param mixed  $data   The value.
+     * @param mixed  $data    The value.
      * @param array  $options An options array.
      */
     protected function _set($name, $data, $options = [])
     {
+        if (!$name) {
+            throw new SourceException("Field name can't be empty.");
+        }
         $defaults = [
             'parent'   => $this,
-            'rootPath'  => $this->_rootPath,
+            'model'    => get_called_class(),
+            'rootPath' => $this->_rootPath,
             'defaults' => !$this->_exists,
             'exists'   => $this->_exists
         ];
@@ -256,7 +260,7 @@ class Model implements \ArrayAccess, \Iterator
         if (method_exists($this, $method)) {
             $data = $this->$method($name);
         }
-        return $this->_updated[$name] = static::schema()->autobox($name, $data, $options);
+        return $this->_updated[$name] = static::schema()->cast($name, $data, $options);
     }
 
     /**
@@ -336,7 +340,9 @@ class Model implements \ArrayAccess, \Iterator
 
         foreach ($fields as $key) {
             if (!isset($this->_data[$key])) {
-                $result[$key] = null;
+                if (isset($this->_updated[$key])) {
+                    $result[$key] = null;
+                }
                 continue;
             }
             $modified = false;
@@ -376,7 +382,7 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function offsetSet($offset, $value)
     {
-        return $this->set($offset, $value);
+        return $this->_set($offset, $value);
     }
 
     /**
@@ -397,7 +403,7 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function offsetUnset($offset)
     {
-        unset($this->_updated[$offset]);
+        unset($this->{$offset});
     }
 
     /**
@@ -515,7 +521,7 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function __set($name, $value)
     {
-        $this->set($name, $value);
+        $this->_set($name, $value);
     }
 
     /**
@@ -536,6 +542,7 @@ class Model implements \ArrayAccess, \Iterator
      */
     public function __unset($name)
     {
+        $this->_skipNext = $name === key($this->_updated);
         unset($this->_updated[$name]);
     }
 
@@ -669,11 +676,15 @@ class Model implements \ArrayAccess, \Iterator
                 'schema'       => 'chaos\model\Schema',
                 'relationship' => 'chaos\model\Relationship'
             ],
+            'schema'      => null,
             'connection'  => null,
             'conventions' => null
         ];
         $config = Set::merge($defaults, $config);
 
+        if ($config['schema']) {
+            static::$_schemas[get_called_class()] = $config['schema'];
+        }
         static::$_classes = $config['classes'];
         static::$_connection = $config['connection'];
         static::$_conventions = $config['conventions'] ?: new Conventions();
@@ -720,7 +731,7 @@ class Model implements \ArrayAccess, \Iterator
         $options['defaults'] = !$options['exists'];
 
         if ($options['defaults'] && $options['type'] === 'entity') {
-            $data = Set::merge(Set::expand(static::schema()->defaults()), $data);
+            $data = Set::merge(Set::expand(static::schema()->fields('default')), $data);
         }
 
         $class = isset($options['model']) ? $options['model'] : static::$_classes[$options['type']];
@@ -753,17 +764,29 @@ class Model implements \ArrayAccess, \Iterator
     }
 
     /**
-     * Gets the connection object to which this model is bound.
+     * Gets/sets the connection object to which this model is bound.
      *
-     * @return object    Returns a connection instance.
-     * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
+     * @param  object $connection The connection instance to set or `null` to get the current one.
+     * @return object             Returns a connection instance.
      */
-    public static function connection() {
-        if (!static::$_connection) {
-            $class = get_called_class();
-            throw new SourceException("Error, missing connection for `{$class}`.");
+    public static function connection($connection = null) {
+        if ($connection !== null) {
+            static::$_connection = $connection;
         }
         return static::$_connection;
+    }
+
+    /**
+     * Gets/sets the conventions object to which this model is bound.
+     *
+     * @param  object $conventions The conventions instance to set or `null` to get the current one.
+     * @return object              Returns a connection instance.
+     */
+    public static function conventions($conventions = null) {
+        if ($conventions !== null) {
+            static::$_conventions = $conventions;
+        }
+        return static::$_conventions;
     }
 
     /**
@@ -777,13 +800,13 @@ class Model implements \ArrayAccess, \Iterator
         if (isset(static::$_schemas[$class])) {
             return static::$_schemas[$class];
         }
-        $config = static::_meta() + [
+        $options = static::_meta() + [
             'classes'     => ['entity' => $class] + static::$_classes,
             'connection'  => static::$_connection,
             'conventions' => static::$_conventions
         ];
-        $class = $config['classes']['schema'];
-        $schema = static::$_schemas[$class] = new $class($config);
+        $class = $options['classes']['schema'];
+        $schema = static::$_schemas[$class] = new $class($options);
         static::_schema($schema);
         return $schema;
     }
@@ -835,7 +858,13 @@ class Model implements \ArrayAccess, \Iterator
      *
      * $schema->add('body', ['type' => 'string', 'use' => 'longtext']);
      *
-     * // Dedicated class
+     * // Custom object
+     * $schema->add('comments',       ['type' => 'object', 'array' => true, 'default' => []]);
+     * $schema->add('comments.id',    ['type' => 'id']);
+     * $schema->add('comments.email', ['type' => 'string']);
+     * $schema->add('comments.body',  ['type' => 'string']);
+     *
+     * // Custom object with a dedicated class
      * $schema->add('comments', [
      *     'type' => 'object',
      *     'class' => 'name\space\model\Comment',
@@ -843,21 +872,15 @@ class Model implements \ArrayAccess, \Iterator
      *     'default' => []
      * ]);
      *
-     * // Custom object
-     * $schema->add('comments',       ['type' => 'object', 'array' => true, 'default' => []]);
-     * $schema->add('comments.id',    ['type' => 'id']);
-     * $schema->add('comments.email', ['type' => 'string']);
-     * $schema->add('comments.body',  ['type' => 'string']);
-     *
      * $schema->bind('tags', [
-     *     'type'        => 'hasManyThrough',
+     *     'relation'    => 'hasManyThrough',
      *     'through'     => 'post_tag'
      *     'using'       => 'tag'
      *     'constraints' => ['{:to}.enabled' => true]
      * ]);
      *
      * $schema->bind('post_tag', [
-     *     'type'        => 'hasMany',
+     *     'relation'    => 'hasMany',
      *     'to'          => 'name\space\model\PostTag',
      *     'key'         => ['id' => 'post_id'],
      *     'constraints' => ['{:to}.enabled' => true]

@@ -140,10 +140,9 @@ class Schema
         $this->_handlers = $config['handlers'];
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
-        $formatters = $this->_conventions->get();
         $config += [
-            'source'     => $formatters['source']($config['classes']['entity']),
-            'primaryKey' => $formatters['primaryKey']()
+            'source'     => $this->_conventions->apply('source', $config['classes']['entity']),
+            'primaryKey' => $this->_conventions->apply('primaryKey')
         ];
 
         $this->_fields = $config['fields'];
@@ -161,7 +160,8 @@ class Schema
      * @return object    Returns a connection instance.
      * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
      */
-    public function connection() {
+    public function connection()
+    {
         if (!$this->_connection) {
             throw new SourceException("Error, missing connection for this schema.");
         }
@@ -179,13 +179,17 @@ class Schema
     }
 
     /**
-     * Normalize a field
+     * Normalize a field.
      *
-     * @param  array $field A field array
-     * @return array A normalized field array
+     * @param  array $field A field array.
+     * @return array        A normalized field array.
      */
     protected function _initField($field)
     {
+        $defaults = [
+            'array' => false,
+            'null'  => true
+        ];
         if (is_string($field)) {
             $field = ['type' => $field];
         } elseif (isset($field[0])) {
@@ -196,7 +200,8 @@ class Schema
         if (isset($this->_handlers[$type])) {
             $field['format'] = $this->_handlers[$type];
         }
-        return $field;
+
+        return $field + $defaults;
     }
 
     /**
@@ -241,24 +246,34 @@ class Schema
     }
 
     /**
-     * Returns a schema field attribute/attributes or all fields.
+     * Returns all schema fields attributes or all fields.
      *
-     * @param  array $name       A field name. If `null` returns all fields.
+     * @param  array $attribute  An attribute name. If `null` returns all fields.
+     * @return array
+     */
+    public function fields($attribute = null)
+    {
+        if (!$attribute) {
+            return $this->_fields;
+        }
+        $result = [];
+        foreach ($this->_fields as $key => $value) {
+            if ($attribute !== 'default' || $value['type'] !== 'object') {
+                $result[$key] = $this->field($key, $attribute);
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Returns a schema field attribute.
+     *
+     * @param  array $name       A field name.
      * @param  array $attribute  An attribute name. If `null` returns all attributes.
      * @return mixed
      */
-    public function fields($name = null, $attribute = null)
+    public function field($name, $attribute = null)
     {
-        if (!$name) {
-            if (!$attribute) {
-                return $this->_fields;
-            }
-            $result = [];
-            foreach ($this->_fields as $key => $value) {
-                $result[$key] = $this->fields($name, $attribute);
-            }
-            return $result;
-        }
         $field = isset($this->_fields[$name]) ? $this->_fields[$name] : null;
 
         if ($field && $attribute) {
@@ -273,35 +288,9 @@ class Schema
      * @param  string $name The field name.
      * @return array  The type value or `null` if not found.
      */
-    public function type($name = null)
+    public function type($name)
     {
-        return $this->fields($name, 'type');
-    }
-
-    /**
-     * Returns the default value of a field name.
-     *
-     * @param  string $name The field name.
-     * @return array  The default value or `null` if not found.
-     */
-    public function defaults($name = null)
-    {
-        return $this->fields($name, 'default');
-    }
-
-    /**
-     * Detects properties of a field, i.e. if it supports arrays.
-     *
-     * @param  string $condition
-     * @param  string $name
-     * @return boolean
-     */
-    public function is($condition, $name)
-    {
-        if (!isset($this->_fields[$name])) {
-            return;
-        }
-        return isset($this->_fields[$name][$condition]) && $this->_fields[$name][$condition];
+        return $this->field($name, 'type');
     }
 
     /**
@@ -368,11 +357,13 @@ class Schema
      */
     public function bind($name, $config = [])
     {
-        if (!isset($config['type']) || !in_array($config['type'], $this->_relationTypes)) {
-            throw new SourceException("Invalid type `{$config['type']}` for the `'{$name}'` relationship.");
+        $config = ['type' => 'object'] + $config;
+
+        if (!isset($config['relation']) || !in_array($config['relation'], $this->_relationTypes)) {
+            throw new SourceException("Unexisting binding relation `{$config['relation']}` for `'{$name}'`.");
         }
         if (!isset($config['to'])) {
-            throw new SourceException("Error, relationship require a `'to'` to be set.");
+            throw new SourceException("Binding requires `'to'` option to be set.");
         }
         if (!isset($config['from'])) {
             $config['from'] = $this->_classes['entity'];
@@ -393,6 +384,9 @@ class Schema
      */
     public function unbind($name)
     {
+        if (!isset($this->_relations[$name])) {
+            return;
+        }
         unset($this->_relations[$name]);
         unset($this->_relationships[$name]);
     }
@@ -409,8 +403,10 @@ class Schema
             return $this->_relationships[$name];
         }
 
-        if (isset($this->_relation[$name])) {
-            $config = $this->_relation[$name];
+        if (isset($this->_relations[$name])) {
+            $config = $this->_relations[$name];
+            $config['type'] = $config['relation'];
+            unset($config['relation']);
             return $this->_relationships[$name] = $this->_relationship($name, $config);
         }
     }
@@ -450,9 +446,9 @@ class Schema
         $conventions = $this->conventions;
         $from = $config['from'];
 
-        if (!isset($config['primaryKey'])) {
+        if (!isset($config['keys'])) {
             $foreignKey = $this->_conventions->get('foreignKey');
-            $config['primaryKey'][$this->primaryKey()] = $foreignKey($from);
+            $config['keys'][$this->primaryKey()] = $foreignKey($from);
         }
         $config += compact('name', 'from', 'conventions');
         $relationship = $this->_classes['relationship'];
@@ -460,74 +456,82 @@ class Schema
     }
 
     /**
-     * Autobox data according to the schema definition.
+     * Cast data according to the schema definition.
      *
      * @param  array  $name    The field name.
      * @param  array  $data    Some data to cast.
      * @param  array  $options Options for the casting.
      * @return object          The casted data.
      */
-    public function autobox($name, $data, $options = [])
+    public function cast($name, $data, $options = [])
     {
+        if (is_object($data)) {
+            return $data;
+        }
+
         $defaults = [
             'parent'    => null,
             'type'      => 'entity',
             'model'     => $this->_classes['entity'],
-            'schema'    => $this,
             'exists'    => false
         ];
         $options += $defaults;
 
-        $options['rootPath'] = $name;
-
-        $model = $options['model'];
+        $name = $options['rootPath'] ? $options['rootPath'] . '.' . $name : $name;
 
         if ($name === null) {
+            $model = $options['model'];
             return $model::create($data, $options);
         }
 
-        if (isset($this->_field[$name])) {
-            $meta = $this->_field[$name];
-        } elseif (isset($this->_relations[$name])) {
-            $meta = $this->_relations[$name];
-        } else {
-            return $data;
-        }
+        $properties = $this->properties($name);
+        $options['rootPath'] = $name;
 
-        if (!$meta['array']) {
-            return $this->cast($meta, $data);
-        }
-
-        if ($data instanceof Iterator) {
-            return $data;
-        }
-
-        $options['type'] = 'set';
-        return $model::create($data, $options);
+        return $this->_cast($properties, $data, $options);
     }
 
     /**
      * Casting helper
      *
-     * @param  array  $field     The field properties which define the casting.
-     * @param  array  $data      Some data to cast.
-     * @param  array  $asContent Cast as if it was a element of the field
-     *                           (unused if the field properties doesn't correspond to an array).
-     * @return mixed             The casted data.
+     * @param  array  $properties The field properties which define the casting.
+     * @param  array  $data       Some data to cast.
+     * @param  array  $options    Options for the casting.
+     * @return mixed              The casted data.
      */
-    public function cast($field, $data, $asContent = false)
+    public function _cast($properties, $data, $options)
     {
-        if ($asContent && is_array($data)) {
-            $result = [];
-            foreach ($data as $key => $value) {
-                $result[] = $this->cast($field, $value);
+        $model = $options['model'];
+
+        if ($properties['array']) {
+            $options['type'] = 'set';
+            return $model::create($data, $options);
+        }
+        if ($properties['type'] === 'object') {
+            if (isset($properties['model'])) {
+                $options['model'] = $properties['model'];
             }
-            return $result;
+            return $model::create($data, $options);
         }
-        if ($field['null'] && ($data === null || $data === '')) {
-            return null;
+        if ($properties['null'] && ($data === null || $data === '')) {
+            return;
         }
-        return isset($field['format']) ? $field['format']($data) : $data;
+        return isset($properties['format']) ? $properties['format']($data) : $data;
+    }
+
+    /**
+     * Gets properties of a schema field/relation
+     *
+     * @param  string $name The field or relation name.
+     * @return array  The properties array or `false` if no properties exists.
+     */
+    public function properties($name)
+    {
+        if (isset($this->_fields[$name])) {
+            return $this->_fields[$name];
+        } elseif (isset($this->_relations[$name])) {
+            return $this->_relations[$name];
+        }
+        return $this->_initField('string');
     }
 
 }

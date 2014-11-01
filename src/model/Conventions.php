@@ -29,7 +29,7 @@ class Conventions
             'conventions' => [
                 'source' => function($class) {
                     $basename = substr(strrchr($class, '\\'), 1);
-                    return Inflector::underscore(Inflector::singularize($basename));
+                    return Inflector::underscore($basename);
                 },
                 'primaryKey' => function() {
                     return 'id';
@@ -37,10 +37,6 @@ class Conventions
                 'foreignKey' => function($class) {
                     $basename = substr(strrchr($class, '\\'), 1);
                     return Inflector::underscore(Inflector::singularize($basename)). '_id';
-                },
-                'fieldName' => function($class) {
-                    $basename = substr(strrchr($class, '\\'), 1);
-                    return Inflector::underscore(Inflector::singularize($basename));
                 }
             ]
         ];
@@ -49,10 +45,22 @@ class Conventions
     }
 
     /**
-     * Get a specific or all convention rules.
+     * Adds a specific convention rule.
      *
-     * @param  string    $name A convention rule or `null` to get all.
-     * @return Closure
+     * @param  string  $name    The name of the convention or `null` to get all.
+     * @param  Closure $closure The convention closure.
+     * @return Closure          The passed convention closure.
+     */
+    public function add($name, $closure)
+    {
+        return $this->_conventions[$name] = $closure;
+    }
+
+    /**
+     * Gets a specific or all convention rules.
+     *
+     * @param  string    $name The name of the convention or `null` to get all.
+     * @return mixed           The closure or an array of closures.
      * @throws Exception       Throws a `chaos\SourceException` if no rule has been found.
      */
     public function get($name = null)
@@ -68,4 +76,21 @@ class Conventions
         }
         return $this->_conventions[$name];
     }
+
+    /**
+     * Applies a specific convention rules.
+     *
+     * @param  string    $name  The name of the convention.
+     * @param  mixed     $param Parameter to pass to the closure.
+     * @param  mixed     ...    Parameter to pass to the closure.
+     * @return mixed
+     * @throws Exception       Throws a `chaos\SourceException` if no rule has been found.
+     */
+    public function apply($name) {
+        $params = func_get_args();
+        array_shift($params);
+        $convention = $this->get($name);
+        return call_user_func_array($convention, $params);
+    }
+
 }

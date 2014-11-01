@@ -156,13 +156,17 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the object's parent `Document` object.
+     * Gets/sets the parent.
      *
+     * @param  object $parent The parent instance to set or `null` to get the current one.
      * @return object
      */
-    public function parent()
+    public function parent($parent = null)
     {
-        return $this->_parent;
+        if ($parent === null) {
+            return $this->_parent;
+        }
+        return $this->_parent = $parent;
     }
 
     /**
@@ -587,7 +591,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         $options = compact('model', 'rootPath', 'parent') + $options + $defaults;
 
         if ($model && !$data instanceof $model) {
-            $data = $model::schema()->autobox(null, $data, $options);
+            $data = $model::schema()->cast(null, $data, $options);
         }
 
         return $offset !== null ? $this->_updated[$offset] = $data : $this->_updated[] = $data;

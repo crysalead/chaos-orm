@@ -57,8 +57,8 @@ class Relationship
      *                                                   data in a result set. For example, in the case of `Posts hasMany Comments`, the
      *                                                   field name defaults to `'comments'`, so comment data is accessed (assuming
      *                                                   `$post = Posts::first()`) as `$post->comments`.
-     *                      - `'key'`         _mixed_  : An array of fields that define the relationship, where the
-     *                                                   keys are fields in the originating model, and the values are fields in the
+     *                      - `'keys'`        _mixed_  : An array of field that define the relationship, where the
+     *                                                   keys is the key in the originating model, and the values is the key in the
      *                                                   target model.
      *                      - `'type'`        _string_ : The type of relationship. Should be one of `'belongsTo'`, `'hasOne'` or `'hasMany'`.
      *                      - `'from'`        _string_ : The fully namespaced class name this relationship originates.
@@ -90,7 +90,7 @@ class Relationship
         $defaults = [
             'name'        => null,
             'correlate'   => null,
-            'key'         => null,
+            'keys'        => null,
             'type'        => null,
             'from'        => null,
             'to'          => null,
@@ -105,22 +105,20 @@ class Relationship
         ];
         $config += $defaults;
 
-        foreach (['name', 'type', 'from', 'to', 'key'] as $value) {
+        foreach (['name', 'type', 'from', 'to', 'keys'] as $value) {
             if (!$config[$value]) {
                 throw new SourceException("Error, `'{$value}'` option can't be empty.");
             }
         }
 
-        $config['conventions'] = $config['conventions'] ?: new Conventions();
-
-        $formatter = $config['conventions']->get('fieldName');
+        $conventions = $config['conventions'] = $config['conventions'] ?: new Conventions();
 
         if ($this->through() && !$this->using()) {
-            $config['using'] = $formatter($this->to());
+            $config['using'] = $conventions->apply('foreignKey', $this->to());
         }
 
         if (!$this->correlate()) {
-            $config['correlate'] = $formatter($this->from());
+            $config['correlate'] = $conventions->apply('foreignKey', $this->from());
         }
 
         $this->_config = $config;
@@ -129,15 +127,15 @@ class Relationship
     /**
      * Returns the named configuration item, or all configuration data, if no parameter is given.
      *
-     * @param  string $key The name of the configuration item to return, or `null` to return all items.
-     * @return mixed  Returns a single configuration item (mixed), or an array of all items.
+     * @param  string $name The name of the configuration item to return, or `null` to return all items.
+     * @return mixed        Returns a single configuration item (mixed), or an array of all items.
      */
-    public function data($key = null)
+    public function data($name = null)
     {
-        if (!$key) {
+        if (!$name) {
             return $this->_config;
         }
-        return isset($this->_config[$key]) ? $this->_config[$key] : null;
+        return isset($this->_config[$name]) ? $this->_config[$name] : null;
     }
 
     /**
@@ -192,7 +190,7 @@ class Relationship
      */
     public function query($entity)
     {
-        list($from, $to) = each($this->key());
+        list($from, $to) = each($this->keys());
 
         if (!$entity instanceof Countable) {
             if (!isset($entity->{$from})) {
@@ -379,12 +377,12 @@ class Relationship
         $toDelete = [];
 
         foreach ($alreadySaved as $key => $entity) {
-            $toDelete[] = $entity->key();
+            $toDelete[] = $entity->primaryKey();
         }
 
         if ($toDelete) {
-            $key = $entity::schema()->key();
-            $return &= $middle::remove([$key => $toDelete]);
+            $primaryKey = $entity::schema()->primaryKey();
+            $return &= $middle::remove([$primaryKey => $toDelete]);
         }
         return true;
     }
