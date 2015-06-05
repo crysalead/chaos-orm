@@ -1,5 +1,5 @@
 <?php
-namespace spec\chaos;
+namespace chaos\spec\suite;
 
 use PDO;
 use chaos\source\database\adapter\MySql;

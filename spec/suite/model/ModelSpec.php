@@ -1,5 +1,5 @@
 <?php
-namespace spec\chaos\model;
+namespace chaos\spec\suite\model;
 
 use stdClass;
 use DateTime;

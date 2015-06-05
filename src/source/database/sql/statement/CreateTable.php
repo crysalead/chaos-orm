@@ -27,8 +27,6 @@ class CreateTable extends Statement
         'metas'       => []
     ];
 
-    protected $_primary = null;
-
     /**
      * Set the table name to create
      *

@@ -37,6 +37,10 @@ class Conventions
                 'foreignKey' => function($class) {
                     $basename = substr(strrchr($class, '\\'), 1);
                     return Inflector::underscore(Inflector::singularize($basename)). '_id';
+                },
+                'fieldName' => function($class) {
+                    $basename = substr(strrchr($class, '\\'), 1);
+                    return Inflector::underscore(Inflector::singularize($basename));
                 }
             ]
         ];

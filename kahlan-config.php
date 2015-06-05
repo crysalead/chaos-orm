@@ -6,23 +6,23 @@ use chaos\source\database\adapter\Sqlite3;
 
 $box = box('chaos.spec', new Box());
 
-$box->factory('source.database.mysql', function() {
+$box->service('source.database.mysql', function() {
     return new MySql([
         'database' => 'chaos_test',
         'login' => 'root',
-        'password' => ''
+        'password' => 'root'
     ]);
 });
 
-$box->factory('source.database.postgresql', function() {
+$box->service('source.database.postgresql', function() {
     return new PostgreSql([
         'database' => 'chaos_test',
         'login' => 'root',
-        'password' => 'mdp'
+        'password' => 'root'
     ]);
 });
 
-$box->factory('source.database.sqlite3', function() {
+$box->service('source.database.sqlite3', function() {
     return new Sqlite3([
         'database' => ':memory:'
     ]);

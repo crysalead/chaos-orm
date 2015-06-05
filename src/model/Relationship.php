@@ -12,18 +12,6 @@ use set\Set;
 class Relationship
 {
     /**
-     * A relationship linking type defined by one document or record (or multiple) being embedded
-     * within another.
-     */
-    const LINK_EMBEDDED = 'embedded';
-
-    /**
-     * The reciprocal of `LINK_EMBEDDED`, this defines a linking type wherein an embedded document
-     * references the document that contains it.
-     */
-    const LINK_CONTAINED = 'contained';
-
-    /**
      * A one-to-one or many-to-one relationship in which a key contains an ID value linking to
      * another document or record.
      */
@@ -36,10 +24,16 @@ class Relationship
     const LINK_KEY_LIST = 'keylist';
 
     /**
-     * A relationship defined by a database-native reference mechanism, linking a key to an
-     * arbitrary record or document in another data collection or entirely separate database.
+     * A relationship linking type defined by one document or record (or multiple) being embedded
+     * within another.
      */
-    const LINK_REF = 'ref';
+    const LINK_EMBEDDED = 'embedded';
+
+    /**
+     * The reciprocal of `LINK_EMBEDDED`, this defines a linking type wherein an embedded document
+     * references the document that contains it.
+     */
+    const LINK_CONTAINED = 'contained';
 
     /**
      * The relationship configuration.
@@ -53,10 +47,9 @@ class Relationship
      *
      * @param array $config The relationship's configuration, which defines how the two models in
      *                      question are bound. The available options are:
-     *                      - `'name'`   _string_ : The name of the field used when accessing the related
+     *                      - `'name'`        _string_ : The name of the field used when accessing the related
      *                                                   data in a result set. For example, in the case of `Posts hasMany Comments`, the
-     *                                                   field name defaults to `'comments'`, so comment data is accessed (assuming
-     *                                                   `$post = Posts::first()`) as `$post->comments`.
+     *                                                   field name defaults to `'comments'`.
      *                      - `'keys'`        _mixed_  : An array of field that define the relationship, where the
      *                                                   keys is the key in the originating model, and the values is the key in the
      *                                                   target model.
@@ -105,7 +98,7 @@ class Relationship
         ];
         $config += $defaults;
 
-        foreach (['name', 'type', 'from', 'to', 'keys'] as $value) {
+        foreach (['type', 'from', 'to'] as $value) {
             if (!$config[$value]) {
                 throw new SourceException("Error, `'{$value}'` option can't be empty.");
             }
@@ -113,12 +106,29 @@ class Relationship
 
         $conventions = $config['conventions'] = $config['conventions'] ?: new Conventions();
 
-        if ($this->through() && !$this->using()) {
-            $config['using'] = $conventions->apply('foreignKey', $this->to());
+        if (!$config['through'] && $config['type'] === 'hasManyThrough') {
+            throw new SourceException("Error, `'through'` option can't be empty for a has many through relation.");
         }
 
-        if (!$this->correlate()) {
-            $config['correlate'] = $conventions->apply('foreignKey', $this->from());
+        if ($config['through'] && !$config['using']) {
+            $config['using'] = $conventions->apply('fieldName', $config['through']);
+        }
+
+        if (!$config['keys']) {
+            $primaryKey = $conventions->apply('primaryKey');
+            if ($config['type'] === 'belongsTo') {
+                $config['keys'][$conventions->apply('foreignKey', $config['from'])] = $primaryKey;
+            } else {
+                $config['keys'][$primaryKey] = $conventions->apply('foreignKey', $config['from']);
+            }
+        }
+
+        if (!$config['correlate']) {
+            $config['correlate'] = $conventions->apply('fieldName', $config['from']);
+        }
+
+        if (!$config['name']) {
+            $config['name'] = $conventions->apply('fieldName', $config['to']);
         }
 
         $this->_config = $config;

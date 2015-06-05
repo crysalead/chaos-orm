@@ -1,5 +1,5 @@
 <?php
-namespace spec\chaos\model\collection;
+namespace chaos\spec\suite\model\collection;
 
 use InvalidArgumentException;
 use kahlan\plugin\Stub;

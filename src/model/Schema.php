@@ -175,7 +175,17 @@ class Schema
      */
     public function add($name, $value = [])
     {
-        $this->_fields[$name] = $this->_initField($value);
+        $field = $this->_fields[$name] = $this->_initField($value);
+
+        if (isset($field['class'])) {
+            $relationship = $this->_classes['relationship'];
+
+            $this->bind($name, [
+                'relation' => $field['array'] ? 'hasMany' : 'hasOne',
+                'to'       => $field['class'],
+                'link'     => $relationship::LINK_EMBEDDED
+            ]);
+        }
     }
 
     /**
@@ -444,13 +454,7 @@ class Schema
     protected function _relationship($name, $config = [])
     {
         $conventions = $this->conventions;
-        $from = $config['from'];
-
-        if (!isset($config['keys'])) {
-            $foreignKey = $this->_conventions->get('foreignKey');
-            $config['keys'][$this->primaryKey()] = $foreignKey($from);
-        }
-        $config += compact('name', 'from', 'conventions');
+        $config += compact('name', 'conventions');
         $relationship = $this->_classes['relationship'];
         return new $relationship($config);
     }
