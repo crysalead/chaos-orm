@@ -160,47 +160,44 @@ class MySql extends \chaos\source\database\Database
     /**
      * Gets the column schema for a given MySQL table.
      *
-     * @param  mixed $entity Specifies the table name for which the schema should be returned, or
-     *                       the class name of the model object requesting the schema, in which case
-     *                       the model class will be queried for the correct table name.
-     * @param  array $fields Any schema data pre-defined by the model.
-     * @param  array $meta
-     * @return array         Returns an associative array describing the given table's schema,
-     *                       where the array keys are the available fields, and the values are arrays
-     *                       describing each field, containing the following keys:
-     *                       - `'type'`: _string_ The field type name.
+     * @param  mixed  $name   Specifies the table name for which the schema should be returned.
+     * @param  array  $fields Any schema data pre-defined by the model.
+     * @param  array  $meta
+     * @return object         Returns a shema definition.
      */
-    public function describe($entity,  $fields = [], array $meta = [])
+    public function describe($name,  $fields = [], $meta = [])
     {
-        $params = compact('entity', 'meta', 'fields');
-        return $this->_filter(__METHOD__, $params, function($self, $params) {
-            extract($params);
+        $schema = $this->_classes['schema'];
 
-            if ($fields) {
-                return $self->invokeMethod('_instance', array('schema', compact('fields')));
-            }
-            $name = $self->invokeMethod('_entityName', array($entity, array('quoted' => true)));
-            $columns = $self->read("DESCRIBE {$name}", array('return' => 'array', 'schema' => array(
-                'field', 'type', 'null', 'key', 'default', 'extra'
-            )));
-            $fields = array();
+        if (func_num_args() === 1) {
+            $statement = $this->execute("DESCRIBE {$name}");
+
+            $cursor = $this->_classes['cursor'];
+
+            $columns = new $cursor(['resource' => $statement]);
 
             foreach ($columns as $column) {
-                $schema = $self->invokeMethod('_column', array($column['type']));
-                $default = $column['default'];
+                $field = $this->_column($column[1]);
+                $default = $column[4];
 
                 if ($default === 'CURRENT_TIMESTAMP') {
                     $default = null;
-                } elseif ($schema['type'] === 'boolean') {
+                } elseif ($column[1] === 'boolean') {
                     $default = !!$default;
                 }
-                $fields[$column['field']] = $schema + array(
-                    'null'     => ($column['null'] === 'YES' ? true : false),
+                $fields[$column[0]] = $field + [
+                    'null'     => ($column[2] === 'YES' ? true : false),
                     'default'  => $default
-                );
+                ];
             }
-            return $self->invokeMethod('_instance', array('schema', compact('fields')));
-        });
+        }
+
+        return new $schema([
+            'connection' => $this,
+            'source'     => $name,
+            'fields'     => $fields,
+            'meta'        => $meta
+        ]);
     }
 
     /**

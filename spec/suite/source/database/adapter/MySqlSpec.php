@@ -6,28 +6,41 @@ use chaos\source\database\adapter\MySql;
 use chaos\source\Schema;
 
 use kahlan\plugin\Stub;
+use chaos\spec\fixture\Fixtures;
 
 describe("MySql", function() {
 
-    before(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.postgresql');
+    beforeEach(function() {
+        $this->adapter = box('chaos.spec')->get('source.database.mysql');
+        $this->fixtures = new Fixtures([
+            'connection' => $this->adapter
+        ]);
+    });
+
+    afterEach(function() {
+        $this->fixtures->drop();
     });
 
     describe("->sources()", function() {
 
-        it("show sources", function() {
-            // $schema = new Schema([
-            //     'name' => 'table1',
-            //     'adapter' =>  $this->adapter,
-            //     'fields' => [
-            //         'id' => ['id']
-            //     ]
-            // ]);
-            // $schema->create();
-            // $sources = $this->adapter->sources();
-            // print_r($sources);
+        it("shows sources", function() {
+            $this->fixtures->populate('gallery');
 
-            //print_r($this->adapter->describe());
+            $sources = $this->adapter->sources();
+
+            expect($sources)->toBe([
+                'gallery' => 'gallery'
+            ]);
+        });
+
+    });
+
+    describe("->describe()", function() {
+
+        it("describe a source", function() {
+
+            $this->fixtures->populate('gallery');
+            //print_r($this->adapter->describe('gallery'));
 
             //$statement = $this->adapter->execute("SELECT row_to_json(aa) FROM aa");
             //print_r($statement->fetchAll(PDO::FETCH_ASSOC));

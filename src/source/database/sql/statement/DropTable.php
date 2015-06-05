@@ -28,6 +28,18 @@ class DropTable extends Statement
     ];
 
     /**
+     * Sets the requirements on the table existence.
+     *
+     * @param  boolean $exists If `true` the table must exists, use `false` for a soft drop.
+     * @return object          Returns `$this`.
+     */
+    public function exists($exists = true)
+    {
+        $this->_parts['exists'] = $exists;
+        return $this;
+    }
+
+    /**
      * Set the table name to create.
      *
      * @param  string $table The table name.
@@ -37,18 +49,6 @@ class DropTable extends Statement
     {
         $tables = is_array($table) ? $table : func_get_args();
         $this->_parts['table'] = array_map([$this->sql(), 'escape'], $tables);
-        return $this;
-    }
-
-    /**
-     * Sets the requirements on the table existence.
-     *
-     * @param  boolean $exists If `true` the table must exists, use `false` for a soft drop.
-     * @return object          Returns `$this`.
-     */
-    public function exists($exists = true)
-    {
-        $this->_parts['exists'] = $exists;
         return $this;
     }
 

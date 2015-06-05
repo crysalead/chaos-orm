@@ -123,6 +123,7 @@ class Schema
                 'set'          => 'collection\Collection',
                 'relationship' => 'chaos\model\Relationship'
             ],
+            'source'       => null,
             'connection'   => null,
             'conventions'  => null,
             'locked'       => true,
@@ -141,7 +142,6 @@ class Schema
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
         $config += [
-            'source'     => $this->_conventions->apply('source', $config['classes']['entity']),
             'primaryKey' => $this->_conventions->apply('primaryKey')
         ];
 
@@ -155,13 +155,17 @@ class Schema
     }
 
     /**
-     * Gets the connection object to which this schema is bound.
+     * Gets/sets the connection object to which this schema is bound.
      *
      * @return object    Returns a connection instance.
      * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
      */
-    public function connection()
+    public function connection($connection = null)
     {
+        if (func_num_args()) {
+            $this->_connection = $connection;
+            return $this;
+        }
         if (!$this->_connection) {
             throw new SourceException("Error, missing connection for this schema.");
         }
@@ -171,7 +175,8 @@ class Schema
     /**
      * Adds a field into the schema.
      *
-     * @param string $name The field name.
+     * @param  string $name The field name.
+     * @return object       Returns `$this`.
      */
     public function add($name, $value = [])
     {
@@ -186,6 +191,7 @@ class Schema
                 'link'     => $relationship::LINK_EMBEDDED
             ]);
         }
+        return $this;
     }
 
     /**
@@ -217,7 +223,8 @@ class Schema
     /**
      * Removes a field/some fields from the schema.
      *
-     * @param string|array $name The field name or an array of field names to remove.
+     * @param  string|array $name The field name or an array of field names to remove.
+     * @return object             Returns `$this`.
      */
     public function remove($name)
     {
@@ -225,10 +232,11 @@ class Schema
         foreach ($names as $name) {
             unset($this->_fields[$name]);
         }
+        return $this;
     }
 
     /**
-     * Check if the schema has a field/some fields.
+     * Checks if the schema has a field/some fields.
      *
      * @param  string|array $name The field name or an array of field names to check.
      * @return boolean Returns `true` if present, `false` otherwise.
@@ -242,28 +250,43 @@ class Schema
     }
 
     /**
-     * Get/set the primary key of this schema
+     * Gets/sets the source schema
+     *
+     * @param  string $source The name or the source (i.e table/collection name) or `null` to get the defined one.
+     * @return string
+     */
+    public function source($source = null)
+    {
+        if (!func_num_args()) {
+            return $this->_source;
+        }
+        $this->_source = $source;
+        return $this;
+    }
+
+    /**
+     * Gets/sets the primary key of this schema
      *
      * @param  string $primaryKey The name or the primary key or `null` to get the defined one.
      * @return string
      */
     public function primaryKey($primaryKey = null)
     {
-        if ($primaryKey) {
+        if (func_num_args()) {
             $this->_primaryKey = $primaryKey;
         }
         return $this->_primaryKey;
     }
 
     /**
-     * Returns all schema fields attributes or all fields.
+     * Gets/sets all schema fields attributes or all fields.
      *
      * @param  array $attribute  An attribute name. If `null` returns all fields.
      * @return array
      */
     public function fields($attribute = null)
     {
-        if (!$attribute) {
+        if (!func_num_args()) {
             return $this->_fields;
         }
         $result = [];
@@ -317,8 +340,9 @@ class Schema
      * Appends additional fields to the schema. Will overwrite existing fields if a
      * conflicts arise.
      *
-     * @param mixed $fields The fields array or a schema instance to merge.
-     * @param array $meta   New meta data.
+     * @param  mixed  $fields The fields array or a schema instance to merge.
+     * @param  array  $meta   New meta data.
+     * @return object         Returns `$this`.
      */
     public function append($fields)
     {
@@ -332,28 +356,30 @@ class Schema
         } else {
             $this->_fields = $schema->fields() + $this->_fields;
         }
+        return $this;
     }
 
     /**
      * Gets/Sets the meta data associated to a field is some exists.
      *
-     * @param  string $name The field name. If `null` returns all metas. If it's an array,
+     * @param  string $name The field name. If `null` returns all meta. If it's an array,
      *                      set it as the meta datas.
      * @return array        If `$name` is a string, it returns the correcponding value
      *                      otherwise it returns meta datas array or `null` if not found.
      */
     public function meta($name = null, $value = null)
     {
-        if ($name === null) {
+        $num = func_num_args();
+        if (!$num) {
             return $this->_meta;
         }
         if (is_array($name)) {
             return $this->_meta = $name;
         }
-        if ($value) {
+        if ($num === 2) {
             return $this->_meta[$name] = $value;
         }
-        return isset($this->_meta[$name]) ? $this->_meta[$name] : null;
+        return isset($this->_meta[$name]) ? $this->_meta[$name] : [];
     }
 
     /**

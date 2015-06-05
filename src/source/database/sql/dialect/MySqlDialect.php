@@ -16,12 +16,13 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
     protected $_escape = '`';
 
     /**
-     * Meta atrribute syntax
-     * By default `'escape'` is false and 'join' is `' '`
+     * Meta attribute syntax pattern.
+     *
+     * Note: by default `'escape'` is false and 'join' is `' '`.
      *
      * @var array
      */
-    protected $_metas = [
+    protected $_meta = [
         'column' => [
             'charset' => ['keyword' => 'CHARACTER SET'],
             'collate' => ['keyword' => 'COLLATE'],
@@ -36,7 +37,7 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
     ];
 
     /**
-     * Column contraints
+     * Column contraints template
      *
      * @var array
      */
@@ -104,7 +105,7 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
         }
 
         $result = [$column];
-        $result[] = $this->metas('column', $field, ['charset', 'collate']);
+        $result[] = $this->meta('column', $field, ['charset', 'collate']);
 
         if (isset($serial) && $serial) {
             $result[] = 'NOT NULL AUTO_INCREMENT';
@@ -120,7 +121,7 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
             }
         }
 
-        $result[] = $this->metas('column', $field, ['comment']);
+        $result[] = $this->meta('column', $field, ['comment']);
         return join(' ', array_filter($result));
     }
 }

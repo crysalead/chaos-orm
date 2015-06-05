@@ -16,7 +16,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         'entity'       => 'chaos\model\Model',
         'set'          => 'chaos\model\collection\Collection',
         'schema'       => 'chaos\model\Schema',
-        'relationship' => 'chaos\model\Relationship'
+        'relationship' => 'chaos\model\Relationship',
+        'conventions'  => 'chaos\model\Conventions'
     ];
 
     /**
@@ -673,7 +674,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = [
             'classes' => [
                 'schema'       => 'chaos\model\Schema',
-                'relationship' => 'chaos\model\Relationship'
+                'relationship' => 'chaos\model\Relationship',
+                'conventions'  => 'chaos\model\Conventions'
             ],
             'schema'      => null,
             'connection'  => null,
@@ -686,7 +688,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
         static::$_classes = $config['classes'];
         static::$_connection = $config['connection'];
-        static::$_conventions = $config['conventions'] ?: new Conventions();
+        static::$_conventions = $config['conventions'];
     }
 
     /**
@@ -769,7 +771,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @return object             Returns a connection instance.
      */
     public static function connection($connection = null) {
-        if ($connection !== null) {
+        if (func_num_args()) {
             static::$_connection = $connection;
         }
         return static::$_connection;
@@ -782,8 +784,12 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @return object              Returns a connection instance.
      */
     public static function conventions($conventions = null) {
-        if ($conventions !== null) {
+        if (func_num_args()) {
             static::$_conventions = $conventions;
+        }
+        if (!static::$_conventions) {
+            $conventions = static::$_classes['conventions'];
+            static::$_conventions = new $conventions();
         }
         return static::$_conventions;
     }
@@ -799,13 +805,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if (isset(static::$_schemas[$class])) {
             return static::$_schemas[$class];
         }
-        $options = static::_meta() + [
+        $conventions = static::conventions();
+
+        $config = static::_meta() + [
             'classes'     => ['entity' => $class] + static::$_classes,
             'connection'  => static::$_connection,
-            'conventions' => static::$_conventions
+            'conventions' => $conventions
         ];
-        $class = $options['classes']['schema'];
-        $schema = static::$_schemas[$class] = new $class($options);
+        $class = $config['classes']['schema'];
+        $schema = static::$_schemas[$class] = new $class($config);
+        $schema->source = $conventions->apply('source', $config['classes']['entity']);
         static::_schema($schema);
         return $schema;
     }
@@ -900,7 +909,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'entity'       => 'chaos\model\Model',
             'set'          => 'chaos\model\collection\Collection',
             'schema'       => 'chaos\model\Schema',
-            'relationship' => 'chaos\model\Relationship'
+            'relationship' => 'chaos\model\Relationship',
+            'conventions'  => 'chaos\model\Conventions'
         ];
         static::$_schemas = [];
         static::$_connection = null;

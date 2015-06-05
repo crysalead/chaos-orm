@@ -45,7 +45,7 @@ describe("CreateTable", function() {
                 ->columns([
                     'id' => ['type' => 'id']
                 ])
-                ->metas([
+                ->meta([
                     'charset' => 'utf8',
                     'collate' => 'utf8_unicode_ci',
                     'engine' => 'InnoDB',
@@ -232,7 +232,7 @@ describe("CreateTable", function() {
                         'null' => false,
                     ]
                 ])
-                ->metas([
+                ->meta([
                     'charset' => 'utf8',
                     'collate' => 'utf8_unicode_ci',
                     'engine' => 'InnoDB'

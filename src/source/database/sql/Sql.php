@@ -513,19 +513,19 @@ class Sql
     }
 
     /**
-     * Helper for building columns metas
+     * Builds a column/table meta.
      *
-     * @param  array  $metas  The array of column metas.
-     * @param  array  $names  If `$names` is not `null` only build meta present in `$names`
-     * @return string         The SQL metas
+     * @param  array  $data  The data.
+     * @param  array  $names If `$names` is not `null` only build meta present in `$names`
+     * @return string        The SQL meta
      */
-    public function metas($type, $metas, $names = null)
+    public function meta($type, $data, $names = null)
     {
         $result = [];
-        $names = $names ? (array) $names : array_keys($metas);
+        $names = $names ? (array) $names : array_keys($data);
         foreach ($names as $name) {
-            $value = isset($metas[$name]) ? $metas[$name] : null;
-            if ($value && $meta = $this->meta($type, $name, $value)) {
+            $value = isset($data[$name]) ? $data[$name] : null;
+            if ($value && $meta = $this->_meta($type, $name, $value)) {
                 $result[] = $meta;
             }
         }
@@ -533,16 +533,16 @@ class Sql
     }
 
     /**
-     * Build a SQL column/table meta
+     * Helper for building a column/table single meta string.
      *
      * @param  string $type  The type of the meta to build (possible values: 'table' or 'column')
      * @param  string $name  The name of the meta to build
      * @param  mixed  $value The value used for building the meta
      * @return string        The SQL meta string
      */
-    public function meta($type, $name, $value)
+    protected function _meta($type, $name, $value)
     {
-        $meta = isset($this->_metas[$type][$name]) ? $this->_metas[$type][$name] : null;
+        $meta = isset($this->_meta[$type][$name]) ? $this->_meta[$type][$name] : null;
         if (!$meta || (isset($meta['options']) && !in_array($value, $meta['options']))) {
             return;
         }

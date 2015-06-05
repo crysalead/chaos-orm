@@ -21,14 +21,27 @@ class CreateTable extends Statement
      * @var string
      */
     protected $_parts = [
+        'notExists'   => false,
         'table'       => '',
         'columns'     => [],
         'constraints' => [],
-        'metas'       => []
+        'meta'        => []
     ];
 
     /**
-     * Set the table name to create
+     * Sets the requirements on the table existence.
+     *
+     * @param  boolean $notExists If `false` the table must not exists, use `true` for a soft create.
+     * @return object          Returns `$this`.
+     */
+    public function notExists($notExists = true)
+    {
+        $this->_parts['notExists'] = $notExists;
+        return $this;
+    }
+
+    /**
+     * Sets the table name to create.
      *
      * @param  string $table The table name.
      * @return object        Returns `$this`.
@@ -40,7 +53,7 @@ class CreateTable extends Statement
     }
 
     /**
-     * Adds some columns to the query
+     * Adds some columns to the query.
      *
      * @param  array $columns An array of fields description.
      * @return object         Returns `$this`.
@@ -52,19 +65,31 @@ class CreateTable extends Statement
     }
 
     /**
-     * Adds some table meta to the query
+     * Sets some table meta to the query.
      *
-     * @param  array  $metas An array of metas for the table.
-     * @return object        Returns `$this`.
+     * @param  array  $meta An array of meta for the table.
+     * @return object       Returns `$this`.
      */
-    public function metas($metas)
+    public function meta($meta)
     {
-        $this->_parts['metas'] =  array_merge($this->_parts['metas'], $metas);
+        $this->_parts['meta'] = $meta;
         return $this;
     }
 
     /**
-     * Adds a constraint to the query
+     * Sets constraints to the query.
+     *
+     * @param  array  $constraints The constraints array definition for columns.
+     * @return object              Returns `$this`.
+     */
+    public function constraints($constraints)
+    {
+        $this->_parts['constraints'] =  $constraints;
+        return $this;
+    }
+
+    /**
+     * Adds a constraint to the query.
      *
      * @param  array  $constraint  An constraint array definition for columns.
      * @return object              Returns `$this`.
@@ -76,7 +101,7 @@ class CreateTable extends Statement
     }
 
     /**
-     * Return the normalized type of a column
+     * Returns the normalized type of a column.
      *
      * @param  string $name The name of the column.
      * @return string       Returns the normalized column type.
@@ -145,9 +170,12 @@ class CreateTable extends Statement
             throw new SourceException("Invalid CREATE TABLE statement missing columns.");
         }
 
+        if ($this->_parts['notExists']) {
+            $query[] = 'IF NOT EXISTS';
+        }
         $query[] = $this->_parts['table'];
         $query[] = $this->_definition($this->_parts['columns'], $this->_parts['constraints']);
-        $query[] = $this->sql()->metas('table', $this->_parts['metas']);
+        $query[] = $this->sql()->meta('table', $this->_parts['meta']);
 
         return join(' ', array_filter($query));
     }

@@ -13,6 +13,11 @@ use PDOException;
 class Cursor extends \chaos\source\Cursor
 {
     /**
+     * The current position of the iterator.
+     */
+    protected $_iterator = 0;
+
+    /**
      * Fetches the result from the resource.
      *
      * @return boolean Return `true` on success or `false` if it is not valid.
@@ -25,7 +30,7 @@ class Cursor extends \chaos\source\Cursor
         }
         try {
             if ($result = $this->_resource->fetch(PDO::FETCH_NUM)) {
-                $this->_key = $this->_iterator;
+                $this->_key = $this->_iterator++;
                 $this->_current = $result;
                 return true;
             }

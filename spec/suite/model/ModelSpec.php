@@ -866,9 +866,9 @@ describe("Model", function() {
 
             Model::reset();
 
-            expect(Model::schema())->not->toBe($schema);
             expect(Model::connection())->toBe(null);
-            expect(Model::conventions())->toBe(null);
+            expect(Model::schema())->not->toBe($schema);
+            expect(Model::conventions())->not->toBe($conventions);
 
         });
 

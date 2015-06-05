@@ -19,28 +19,28 @@ describe("Sql", function() {
 
             it("generates charset meta", function() {
 
-                $result = $this->sql->meta('table', 'charset', 'utf8');
+                $result = $this->sql->meta('table', ['charset' => 'utf8']);
                 expect($result)->toBe('DEFAULT CHARSET utf8');
 
             });
 
             it("generates collate meta", function() {
 
-                $result = $this->sql->meta('table', 'collate', 'utf8_unicode_ci');
+                $result = $this->sql->meta('table', ['collate' => 'utf8_unicode_ci']);
                 expect($result)->toBe('COLLATE utf8_unicode_ci');
 
             });
 
             it("generates ENGINE meta", function() {
 
-                $result = $this->sql->meta('table', 'engine', 'InnoDB');
+                $result = $this->sql->meta('table', ['engine' => 'InnoDB']);
                 expect($result)->toBe('ENGINE InnoDB');
 
             });
 
             it("generates TABLESPACE meta", function() {
 
-                $result = $this->sql->meta('table', 'tablespace', 'myspace');
+                $result = $this->sql->meta('table', ['tablespace' => 'myspace']);
                 expect($result)->toBe('TABLESPACE myspace');
 
             });
@@ -51,21 +51,21 @@ describe("Sql", function() {
 
             it("generates charset meta", function() {
 
-                $result = $this->sql->meta('column', 'charset', 'utf8');
+                $result = $this->sql->meta('column', ['charset' => 'utf8']);
                 expect($result)->toBe('CHARACTER SET utf8');
 
             });
 
             it("generates collate meta", function() {
 
-                $result = $this->sql->meta('column', 'collate', 'utf8_unicode_ci');
+                $result = $this->sql->meta('column', ['collate' => 'utf8_unicode_ci']);
                 expect($result)->toBe('COLLATE utf8_unicode_ci');
 
             });
 
             it("generates ENGINE meta", function() {
 
-                $result = $this->sql->meta('column', 'comment', 'comment value');
+                $result = $this->sql->meta('column', ['comment' => 'comment value']);
                 expect($result)->toBe('COMMENT \'comment value\'');
 
             });

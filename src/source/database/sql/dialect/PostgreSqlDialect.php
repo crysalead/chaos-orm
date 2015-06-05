@@ -19,12 +19,13 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Sql
     protected $_escape = '"';
 
     /**
-     * Column/table metas
-     * By default `'escape'` is false and 'join' is `' '`
+     * Meta attribute syntax pattern.
+     *
+     * Note: by default `'escape'` is false and 'join' is `' '`.
      *
      * @var array
      */
-    protected $_metas = [
+    protected $_meta = [
         'table' => [
             'tablespace' => ['keyword' => 'TABLESPACE']
         ]

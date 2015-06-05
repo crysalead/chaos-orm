@@ -90,7 +90,7 @@ abstract class Database
         $defaults = [
             'classes' => [
                 'cursor' => 'chaos\source\database\Cursor',
-                'schema' => 'chaos\source\Schema'
+                'schema' => 'chaos\source\database\Schema'
             ],
             'connection' => null,
             'connect' => true,
@@ -423,5 +423,3 @@ abstract class Database
      */
     abstract public function encoding($encoding = null);
 }
-
-?>
