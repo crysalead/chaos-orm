@@ -30,7 +30,7 @@ describe("Select", function() {
             $closure = function() {
                 $this->select->from('');
             };
-            expect($closure)->toThrow(new SourceException("A `FROM` statement require at least one non empty table."));
+            expect($closure)->toThrow(new SourceException("A `FROM` clause requires a non empty table."));
 
         });
 
@@ -264,7 +264,7 @@ describe("Select", function() {
             $closure = function() {
                 $this->select->toString();
             };
-            expect($closure)->toThrow(new SourceException("Invalid SELECT statement missing FORM clause."));
+            expect($closure)->toThrow(new SourceException("Invalid `SELECT` statement missing `FORM` clause."));
 
         });
 

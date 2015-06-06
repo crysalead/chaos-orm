@@ -1,7 +1,9 @@
 <?php
 namespace chaos\source;
 
-abstract class Cursor implements \Iterator
+use chaos\SourceException;
+
+class Cursor implements \Iterator
 {
     /**
      * The optionnal bound data.
@@ -96,6 +98,7 @@ abstract class Cursor implements \Iterator
         $this->_key = null;
         $this->_current = false;
         $this->_init = false;
+        reset($this->_data);
     }
 
     /**
@@ -152,7 +155,12 @@ abstract class Cursor implements \Iterator
     protected function fetch()
     {
         $this->_init = true;
-        return $this->_data ? $this->_fetchArray() : $this->_fetchResource();
+        if ($this->_data) {
+            return $this->_fetchArray();
+        } else if($this->_resource) {
+            return $this->_fetchResource();
+        }
+        throw new SourceException("Invalid data or ressource");
     }
 
     /**
@@ -189,5 +197,8 @@ abstract class Cursor implements \Iterator
         $this->close();
     }
 
-    abstract protected function _fetchResource();
+    protected function _fetchResource()
+    {
+        throw new SourceException("This cursor doesn't support ressource");
+    }
 }

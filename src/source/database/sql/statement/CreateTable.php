@@ -21,7 +21,7 @@ class CreateTable extends Statement
      * @var string
      */
     protected $_parts = [
-        'notExists'   => false,
+        'ifNotExists' => false,
         'table'       => '',
         'columns'     => [],
         'constraints' => [],
@@ -31,12 +31,12 @@ class CreateTable extends Statement
     /**
      * Sets the requirements on the table existence.
      *
-     * @param  boolean $notExists If `false` the table must not exists, use `true` for a soft create.
-     * @return object          Returns `$this`.
+     * @param  boolean $ifNotExists If `false` the table must not exists, use `true` for a soft create.
+     * @return object               Returns `$this`.
      */
-    public function notExists($notExists = true)
+    public function ifNotExists($ifNotExists = true)
     {
-        $this->_parts['notExists'] = $notExists;
+        $this->_parts['ifNotExists'] = $ifNotExists;
         return $this;
     }
 
@@ -48,7 +48,7 @@ class CreateTable extends Statement
      */
     public function table($table)
     {
-        $this->_parts['table'] = $this->sql()->escape($table);
+        $this->_parts['table'] = $table;
         return $this;
     }
 
@@ -163,17 +163,17 @@ class CreateTable extends Statement
         $query = ['CREATE TABLE'];
 
         if (!$this->_parts['table']) {
-            throw new SourceException("Invalid CREATE TABLE statement missing table name.");
+            throw new SourceException("Invalid `CREATE TABLE` statement missing table name.");
         }
 
         if (!$this->_parts['columns']) {
-            throw new SourceException("Invalid CREATE TABLE statement missing columns.");
+            throw new SourceException("Invalid `CREATE TABLE` statement missing columns.");
         }
 
-        if ($this->_parts['notExists']) {
+        if ($this->_parts['ifNotExists']) {
             $query[] = 'IF NOT EXISTS';
         }
-        $query[] = $this->_parts['table'];
+        $query[] = $this->sql()->escape($this->_parts['table']);
         $query[] = $this->_definition($this->_parts['columns'], $this->_parts['constraints']);
         $query[] = $this->sql()->meta('table', $this->_parts['meta']);
 

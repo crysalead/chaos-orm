@@ -210,8 +210,8 @@ class PostgreSql extends \chaos\source\database\Database {
             if ($fields) {
                 return $self->invokeMethod('_instance', array('schema', compact('fields')));
             }
-            $name = $self->_connection->quote($self->invokeMethod('_entityName', array($entity)));
-            $schema = $self->_connection->quote($schema);
+            $name = $self->_pdo->quote($self->invokeMethod('_entityName', array($entity)));
+            $schema = $self->_pdo->quote($schema);
 
             $sql = 'SELECT "column_name" AS "field", "data_type" AS "type", ';
             $sql .= '"is_nullable" AS "null", "column_default" AS "default", ';
@@ -219,7 +219,7 @@ class PostgreSql extends \chaos\source\database\Database {
             $sql .= 'FROM "information_schema"."columns" WHERE "table_name" = ' . $name;
             $sql .= ' AND table_schema = ' . $schema . ' ORDER BY "ordinal_position"';
 
-            $columns = $self->_connection->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+            $columns = $self->_pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
             $fields = array();
 
             foreach ($columns as $column) {
@@ -312,12 +312,12 @@ class PostgreSql extends \chaos\source\database\Database {
     public function searchPath($searchPath)
     {
         if (empty($searchPath)) {
-            $query = $this->_connection->query('SHOW search_path');
+            $query = $this->_pdo->query('SHOW search_path');
             $searchPath = $query->fetchColumn(1);
             return explode(",", $searchPath);
         }
         try{
-            $this->_connection->exec("SET search_path TO ${searchPath}");
+            $this->_pdo->exec("SET search_path TO ${searchPath}");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -334,11 +334,11 @@ class PostgreSql extends \chaos\source\database\Database {
     public function timezone($timezone = null)
     {
         if (empty($timezone)) {
-            $query = $this->_connection->query('SHOW TIME ZONE');
+            $query = $this->_pdo->query('SHOW TIME ZONE');
             return $query->fetchColumn();
         }
         try {
-            $this->_connection->exec("SET TIME ZONE '{$timezone}'");
+            $this->_pdo->exec("SET TIME ZONE '{$timezone}'");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -357,13 +357,13 @@ class PostgreSql extends \chaos\source\database\Database {
         $encodingMap = ['UTF-8' => 'UTF8'];
 
         if (empty($encoding)) {
-            $query = $this->_connection->query("SHOW client_encoding");
+            $query = $this->_pdo->query("SHOW client_encoding");
             $encoding = $query->fetchColumn();
             return ($key = array_search($encoding, $encodingMap)) ? $key : $encoding;
         }
         $encoding = isset($encodingMap[$encoding]) ? $encodingMap[$encoding] : $encoding;
         try {
-            $this->_connection->exec("SET NAMES '{$encoding}'");
+            $this->_pdo->exec("SET NAMES '{$encoding}'");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -379,10 +379,10 @@ class PostgreSql extends \chaos\source\database\Database {
      */
     protected function _execute($sql, $options = [])
     {
-        $conn = $this->_connection;
+        $pdo = $this->_pdo;
 
         try {
-            $resource = $conn->query($sql);
+            $resource = $pdo->query($sql);
         } catch(PDOException $e) {
             $self->invokeMethod('_error', [$sql]);
         };

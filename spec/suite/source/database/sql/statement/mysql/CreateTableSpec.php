@@ -14,7 +14,32 @@ describe("CreateTable", function() {
 
     describe("->table()", function() {
 
-        it("generates a CREATE table statement with specific metas", function() {
+        it("generates a soft CREATE TABLE statement", function() {
+
+            $this->create->table('table1')
+                ->ifNotExists(false)
+                ->columns([
+                    'id' => ['type' => 'serial']
+                ]);
+
+            $expected  = 'CREATE TABLE `table1` (`id` int NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`))';
+            expect($this->create->toString())->toBe($expected);
+
+        });
+
+        it("generates a CREATE TABLE statement with primary key constraint if an id column is present", function() {
+
+            $this->create->table('table1')
+                ->columns([
+                    'id' => ['type' => 'serial']
+                ]);
+
+            $expected  = 'CREATE TABLE `table1` (`id` int NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`))';
+            expect($this->create->toString())->toBe($expected);
+
+        });
+
+        it("generates a CREATE TABLE statement with specific metas", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -27,19 +52,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with primary key constraint if an id column is present", function() {
-
-            $this->create->table('table1')
-                ->columns([
-                    'id' => ['type' => 'serial']
-                ]);
-
-            $expected  = 'CREATE TABLE `table1` (`id` int NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`))';
-            expect($this->create->toString())->toBe($expected);
-
-        });
-
-        it("generates a CREATE table statement with specific metas", function() {
+        it("generates a CREATE TABLE statement with specific metas", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -58,7 +71,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a primary key constraint", function() {
+        it("generates a CREATE TABLE statement with a primary key constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -71,7 +84,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a mulit key primary key constraint", function() {
+        it("generates a CREATE TABLE statement with a mulit key primary key constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -85,7 +98,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a CHECK constraint", function() {
+        it("generates a CREATE TABLE statement with a CHECK constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -106,7 +119,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a named CHECK constraint", function() {
+        it("generates a CREATE TABLE statement with a named CHECK constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -125,7 +138,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a UNIQUE constraint", function() {
+        it("generates a CREATE TABLE statement with a UNIQUE constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -138,7 +151,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a UNIQUE constraint", function() {
+        it("generates a CREATE TABLE statement with a UNIQUE constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -152,7 +165,7 @@ describe("CreateTable", function() {
 
         });
 
-         it("generates a CREATE table statement with a UNIQUE INDEX constraint", function() {
+         it("generates a CREATE TABLE statement with a UNIQUE INDEX constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -166,7 +179,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a UNIQUE KEY constraint if both index & key are set", function() {
+        it("generates a CREATE TABLE statement with a UNIQUE KEY constraint if both index & key are set", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -180,7 +193,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with a FOREIGN KEY constraint", function() {
+        it("generates a CREATE TABLE statement with a FOREIGN KEY constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -201,7 +214,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE table statement with columns metas & constraints", function() {
+        it("generates a CREATE TABLE statement with columns metas & constraints", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -210,7 +223,7 @@ describe("CreateTable", function() {
                     'published' => [
                         'type' => 'datetime',
                         'null' => false,
-                        'default' => [':raw' => 'CURRENT_TIMESTAMP']
+                        'default' => [':plain' => 'CURRENT_TIMESTAMP']
                     ],
                     'decimal' => [
                         'type' => 'float',
@@ -306,7 +319,7 @@ describe("CreateTable", function() {
                 $this->create->toString();
             };
 
-            expect($closure)->toThrow(new SourceException("Invalid CREATE TABLE statement missing table name."));
+            expect($closure)->toThrow(new SourceException("Invalid `CREATE TABLE` statement missing table name."));
 
         });
 
@@ -316,7 +329,7 @@ describe("CreateTable", function() {
                 $this->create->table('table1')->toString();
             };
 
-            expect($closure)->toThrow(new SourceException("Invalid CREATE TABLE statement missing columns."));
+            expect($closure)->toThrow(new SourceException("Invalid `CREATE TABLE` statement missing columns."));
 
         });
 

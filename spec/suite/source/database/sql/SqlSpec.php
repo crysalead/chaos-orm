@@ -154,8 +154,8 @@ describe("Sql", function() {
 
             $part = $this->sql->conditions([
                 ':any' => [
-                    [':key' => 'score'],
-                    [':raw' => 'SELECT "s1" FROM "t1"']
+                    [':key'   => 'score'],
+                    [':plain' => 'SELECT "s1" FROM "t1"']
                 ]
             ]);
             expect($part)->toBe('"score" ANY (SELECT "s1" FROM "t1")');
@@ -169,8 +169,8 @@ describe("Sql", function() {
 
             $part = $this->sql->conditions([
                 ':any' => [
-                    [':key' => 'score'],
-                    [':raw' => $subquery]
+                    [':key'   => 'score'],
+                    [':plain' => $subquery]
                 ]
             ]);
             expect($part)->toBe('"score" ANY (SELECT "s1" FROM "t1")');

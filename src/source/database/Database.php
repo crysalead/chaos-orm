@@ -31,7 +31,7 @@ abstract class Database
      *
      * @var mixed
      */
-    protected $_connection = null;
+    protected $_pdo = null;
 
     /**
      * Column type definitions.
@@ -92,7 +92,7 @@ abstract class Database
                 'cursor' => 'chaos\source\database\Cursor',
                 'schema' => 'chaos\source\database\Schema'
             ],
-            'connection' => null,
+            'pdo'     => null,
             'connect' => true,
             'meta' => ['key' => 'id', 'locked' => true],
             'persistent' => true,
@@ -110,8 +110,8 @@ abstract class Database
         $this->_config = $config + $defaults;
 
         $this->_classes = $this->_config['classes'] + $this->_classes;
-        $this->_connection = $this->_config['connection'];
-        unset($this->_config['connection']);
+        $this->_pdo = $this->_config['pdo'];
+        unset($this->_config['pdo']);
 
         $this->_sql = $config['sql'];
         unset($this->_config['sql']);
@@ -135,7 +135,7 @@ abstract class Database
      */
     public function __call($name, $params = [])
     {
-        return call_user_func_array([$this->_connection, $name], $params);
+        return call_user_func_array([$this->_pdo, $name], $params);
     }
 
     /**
@@ -155,8 +155,8 @@ abstract class Database
      */
     public function connect()
     {
-        if ($this->_connection) {
-            return $this->_connection;
+        if ($this->_pdo) {
+            return $this->_pdo;
         }
         $config = $this->_config;
 
@@ -174,7 +174,7 @@ abstract class Database
         ];
 
         try {
-            $this->_connection = new PDO($dsn, $config['login'], $config['password'], $options);
+            $this->_pdo = new PDO($dsn, $config['login'], $config['password'], $options);
         } catch (PDOException $e) {
             $this->_exception($e);
         }
@@ -183,7 +183,7 @@ abstract class Database
             $this->encoding($config['encoding']);
         }
 
-        return $this->_connection;
+        return $this->_pdo;
     }
 
     /**
@@ -201,7 +201,7 @@ abstract class Database
      * @return mixed
      */
     public function driver() {
-        return $this->_connection;
+        return $this->_pdo;
     }
 
     /**
@@ -212,7 +212,7 @@ abstract class Database
      *                 otherwise been dropped by the remote resource during the course of the request.
      */
     public function connected() {
-        return !!$this->_connection;
+        return !!$this->_pdo;
     }
 
     /**
@@ -244,7 +244,7 @@ abstract class Database
      */
     protected function _sources($sql)
     {
-        $statement = $this->_connection->query($sql);
+        $statement = $this->_pdo->query($sql);
         $result = $statement->fetchAll(PDO::FETCH_NUM);
 
         $sources = [];
@@ -379,8 +379,7 @@ abstract class Database
      * @throws chaos\SourceException
      */
     public function execute($sql, $data = []){
-        $statement = $this->_connection->prepare($sql);
-        $statement->execute($data);
+        $statement = $this->_pdo->query($sql);
         return $statement;
     }
 
@@ -390,7 +389,7 @@ abstract class Database
      * @param $query lithium\data\model\Query $context The given query.
      */
     public function lastInsertId($source = null, $field = null) {
-        return $this->_connection->lastInsertId();
+        return $this->_pdo->lastInsertId();
     }
 
     /**
@@ -399,7 +398,7 @@ abstract class Database
      * @return array
      */
     public function error() {
-        if ($error = $this->_connection->errorInfo()) {
+        if ($error = $this->_pdo->errorInfo()) {
             return [$error[1], $error[2]];
         }
     }
@@ -410,7 +409,7 @@ abstract class Database
      * @return boolean Returns `true` on success, else `false`.
      */
     public function disconnect() {
-        $this->_connection = null;
+        $this->_pdo = null;
         return true;
     }
 

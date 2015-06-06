@@ -328,7 +328,7 @@ describe("Sql", function() {
                 $data = [
                     'name' => 'created',
                     'type' => 'datetime',
-                    'default' => [':raw' => 'CURRENT_TIMESTAMP']
+                    'default' => [':plain' => 'CURRENT_TIMESTAMP']
                 ];
                 $result = $this->sql->column($data);
                 expect($result)->toBe('`created` datetime DEFAULT CURRENT_TIMESTAMP');

@@ -5,7 +5,7 @@ use chaos\SourceException;
 
 class Schema extends \chaos\model\Schema
 {
-	/**
+    /**
      * Create the schema.
      *
      * @param  array   $options An array of options.
@@ -24,7 +24,7 @@ class Schema extends \chaos\model\Schema
         }
         $query = $this->connection()->sql()->statement('create table');
         $query
-            ->notExists($options['soft'])
+            ->ifNotExists($options['soft'])
             ->table($this->_source)
             ->columns($this->fields())
             ->constraints($this->meta('constraints'))
@@ -54,7 +54,7 @@ class Schema extends \chaos\model\Schema
         }
         $query = $this->connection()->sql()->statement('drop table');
         $query
-            ->exists($options['soft'])
+            ->ifExists($options['soft'])
             ->table($this->_source)
             ->cascade($options['cascade'])
             ->restrict($options['restrict']);

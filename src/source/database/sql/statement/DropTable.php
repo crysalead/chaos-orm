@@ -21,7 +21,7 @@ class DropTable extends Statement
      * @var string
      */
     protected $_parts = [
-        'exists'   => false,
+        'ifExists' => false,
         'table'    => [],
         'cascade'  => false,
         'restrict' => false
@@ -30,12 +30,12 @@ class DropTable extends Statement
     /**
      * Sets the requirements on the table existence.
      *
-     * @param  boolean $exists If `true` the table must exists, use `false` for a soft drop.
+     * @param  boolean $ifExists If `false` the table must exists, use `true` for a soft drop.
      * @return object          Returns `$this`.
      */
-    public function exists($exists = true)
+    public function ifExists($ifExists = true)
     {
-        $this->_parts['exists'] = $exists;
+        $this->_parts['ifExists'] = $ifExists;
         return $this;
     }
 
@@ -48,7 +48,7 @@ class DropTable extends Statement
     public function table($table)
     {
         $tables = is_array($table) ? $table : func_get_args();
-        $this->_parts['table'] = array_map([$this->sql(), 'escape'], $tables);
+        $this->_parts['table'] = $tables;
         return $this;
     }
 
@@ -60,7 +60,7 @@ class DropTable extends Statement
      */
     public function cascade($cascade = true)
     {
-        $this->_parts['cascade'] = $exists;
+        $this->_parts['cascade'] = $cascade;
         return $this;
     }
 
@@ -72,7 +72,7 @@ class DropTable extends Statement
      */
     public function restrict($restrict = true)
     {
-        $this->_parts['restrict'] = $exists;
+        $this->_parts['restrict'] = $restrict;
         return $this;
     }
 
@@ -85,15 +85,16 @@ class DropTable extends Statement
     {
         $query = ['DROP TABLE'];
 
-        if (!$this->_parts['exists']) {
+        if ($this->_parts['ifExists']) {
             $query[] = 'IF EXISTS';
         }
 
         if (!$this->_parts['table']) {
-            throw new SourceException("Invalid DROM TABLE statement missing at least a table name.");
+            throw new SourceException("Invalid `DROP TABLE` statement no table name defined");
         }
 
-        $query[] = join(', ', $this->_parts['table']);
+        $tables = array_map([$this->sql(), 'escape'], $this->_parts['table']);
+        $query[] = join(', ', $tables);
 
         if ($this->_parts['cascade']) {
             $query[] = 'CASCADE';

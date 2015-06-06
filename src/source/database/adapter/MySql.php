@@ -136,7 +136,7 @@ class MySql extends \chaos\source\database\Database
             return false;
         }
 
-        $info = $this->_connection->getAttribute(PDO::ATTR_SERVER_VERSION);
+        $info = $this->_pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
         $this->_alias = (boolean) version_compare($info, "4.1", ">=");
         return true;
     }
@@ -264,14 +264,14 @@ class MySql extends \chaos\source\database\Database
         $encodingMap = ['UTF-8' => 'utf8'];
 
         if (empty($encoding)) {
-            $query = $this->_connection->query("SHOW VARIABLES LIKE 'character_set_client'");
+            $query = $this->_pdo->query("SHOW VARIABLES LIKE 'character_set_client'");
             $encoding = $query->fetchColumn(1);
             return ($key = array_search($encoding, $encodingMap)) ? $key : $encoding;
         }
         $encoding = isset($encodingMap[$encoding]) ? $encodingMap[$encoding] : $encoding;
 
         try {
-            $this->_connection->exec("SET NAMES '{$encoding}'");
+            $this->_pdo->exec("SET NAMES '{$encoding}'");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -293,11 +293,11 @@ class MySql extends \chaos\source\database\Database
         $defaults = ['buffered' => true];
         $options += $defaults;
 
-        $conn = $this->_connection;
-        $conn->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $options['buffered']);
+        $pdo = $this->_pdo;
+        $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $options['buffered']);
 
         try {
-            $resource = $conn->query($sql);
+            $resource = $pdo->query($sql);
         } catch(PDOException $e) {
             $self->invokeMethod('_error', [$sql]);
         };

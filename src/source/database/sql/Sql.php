@@ -7,7 +7,7 @@ use string\String;
 use chaos\SourceException;
 
 /**
- * Ansi SQL dialect
+ * ANSI SQL dialect
  */
 class Sql
 {
@@ -99,9 +99,9 @@ class Sql
      * @var array
      */
     protected $_formatters = [
-        ':key'         => [],
-        ':value'       => [],
-        ':raw'         => []
+        ':key'   => [],
+        ':value' => [],
+        ':plain' => []
     ];
 
     /**
@@ -120,7 +120,6 @@ class Sql
     {
         $defaults = [
             'classes' => [
-                'create'       => 'chaos\source\database\sql\statement\Create',
                 'select'       => 'chaos\source\database\sql\statement\Select',
                 'insert'       => 'chaos\source\database\sql\statement\Insert',
                 'update'       => 'chaos\source\database\sql\statement\Update',
@@ -380,7 +379,7 @@ class Sql
             case ':value':
                 return $this->value($value, $type);
             break;
-            case ':raw':
+            case ':plain':
                 return (string) $value;
             break;
         }
@@ -515,7 +514,7 @@ class Sql
     /**
      * Builds a column/table meta.
      *
-     * @param  array  $data  The data.
+     * @param  array  $data  The meta data.
      * @param  array  $names If `$names` is not `null` only build meta present in `$names`
      * @return string        The SQL meta
      */

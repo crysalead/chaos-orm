@@ -4,7 +4,7 @@ namespace chaos\source\database\sql\statement;
 use chaos\SourceException;
 
 /**
- * SQL CRUD helper
+ * SELECT statement.
  */
 class Select extends Statement
 {
@@ -51,10 +51,9 @@ class Select extends Statement
     public function from($sources)
     {
         if (!$sources) {
-            throw new SourceException("A `FROM` statement require at least one non empty table.");
+            throw new SourceException("A `FROM` clause requires a non empty table.");
         }
-        $names = $this->sql()->names(is_array($sources) ? $sources : func_get_args(), false);
-        $this->_parts['from'] += array_merge($this->_parts['from'], $names);
+        $this->_parts['from'] += array_merge($this->_parts['from'], is_array($sources) ? $sources : func_get_args());
         return $this;
     }
 
@@ -226,10 +225,10 @@ class Select extends Statement
         }
 
         if (!$this->_parts['from']) {
-            throw new SourceException("Invalid SELECT statement missing FORM clause.");
+            throw new SourceException("Invalid `SELECT` statement missing `FORM` clause.");
         }
 
-        $query[] = $this->_prefix('FROM', join(', ', $this->_parts['from']));
+        $query[] = $this->_prefix('FROM', join(', ', $this->sql()->names($this->_parts['from'], false)));
         $query[] = join(' ', $this->_parts['joins']);
         $query[] = $this->_prefix('WHERE', join(' AND ', $this->_parts['where']));
         $query[] = $this->_prefix('GROUP BY', join(', ', $this->_parts['group']));
