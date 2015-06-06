@@ -69,6 +69,7 @@ class Sql
         ':not like'    => [],
         ':is'          => [],
         ':is not'      => [],
+        ':distinct'    => ['type' => 'prefix'],
         '~'            => ['type' => 'prefix'],
         ':between'     => ['type' => 'between'],
         ':not between' => ['type' => 'between'],
@@ -98,11 +99,7 @@ class Sql
      *
      * @var array
      */
-    protected $_formatters = [
-        ':key'   => [],
-        ':value' => [],
-        ':plain' => []
-    ];
+    protected $_formatters = [];
 
     /**
      * Date format
@@ -131,6 +128,7 @@ class Sql
             'types' => [],
             'operators' => [],
             'builders' => $this->_builders(),
+            'formatters' => $this->_formatters(),
             'dateFormat' => 'Y-m-d H:i:s'
         ];
 
@@ -139,6 +137,7 @@ class Sql
         $this->_classes = $config['classes'];
         $this->_adapter = $config['adapter'];
         $this->_builders = $config['builders'];
+        $this->_formatters = $config['formatters'];
         $this->_dateFormat = $config['dateFormat'];
         $this->_types = $config['types'] + $this->_types;
         $this->_operators = $config['operators'] + $this->_operators;
@@ -151,9 +150,12 @@ class Sql
      */
     protected function _builders() {
         return [
+            'function' => function ($operator, $parts) {
+                $operator = strtoupper(substr($operator, 0, -2));
+                return "{$operator}(" . join(", ", $parts). ')';
+            },
             'prefix' => function ($operator, $parts) {
-                $key = array_shift($parts);
-                return "{$key} {$operator} " . reset($parts);
+                return "{$operator} " . reset($parts);
             },
             'list' => function ($operator, $parts) {
                 $key = array_shift($parts);
@@ -165,6 +167,25 @@ class Sql
             },
             'set' => function ($operator, $parts) {
                 return join(" {$operator} ", $parts);
+            }
+        ];
+    }
+
+    /**
+     * Return default formatters.
+     *
+     * @return array
+     */
+    protected function _formatters() {
+        return [
+            ':key' => function ($value) {
+                return $this->escape($value);
+            },
+            ':value' => function ($value, $type) {
+                return $this->value($value, $type);
+            },
+            ':plain' => function ($value) {
+                return (string) $value;
             }
         ];
     }
@@ -201,14 +222,31 @@ class Sql
     }
 
     /**
-     * Generate a list of identifers
+     * Escapes a list of table names.
+     */
+    public function tables($tables) {
+        return join(", ", $this->names(is_array($tables) ? $tables : [$tables], true));
+    }
+
+    /**
+     * Escapes a list of field names.
+     */
+    public function fields($fields) {
+        return join(", ", $this->names(is_array($fields) ? $fields : [$fields]));
+    }
+
+    /**
+     * Escapes a list of identifers.
+     *
+     * Note: it ignores duplicates.
+     *
      */
     public function names($names, $star = false, $prefix = null)
     {
         $sql = [];
         foreach ($names as $key => $value) {
             if (is_string($value)) {
-                $value = ($value === '*' && $star) ? '*' : $this->escape($value);
+                $value = $this->escape($value, $star);
                 if (!is_numeric($key)) {
                     $name = $this->escape($key);
                     $name = $prefix ? "{$prefix}.{$name}" : $name;
@@ -280,23 +318,31 @@ class Sql
      */
     protected function _operator($operator, $conditions, $states)
     {
-        $config = $this->_operators[$operator];
-        if (!isset($this->_operators[$operator])) {
-            throw new SourceException("Unsupported operator `{$operator}`.");
+        if (substr($operator, -2) === '()') {
+            $config = ['type' => 'function'];
+        } else if (isset($this->_operators[$operator])) {
+            $config = $this->_operators[$operator];
+        } else {
+            throw new SourceException("Unexisting operator `'{$operator}'`.");
         }
 
         $parts = $this->_conditions($conditions, $states);
+
         $operator = (is_array($parts) && next($parts) === null && isset($config['null'])) ? $config['null'] : $operator;
         $operator = $operator[0] === ':' ? strtoupper(substr($operator, 1)) : $operator;
 
-        if (isset($config['type'])) {
-            if (!isset($this->_builders[$config['type']])) {
-                throw new SourceException("Unsupported builder `{$config['type']}`.");
-            }
-            $builder = $this->_builders[$config['type']];
-            return $builder($operator, $parts);
+        if (!isset($config['type'])) {
+            return join(" {$operator} ", $parts);
         }
-        return join(" {$operator} ", $parts);
+        if (!isset($this->_builders[$config['type']])) {
+            throw new SourceException("Unexisting builder `'{$config['type']}'`.");
+        }
+        $builder = $this->_builders[$config['type']];
+        return $builder($operator, $parts);
+    }
+
+    public function isOperator($operator) {
+        return ($operator && $operator[0] === ':') || isset($this->_operators[$operator]);
     }
 
     /**
@@ -313,7 +359,7 @@ class Sql
             $operator = strtolower($key);
             if (isset($this->_formatters[$operator])) {
                 $parts[] = $this->format($operator, $value, $this->_type($states));
-            } elseif (isset($this->_operators[$operator])) {
+            } elseif ($this->isOperator($operator)) {
                 $parts[] = $this->_operator($operator, $value, $states);
             } elseif (is_numeric($key)) {
                 if (is_array($value)) {
@@ -342,7 +388,7 @@ class Sql
      */
     protected function _key($key, $value, &$states)
     {
-        $escaped = $this->escape($key, $alias, $field);
+        $escaped = $this->escape($key, false, $alias, $field);
         $schema = isset($states['schemas'][$alias]) ? $states['schemas'][$alias] : null;
         $states['key'] = $field;
         $states['schema'] = $schema;
@@ -372,18 +418,11 @@ class Sql
      */
     public function format($operator, $value, $type = null)
     {
-        switch ($operator) {
-            case ':key':
-                return $this->escape($value);
-            break;
-            case ':value':
-                return $this->value($value, $type);
-            break;
-            case ':plain':
-                return (string) $value;
-            break;
+        if (!isset($this->_formatters[$operator])) {
+            throw new SourceException("Unexisting formatter `'{$operator}'`.");
         }
-        return $this->value($value, $type);
+        $formatter = $this->_formatters[$operator];
+        return $formatter($value, $type);
     }
 
     /**
@@ -393,10 +432,10 @@ class Sql
      * @param  string $alias The filled alias name if present.
      * @return string        The escaped identifien.
      */
-    public function escape($name, &$alias = null, &$field = null)
+    public function escape($name, $star = false, &$alias = null, &$field = null)
     {
         list($alias, $field) = $this->undot($name);
-        return $alias ? $this->_escape($alias) . '.' . $this->_escape($field) : $this->_escape($name);
+        return $alias ? $this->_escape($alias) . '.' . $this->_escape($field, $star) : $this->_escape($name, $star);
     }
 
     /**
@@ -405,12 +444,9 @@ class Sql
      * @param  string $name Identifier name.
      * @return string
      */
-    protected function _escape($name)
+    protected function _escape($name, $star = false)
     {
-        if (is_string($name) && preg_match('/^[a-z0-9_-]+$/i', $name)) {
-            return $this->_escape . $name . $this->_escape;
-        }
-        return $name;
+        return (!$star && $name === '*') ? '*' : $this->_escape . $name . $this->_escape;
     }
 
     /**

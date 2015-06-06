@@ -9,7 +9,7 @@ describe("Select", function() {
 
     beforeEach(function() {
         $this->sql = new Sql();
-        $this->select =  $this->sql->statement('select');
+        $this->select = $this->sql->statement('select');
     });
 
     describe("->select()", function() {

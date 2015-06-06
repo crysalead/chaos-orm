@@ -64,8 +64,6 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
     {
         $defaults = [
             'operators' => [
-                ':concat'      => ['format' => 'CONCAT(%s, %s)'],
-                ':pow'         => ['format' => 'POW(%s, %s)'],
                 '#'            => ['format' => '%s ^ %s'],
                 ':regex'       => ['format' => '%s REGEXP %s'],
                 ':rlike'       => [],

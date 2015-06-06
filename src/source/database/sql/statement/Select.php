@@ -37,8 +37,7 @@ class Select extends Statement
      */
     public function fields($fields)
     {
-        $names = $this->sql()->names(is_array($fields) ? $fields : func_get_args(), true);
-        $this->_parts['fields'] = array_merge($this->_parts['fields'], $names);
+        $this->_parts['fields'] = array_merge($this->_parts['fields'], is_array($fields) ? $fields : func_get_args());
         return $this;
     }
 
@@ -68,18 +67,7 @@ class Select extends Statement
         if (!$join) {
             return $this;
         }
-
-        $sql = [strtoupper($type), 'JOIN'];
-        $name = $this->sql()->names(is_array($join) ? $join : [$join]);
-        $sql[] = reset($name);
-
-        if ($on) {
-            $sql[] = 'ON';
-            $sql[] = $this->sql()->conditions($on);
-        }
-
-        $this->_parts['joins'][] = join(' ', $sql);
-
+        $this->_parts['joins'][] = compact('join', 'on', 'type');
         return $this;
     }
 
@@ -219,7 +207,7 @@ class Select extends Statement
     {
         $query = ['SELECT'];
         if ($this->_parts['fields']) {
-            $query[] = join(', ', $this->_parts['fields']);
+            $query[] = $this->sql()->fields($this->_parts['fields']);
         } else {
             $query[] = '*';
         }
@@ -228,8 +216,25 @@ class Select extends Statement
             throw new SourceException("Invalid `SELECT` statement missing `FORM` clause.");
         }
 
-        $query[] = $this->_prefix('FROM', join(', ', $this->sql()->names($this->_parts['from'], false)));
-        $query[] = join(' ', $this->_parts['joins']);
+        $query[] = $this->_prefix('FROM', $this->sql()->tables($this->_parts['from']));
+
+        $joins = [];
+        foreach ($this->_parts['joins'] as $value) {
+            $join = $value['join'];
+            $on = $value['on'];
+            $type = $value['type'];
+            $sql = [strtoupper($type), 'JOIN'];
+            $sql[] = $this->sql()->tables($join);
+
+            if ($on) {
+                $sql[] = 'ON';
+                $sql[] = $this->sql()->conditions($on);
+            }
+
+            $joins[] = join(' ', $sql);
+        }
+        $query[] = join(' ', $joins);
+
         $query[] = $this->_prefix('WHERE', join(' AND ', $this->_parts['where']));
         $query[] = $this->_prefix('GROUP BY', join(', ', $this->_parts['group']));
         $query[] = $this->_prefix('HAVING', join(' AND ', $this->_parts['having']));
