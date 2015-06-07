@@ -50,22 +50,18 @@ class Insert extends Statement
      */
     public function toString()
     {
-        $query = ['INSERT INTO'];
-
         if (!$this->_parts['into']) {
-            throw new SourceException("Invalid `INSERT` statement missing `INTO` clause.");
+            throw new SourceException("Invalid `INSERT` statement missing table name.");
         }
 
-        $query[] = $this->sql()->escape($this->_parts['into']);
+        $fields = array_keys($this->_parts['values']);
+        $values = array_values($this->_parts['values']);
 
-        $keys = array_map([$this->sql(), 'escape'], array_keys($this->_parts['values']));
-        $query[] = '(' . join(', ', $keys) . ')';
-
-        $values = array_map([$this->sql(), 'value'], array_values($this->_parts['values']));
-        $query[] = 'VALUES (' . join(', ', $values) . ')';
-
-        $sql = join(' ', array_filter($query));
-        return $sql;
+        return 'INSERT' .
+            $this->_buildClause('INTO', $this->sql()->name($this->_parts['into'])) .
+            $this->_buildChunk('(' . join(', ', $this->sql()->fields($fields, true)) . ')', false) .
+            $this->_buildChunk('VALUES (' . join(', ', array_map([$this->sql(), 'value'], $values)) . ')') .
+            $this->_buildClause('RETURNING', $this->sql()->fields($this->_parts['returning'], false, ''));
     }
 
 }

@@ -93,8 +93,8 @@ describe("Select", function() {
         it("generates a `LEFT JOIN` statement with an `ON` statement", function() {
 
             $on = ['=' => [
-               [':key' => 't.table2_id'],
-               [':key' => 't2.id']
+               [':name' => 't.table2_id'],
+               [':name' => 't2.id']
             ]];
             $this->select->from(['table' => 't'])->join(['table2' => 't2'], $on);
             expect($this->select->toString())->toBe('SELECT * FROM "table" AS "t" LEFT JOIN "table2" AS "t2" ON "t"."table2_id" = "t2"."id"');

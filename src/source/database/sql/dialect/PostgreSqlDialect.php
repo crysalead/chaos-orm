@@ -55,6 +55,14 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Sql
     public function __construct($config = [])
     {
         $defaults = [
+            'classes' => [
+                'select'       => 'chaos\source\database\sql\statement\postgresql\Select',
+                'insert'       => 'chaos\source\database\sql\statement\postgresql\Insert',
+                'update'       => 'chaos\source\database\sql\statement\postgresql\Update',
+                'delete'       => 'chaos\source\database\sql\statement\postgresql\Delete',
+                'create table' => 'chaos\source\database\sql\statement\CreateTable',
+                'drop table'   => 'chaos\source\database\sql\statement\DropTable'
+            ],
             'operators' => [
                 ':regex'          => ['format' => '%s ~ %s'],
                 ':regexi'         => ['format' => '%s ~* %s'],

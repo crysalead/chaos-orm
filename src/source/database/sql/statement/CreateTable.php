@@ -4,17 +4,10 @@ namespace chaos\source\database\sql\statement;
 use chaos\SourceException;
 
 /**
- * SQL CRUD helper
+ * `CREATE TABLE` statement.
  */
 class CreateTable extends Statement
 {
-    /**
-     * Pointer to the dialect adapter.
-     *
-     * @var object
-     */
-    protected $_sql = null;
-
     /**
      * The SQL parts.
      *
@@ -115,13 +108,35 @@ class CreateTable extends Statement
     }
 
     /**
+     * Render the SQL statement
+     *
+     * @return string The generated SQL string.
+     */
+    public function toString()
+    {
+        if (!$this->_parts['table']) {
+            throw new SourceException("Invalid `CREATE TABLE` statement missing table name.");
+        }
+
+        if (!$this->_parts['columns']) {
+            throw new SourceException("Invalid `CREATE TABLE` statement missing columns.");
+        }
+
+        return 'CREATE TABLE' .
+            $this->_buildFlag('IF NOT EXISTS', $this->_parts['ifNotExists']) .
+            $this->_buildChunk($this->sql()->name($this->_parts['table'])) .
+            $this->_buildDefinition($this->_parts['columns'], $this->_parts['constraints']) .
+            $this->_buildChunk($this->sql()->meta('table', $this->_parts['meta']));
+    }
+
+    /**
      * Helper for building columns definition
      *
      * @param  array  $columns     The columns.
      * @param  array  $constraints The columns constraints.
      * @return string              The SQL columns definition list.
      */
-    protected function _definition($columns, $constraints)
+    protected function _buildDefinition($columns, $constraints)
     {
         $result = [];
         $primary = null;
@@ -150,33 +165,7 @@ class CreateTable extends Statement
             $result[] = $this->sql()->constraint('primary', ['column' => $primary]);
         }
 
-        return '(' . join(', ', array_filter($result)) . ')';
+        return ' (' . join(', ', array_filter($result)) . ')';
     }
 
-    /**
-     * Render the SQL statement
-     *
-     * @return string The generated SQL string.
-     */
-    public function toString()
-    {
-        $query = ['CREATE TABLE'];
-
-        if (!$this->_parts['table']) {
-            throw new SourceException("Invalid `CREATE TABLE` statement missing table name.");
-        }
-
-        if (!$this->_parts['columns']) {
-            throw new SourceException("Invalid `CREATE TABLE` statement missing columns.");
-        }
-
-        if ($this->_parts['ifNotExists']) {
-            $query[] = 'IF NOT EXISTS';
-        }
-        $query[] = $this->sql()->escape($this->_parts['table']);
-        $query[] = $this->_definition($this->_parts['columns'], $this->_parts['constraints']);
-        $query[] = $this->sql()->meta('table', $this->_parts['meta']);
-
-        return join(' ', array_filter($query));
-    }
 }

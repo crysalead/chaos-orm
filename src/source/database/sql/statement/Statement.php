@@ -20,7 +20,9 @@ class Statement
      *
      * @var string
      */
-    protected $_parts = [];
+    protected $_parts = [
+        'flags' => ''
+    ];
 
     /**
      * Constructor
@@ -55,6 +57,44 @@ class Statement
         return isset($this->_parts[$name]) ? $this->_parts[$name] : null;
     }
 
+    protected function setFlag($flag, $enable = true)
+    {
+        return $this->_parts['flags'][$flag] = $enable;
+    }
+
+    /**
+     * Helper method
+     *
+     * @param  string|array $fields The fields.
+     * @return string       Formatted fields.
+     */
+    protected function _sort($fields, $direction = true)
+    {
+        $direction = $direction ? ' ASC' : '';
+
+        if (is_string($fields)) {
+            if (preg_match('/^(.*?)\s+((?:a|de)sc)$/i', $fields, $match)) {
+                $fields = $match[1];
+                $direction = $match[2];
+            }
+            $fields = [$fields => $direction];
+        }
+
+        $result = [];
+
+        foreach ($fields as $column => $dir) {
+            if (is_int($column)) {
+                $column = $dir;
+                $dir = $direction;
+            }
+            $dir = preg_match('/^(asc|desc)$/i', $dir) ? " {$dir}" : $direction;
+
+            $column = $this->sql()->name($column);
+            $result[] = "{$column}{$dir}";
+        }
+        return $fields = join(', ', $result);
+    }
+
     /**
      * Throws an error for invalid clauses.
      *
@@ -78,4 +118,27 @@ class Statement
             return '';
         }
     }
+
+    protected function _buildClause($clause, $expression)
+    {
+        return $expression ? " {$clause} {$expression}": '';
+    }
+
+    protected function _buildFlags($flags)
+    {
+        $flags = array_filter($flags);
+        return $flags ? ' ' . join(' ', array_keys($flags)) : '';
+    }
+
+
+    protected function _buildFlag($flag, $value)
+    {
+        return $value ? " {$flag}": '';
+    }
+
+    protected function _buildChunk($sql)
+    {
+        return $sql ? " {$sql}" : '';
+    }
+
 }

@@ -4,7 +4,7 @@ namespace chaos\source\database\sql\statement;
 use chaos\SourceException;
 
 /**
- * SELECT statement.
+ * `SELECT` statement.
  */
 class Select extends Statement
 {
@@ -19,15 +19,29 @@ class Select extends Statement
      * @var string
      */
     protected $_parts = [
-        'fields' => [],
-        'from'   => [],
-        'joins'  => [],
-        'where'  => [],
-        'group'  => [],
-        'having' => [],
-        'order'  => [],
-        'limit'  => ''
+        'flags'     => [],
+        'fields'    => [],
+        'from'      => [],
+        'joins'     => [],
+        'where'     => [],
+        'group'     => [],
+        'having'    => [],
+        'order'     => [],
+        'limit'     => '',
+        'forUpdate' => false
     ];
+
+    /**
+     * Sets `DISTINCT` flag.
+     *
+     * @param  boolean $enable A boolan value.
+     * @return object          Returns `$this`.
+     */
+    public function distinct($enable = true)
+    {
+        $this->setFlag('DISTINCT', $enable);
+        return $this;
+    }
 
     /**
      * Adds some fields to the query
@@ -130,39 +144,6 @@ class Select extends Statement
     }
 
     /**
-     * Helper method
-     *
-     * @param  string|array $fields The fields.
-     * @return string       Formatted fields.
-     */
-    protected function _sort($fields, $direction = true)
-    {
-        $direction = $direction ? ' ASC' : '';
-
-        if (is_string($fields)) {
-            if (preg_match('/^(.*?)\s+((?:a|de)sc)$/i', $fields, $match)) {
-                $fields = $match[1];
-                $direction = $match[2];
-            }
-            $fields = [$fields => $direction];
-        }
-
-        $result = [];
-
-        foreach ($fields as $column => $dir) {
-            if (is_int($column)) {
-                $column = $dir;
-                $dir = $direction;
-            }
-            $dir = preg_match('/^(asc|desc)$/i', $dir) ? " {$dir}" : $direction;
-
-            $column = $this->sql()->escape($column);
-            $result[] = "{$column}{$dir}";
-        }
-        return $fields = join(', ', $result);
-    }
-
-    /**
      * Adds a limit statement to the query
      *
      * @param  integer $limit  The limit value.
@@ -178,6 +159,18 @@ class Select extends Statement
             $limit .= " OFFSET {$offset}";
         }
         $this->_parts['limit'] = $limit;
+        return $this;
+    }
+
+    /**
+     * Sets `FOR UPDATE` mode.
+     *
+     * @param  boolean $forUpdate The `FOR UPDATE` value.
+     * @return object             Returns `$this`.
+     */
+    public function forUpdate($forUpdate = true)
+    {
+        $this->_parts['forUpdate'] = $forUpdate;
         return $this;
     }
 
@@ -205,50 +198,43 @@ class Select extends Statement
      */
     public function toString()
     {
-        $query = ['SELECT'];
-        if ($this->_parts['fields']) {
-            $query[] = $this->sql()->fields($this->_parts['fields']);
-        } else {
-            $query[] = '*';
-        }
-
         if (!$this->_parts['from']) {
             throw new SourceException("Invalid `SELECT` statement missing `FORM` clause.");
         }
 
-        $query[] = $this->_prefix('FROM', $this->sql()->tables($this->_parts['from']));
+        $sql = 'SELECT' .
+            $this->_buildFlags($this->_parts['flags']) .
+            $this->_buildChunk($this->sql()->fields($this->_parts['fields'], false, '*')) .
+            $this->_buildClause('FROM', $this->sql()->tables($this->_parts['from'])) .
+            $this->_buildJoins() .
+            $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
+            $this->_buildClause('GROUP BY', join(', ', $this->_parts['group'])) .
+            $this->_buildClause('HAVING', join(' AND ', $this->_parts['having'])) .
+            $this->_buildClause('ORDER BY', join(', ', $this->_parts['order'])) .
+            $this->_buildClause('LIMIT', $this->_parts['limit']) .
+            $this->_buildFlag('FOR UPDATE', $this->_parts['forUpdate']);
 
+        return $this->_alias ? "({$sql}) AS " . $this->sql()->name($this->_alias) : $sql;
+    }
+
+    protected function _buildJoins()
+    {
         $joins = [];
         foreach ($this->_parts['joins'] as $value) {
-            $join = $value['join'];
+            $table = $value['join'];
             $on = $value['on'];
             $type = $value['type'];
-            $sql = [strtoupper($type), 'JOIN'];
-            $sql[] = $this->sql()->tables($join);
+            $join = [strtoupper($type), 'JOIN'];
+            $join[] = $this->sql()->tables($table);
 
             if ($on) {
-                $sql[] = 'ON';
-                $sql[] = $this->sql()->conditions($on);
+                $join[] = 'ON';
+                $join[] = $this->sql()->conditions($on);
             }
 
-            $joins[] = join(' ', $sql);
+            $joins[] = join(' ', $join);
         }
-        $query[] = join(' ', $joins);
-
-        $query[] = $this->_prefix('WHERE', join(' AND ', $this->_parts['where']));
-        $query[] = $this->_prefix('GROUP BY', join(', ', $this->_parts['group']));
-        $query[] = $this->_prefix('HAVING', join(' AND ', $this->_parts['having']));
-        $query[] = $this->_prefix('ORDER BY', join(', ', $this->_parts['order']));
-        $query[] = $this->_prefix('LIMIT', $this->_parts['limit']);
-
-        $sql = join(' ', array_filter($query));
-        if ($this->_alias) {
-            return "({$sql}) AS " . $this->sql()->escape($this->_alias);
-        }
-        return $sql;
+        return $joins ? ' ' . join(' ', $joins) : '';
     }
 
-    protected function _prefix($prefix, $sql) {
-        return $sql ? "{$prefix} {$sql}": '';
-    }
 }

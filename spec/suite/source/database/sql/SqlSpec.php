@@ -137,7 +137,7 @@ describe("Sql", function() {
             it("manages function call", function() {
 
                 $part = $this->sql->names([
-                    [':count()' => [':distinct' => [ [':key' => 'table.firstname']]]]
+                    [':count()' => [':distinct' => [ [':name' => 'table.firstname']]]]
                 ]);
                 expect($part)->toBe([
                     'COUNT(DISTINCT "table"."firstname")'
@@ -165,12 +165,12 @@ describe("Sql", function() {
 
             $part = $this->sql->conditions([
                 ['=' => [
-                    [':key' => 'field1'],
-                    [':key' => 'field2']
+                    [':name' => 'field1'],
+                    [':name' => 'field2']
                 ]],
                 ['=' => [
-                    [':key' => 'field3'],
-                    [':key' => 'field4']
+                    [':name' => 'field3'],
+                    [':name' => 'field4']
                 ]]
             ]);
             expect($part)->toBe('"field1" = "field2" AND "field3" = "field4"');
@@ -180,8 +180,8 @@ describe("Sql", function() {
         it("generates a comparison expression", function() {
 
             $part = $this->sql->conditions([
-                ['>' => [[':key' => 'field'], 10]],
-                ['<=' => [[':key' => 'field'], 15]]
+                ['>' => [[':name' => 'field'], 10]],
+                ['<=' => [[':name' => 'field'], 15]]
             ]);
             expect($part)->toBe('"field" > 10 AND "field" <= 15');
 
@@ -190,12 +190,12 @@ describe("Sql", function() {
         it("generates a BETWEEN/NOT BETWEEN expression", function() {
 
             $part = $this->sql->conditions([
-                ':between' => [[':key' => 'score'], [90, 100]]
+                ':between' => [[':name' => 'score'], [90, 100]]
             ]);
             expect($part)->toBe('"score" BETWEEN 90 AND 100');
 
             $part = $this->sql->conditions([
-                ':not between' => [[':key' => 'score'], [90, 100]]
+                ':not between' => [[':name' => 'score'], [90, 100]]
             ]);
             expect($part)->toBe('"score" NOT BETWEEN 90 AND 100');
 
@@ -204,7 +204,7 @@ describe("Sql", function() {
         it("generates a subquery IN expression", function() {
 
             $part = $this->sql->conditions([
-                ':in' => [[':key' => 'score'], [1, 2, 3, 4, 5]]
+                ':in' => [[':name' => 'score'], [1, 2, 3, 4, 5]]
             ]);
             expect($part)->toBe('"score" IN (1, 2, 3, 4, 5)');
 
@@ -213,7 +213,7 @@ describe("Sql", function() {
         it("generates a subquery NOT IN expression", function() {
 
             $part = $this->sql->conditions([
-                ':not in' => [[':key' => 'score'], [1, 2, 3, 4, 5]]
+                ':not in' => [[':name' => 'score'], [1, 2, 3, 4, 5]]
             ]);
             expect($part)->toBe('"score" NOT IN (1, 2, 3, 4, 5)');
 
@@ -223,7 +223,7 @@ describe("Sql", function() {
 
             $part = $this->sql->conditions([
                 ':any' => [
-                    [':key'   => 'score'],
+                    [':name'   => 'score'],
                     [':plain' => 'SELECT "s1" FROM "t1"']
                 ]
             ]);
@@ -238,7 +238,7 @@ describe("Sql", function() {
 
             $part = $this->sql->conditions([
                 ':any' => [
-                    [':key'   => 'score'],
+                    [':name'   => 'score'],
                     [':plain' => $subquery]
                 ]
             ]);
@@ -262,9 +262,9 @@ describe("Sql", function() {
 
             $part = $this->sql->conditions([
                 ':concat()' => [
-                    [':key' => 'table.firstname'],
+                    [':name' => 'table.firstname'],
                     [':value' => ' '],
-                    [':key' => 'table.lastname']
+                    [':name' => 'table.lastname']
                 ]
             ]);
             expect($part)->toBe('CONCAT("table"."firstname", \' \', "table"."lastname")');

@@ -63,6 +63,14 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
     public function __construct($config = [])
     {
         $defaults = [
+            'classes' => [
+                'select'       => 'chaos\source\database\sql\statement\mysql\Select',
+                'insert'       => 'chaos\source\database\sql\statement\mysql\Insert',
+                'update'       => 'chaos\source\database\sql\statement\mysql\Update',
+                'delete'       => 'chaos\source\database\sql\statement\mysql\Delete',
+                'create table' => 'chaos\source\database\sql\statement\CreateTable',
+                'drop table'   => 'chaos\source\database\sql\statement\DropTable'
+            ],
             'operators' => [
                 '#'            => ['format' => '%s ^ %s'],
                 ':regex'       => ['format' => '%s REGEXP %s'],
@@ -93,7 +101,7 @@ class MySqlDialect extends \chaos\source\database\sql\Sql
             $use = 'decimal';
         }
 
-        $column = $this->escape($name) . ' ' . $use;
+        $column = $this->name($name) . ' ' . $use;
 
         $allowPrecision = preg_match('/^(decimal|float|double|real|numeric)$/',$use);
         $precision = ($precision && $allowPrecision) ? ",{$precision}" : '';

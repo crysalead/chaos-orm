@@ -4,17 +4,10 @@ namespace chaos\source\database\sql\statement;
 use chaos\SourceException;
 
 /**
- * SQL CRUD helper
+ * `DROP TABLE` statement.
  */
 class DropTable extends Statement
 {
-    /**
-     * Pointer to the dialect adapter.
-     *
-     * @var object
-     */
-    protected $_sql = null;
-
     /**
      * The SQL parts.
      *
@@ -83,27 +76,14 @@ class DropTable extends Statement
      */
     public function toString()
     {
-        $query = ['DROP TABLE'];
-
-        if ($this->_parts['ifExists']) {
-            $query[] = 'IF EXISTS';
-        }
-
         if (!$this->_parts['table']) {
-            throw new SourceException("Invalid `DROP TABLE` statement no table name defined");
+            throw new SourceException("Invalid `DROP TABLE` statement missing table name.");
         }
 
-        $tables = array_map([$this->sql(), 'escape'], $this->_parts['table']);
-        $query[] = join(', ', $tables);
-
-        if ($this->_parts['cascade']) {
-            $query[] = 'CASCADE';
-        }
-
-        if ($this->_parts['restrict']) {
-            $query[] = 'RESTRICT';
-        }
-
-        return join(' ', array_filter($query));
+        return 'DROP TABLE' .
+            $this->_buildFlag('IF EXISTS', $this->_parts['ifExists']) .
+            $this->_buildChunk($this->sql()->tables($this->_parts['table'])) .
+            $this->_buildFlag('CASCADE', $this->_parts['cascade']) .
+            $this->_buildFlag('RESTRICT', $this->_parts['restrict']);
     }
 }
