@@ -12,12 +12,42 @@ describe("Select", function() {
         $this->select = $this->sql->statement('select');
     });
 
-    describe("->select()", function() {
+    describe("->distinct()", function() {
 
-        it("generates a SELECT statement", function() {
+        it("sets the `DISTINCT` flag", function() {
 
-            $this->select->from('table');
-            expect($this->select->toString())->toBe('SELECT * FROM "table"');
+            $this->select->from('table')
+                ->distinct()
+                ->fields('firstname');
+            expect($this->select->toString())->toBe('SELECT DISTINCT "firstname" FROM "table"');
+
+        });
+
+    });
+
+    describe("->fields()", function() {
+
+        it("sets the fields", function() {
+
+            $this->select->from('table')
+                ->fields('firstname', 'lastname');
+            expect($this->select->toString())->toBe('SELECT "firstname", "lastname" FROM "table"');
+
+        });
+
+        it("sets the fields", function() {
+
+            $this->select->from('table')
+                ->fields(['firstname' => 'FN'], ['lastname' => 'LN']);
+            expect($this->select->toString())->toBe('SELECT "firstname" AS "FN", "lastname" AS "LN" FROM "table"');
+
+        });
+
+        it("sets the fields using an array syntax", function() {
+
+            $this->select->from('table')
+                ->fields(['firstname', 'lastname']);
+            expect($this->select->toString())->toBe('SELECT "firstname", "lastname" FROM "table"');
 
         });
 
@@ -34,21 +64,35 @@ describe("Select", function() {
 
         });
 
-        it("generates a `FORM` statement", function() {
+        it("sets the `FROM` clause", function() {
 
             $this->select->from('table');
             expect($this->select->toString())->toBe('SELECT * FROM "table"');
 
         });
 
-        it("generates a cross product", function() {
+        it("sets multiple `FROM`", function() {
+
+            $this->select->from('table', 'table2');
+            expect($this->select->toString())->toBe('SELECT * FROM "table", "table2"');
+
+        });
+
+        it("sets multiple `FROM` using an array syntax", function() {
 
             $this->select->from(['table', 'table2']);
             expect($this->select->toString())->toBe('SELECT * FROM "table", "table2"');
 
         });
 
-        it("generates aliases", function() {
+        it("sets multiple `FROM` with multiple call", function() {
+
+            $this->select->from('table')->from('table2');
+            expect($this->select->toString())->toBe('SELECT * FROM "table", "table2"');
+
+        });
+
+        it("sets the `FROM` clause with aliases table name", function() {
 
             $this->select->from(['table' => 'T1', 'table2' => 'T2']);
             expect($this->select->toString())->toBe('SELECT * FROM "table" AS "T1", "table2" AS "T2"');
@@ -59,28 +103,28 @@ describe("Select", function() {
 
     describe("->join()", function() {
 
-        it("generates a `LEFT JOIN` statement", function() {
+        it("sets a `LEFT JOIN` clause", function() {
 
             $this->select->from('table')->join('table2');
             expect($this->select->toString())->toBe('SELECT * FROM "table" LEFT JOIN "table2"');
 
         });
 
-        it("generates a `LEFT JOIN` statement with an alias", function() {
+        it("sets a `LEFT JOIN` clause with an alias", function() {
 
             $this->select->from('table')->join(['table2' => 't2']);
             expect($this->select->toString())->toBe('SELECT * FROM "table" LEFT JOIN "table2" AS "t2"');
 
         });
 
-        it("generates a `RIGHT JOIN` statement with an alias", function() {
+        it("sets a `RIGHT JOIN` clause with an alias", function() {
 
             $this->select->from('table')->join(['table2' => 't2'], [], 'right');
             expect($this->select->toString())->toBe('SELECT * FROM "table" RIGHT JOIN "table2" AS "t2"');
 
         });
 
-        it("generates a `LEFT JOIN` statement using a subquery", function() {
+        it("sets a `LEFT JOIN` clause using a subquery", function() {
 
             $subquery = $this->sql->statement('select');
             $subquery->from('table2')->alias('t2');
@@ -90,7 +134,7 @@ describe("Select", function() {
 
         });
 
-        it("generates a `LEFT JOIN` statement with an `ON` statement", function() {
+        it("sets a `LEFT JOIN` clause with an `ON` statement", function() {
 
             $on = ['=' => [
                [':name' => 't.table2_id'],
@@ -101,10 +145,12 @@ describe("Select", function() {
 
         });
 
-        it("doesn't generate any `JOIN` with when an empty parameter is passed", function() {
+        it("ignores empty parameters", function() {
 
-            $this->select->from('table')->join();
-            $this->select->from('table')->join(null);
+            $this->select->from('table')
+                ->join()
+                ->join(null);
+
             expect($this->select->toString())->toBe('SELECT * FROM "table"');
 
         });
@@ -113,7 +159,7 @@ describe("Select", function() {
 
     describe("->where()", function() {
 
-        it("generates a `WHERE` statement", function() {
+        it("sets a `WHERE` clause", function() {
 
             $this->select->from('table')->where([true]);
             expect($this->select->toString())->toBe('SELECT * FROM "table" WHERE TRUE');
@@ -124,21 +170,38 @@ describe("Select", function() {
 
     describe("->group()", function() {
 
-        it("generates a `GROUP BY` statement", function() {
+        it("sets a `GROUP BY` clause", function() {
 
             $this->select->from('table')->group('field');
             expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field"');
 
         });
 
-        it("generates a `GROUP BY` statement with multiple fields", function() {
+        it("sets a `GROUP BY` clause with multiple fields", function() {
+
+            $this->select->from('table')->group('field1', 'field2');
+            expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field1", "field2"');
+
+        });
+
+        it("sets a `GROUP BY` clause with multiple fields using an array", function() {
 
             $this->select->from('table')->group(['field1', 'field2']);
             expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field1", "field2"');
 
         });
 
-        it("doesn't generate an `GROUP BY` with an invalid field names", function() {
+        it("sets a `GROUP BY` clause with multiple fields with multiple calls", function() {
+
+            $this->select->from('table')
+                ->group('field1')
+                ->group('field2');
+
+            expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field1", "field2"');
+
+        });
+
+        it("ignores empty parameters", function() {
 
             $this->select->from('table')->group();
             $this->select->from('table')->group('');
@@ -152,10 +215,42 @@ describe("Select", function() {
 
     describe("->having()", function() {
 
-        it("generates a `GROUP` statement", function() {
+        it("sets a `HAVING` clause", function() {
 
             $this->select->from('table')->group('field')->having([true]);
             expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field" HAVING TRUE');
+
+        });
+
+        it("sets a `HAVING` with multiple fields", function() {
+
+            $this->select->from('table')->group('field')->having(true, true);
+            expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field" HAVING TRUE AND TRUE');
+
+        });
+
+        it("sets a `HAVING` with multiple fields using array based conditions", function() {
+
+            $this->select->from('table')->group('field')->having([true], [true]);
+            expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field" HAVING TRUE AND TRUE');
+
+        });
+
+        it("sets a `HAVING` with multiple fields using an array", function() {
+
+            $this->select->from('table')->group('field')->having([true, true]);
+            expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field" HAVING TRUE AND TRUE');
+
+        });
+
+        it("sets a `HAVING` with multiple fields with multiple calls", function() {
+
+            $this->select->from('table')
+                ->group('field')
+                ->having(true)
+                ->having(true);
+
+            expect($this->select->toString())->toBe('SELECT * FROM "table" GROUP BY "field" HAVING TRUE AND TRUE');
 
         });
 
@@ -163,35 +258,45 @@ describe("Select", function() {
 
     describe("->order()", function() {
 
-        it("generates a `ORDER BY` statement", function() {
+        it("sets an `ORDER BY` clause", function() {
 
             $this->select->from('table')->order('field');
             expect($this->select->toString())->toBe('SELECT * FROM "table" ORDER BY "field" ASC');
 
         });
 
-        it("generates a `ORDER BY` statement with a DESC direction", function() {
+        it("sets an `ORDER BY` clause with a `'DESC'` direction", function() {
 
             $this->select->from('table')->order(['field' => 'DESC']);
             expect($this->select->toString())->toBe('SELECT * FROM "table" ORDER BY "field" DESC');
 
         });
 
-        it("generates a `ORDER BY` statement with a DESC direction (compatibility syntax)", function() {
+        it("sets an a `ORDER BY` clause with a `'DESC'` direction (compatibility syntax)", function() {
 
             $this->select->from('table')->order('field DESC');
             expect($this->select->toString())->toBe('SELECT * FROM "table" ORDER BY "field" DESC');
 
         });
 
-        it("generates a `GROUP BY` statement with multiple fields", function() {
+        it("sets an a `ORDER BY` clause with multiple fields", function() {
 
             $this->select->from('table')->order(['field1' => 'ASC', 'field2' => 'DESC']);
             expect($this->select->toString())->toBe('SELECT * FROM "table" ORDER BY "field1" ASC, "field2" DESC');
 
         });
 
-        it("doesn't generate an `ORDER BY` with an invalid field names", function() {
+        it("sets an a `ORDER BY` clause with multiple fields using multiple call", function() {
+
+            $this->select->from('table')
+                ->order(['field1' => 'ASC'])
+                ->order(['field2' => 'DESC']);
+
+            expect($this->select->toString())->toBe('SELECT * FROM "table" ORDER BY "field1" ASC, "field2" DESC');
+
+        });
+
+        it("ignores empty parameters", function() {
 
             $this->select->from('table')->order();
             $this->select->from('table')->order('');

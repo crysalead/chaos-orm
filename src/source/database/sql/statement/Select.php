@@ -51,7 +51,8 @@ class Select extends Statement
      */
     public function fields($fields)
     {
-        $this->_parts['fields'] = array_merge($this->_parts['fields'], is_array($fields) ? $fields : func_get_args());
+        $fields = is_array($fields) && func_num_args() === 1 ? $fields : func_get_args();
+        $this->_parts['fields'] = array_merge($this->_parts['fields'], $fields);
         return $this;
     }
 
@@ -66,7 +67,8 @@ class Select extends Statement
         if (!$sources) {
             throw new SourceException("A `FROM` clause requires a non empty table.");
         }
-        $this->_parts['from'] += array_merge($this->_parts['from'], is_array($sources) ? $sources : func_get_args());
+        $sources = is_array($sources) ? $sources : func_get_args();
+        $this->_parts['from'] += array_merge($this->_parts['from'], $sources);
         return $this;
     }
 
@@ -93,6 +95,7 @@ class Select extends Statement
      */
     public function where($conditions)
     {
+        $conditions = is_array($conditions) && func_num_args() === 1 ? $conditions : func_get_args();
         if ($conditions = $this->sql()->conditions($conditions)) {
             $this->_parts['where'][] = $conditions;
         }
@@ -107,6 +110,7 @@ class Select extends Statement
      */
     public function having($conditions)
     {
+        $conditions = is_array($conditions) && func_num_args() === 1 ? $conditions : func_get_args();
         if ($conditions = $this->sql()->conditions($conditions)) {
             $this->_parts['having'][] = $conditions;
         }
@@ -124,6 +128,7 @@ class Select extends Statement
         if (!$fields) {
             return $this;
         }
+        $fields = is_array($fields) ? $fields : func_get_args();
         $this->_parts['group'][] = $this->_sort($fields, false);
         return $this;
     }
@@ -204,8 +209,8 @@ class Select extends Statement
 
         $sql = 'SELECT' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildChunk($this->sql()->fields($this->_parts['fields'], false, '*')) .
-            $this->_buildClause('FROM', $this->sql()->tables($this->_parts['from'])) .
+            $this->_buildChunk($this->sql()->names($this->_parts['fields'], false, '*')) .
+            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'], true)) .
             $this->_buildJoins() .
             $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
             $this->_buildClause('GROUP BY', join(', ', $this->_parts['group'])) .
@@ -225,7 +230,7 @@ class Select extends Statement
             $on = $value['on'];
             $type = $value['type'];
             $join = [strtoupper($type), 'JOIN'];
-            $join[] = $this->sql()->tables($table);
+            $join[] = $this->sql()->name($table, true);
 
             if ($on) {
                 $join[] = 'ON';

@@ -12,136 +12,158 @@ describe("Sql", function() {
 
     describe("->names()", function() {
 
-        context("with star escaping (table mode)", function() {
+        it("escapes table name with a schema prefix", function() {
 
-            it("escapes table name", function() {
-
-                $tables = ['schema.tablename'];
-                $part = $this->sql->names($tables, true);
-                expect($part)->toBe(['"schema"."tablename"' => '"schema"."tablename"']);
-
-            });
-
-            it("escapes star", function() {
-
-                $tables = ['schema.*'];
-                $part = $this->sql->names($tables, true);
-                expect($part)->toBe(['"schema"."*"' => '"schema"."*"']);
-
-            });
+            $part = $this->sql->names('schema.tablename');
+            expect($part)->toBe('"schema"."tablename"');
 
         });
 
-        context("with allowed star (field mode)", function() {
+        it("escapes star by default", function() {
 
-            it("generates aliasing", function() {
+            $part = $this->sql->names(['schema.*']);
+            expect($part)->toBe('"schema"."*"');
 
-                $fields = [
-                    'name' => ['field' => 'F1'],
-                    'name2' => ['field2' => 'F2']
-                ];
-                $part = $this->sql->names($fields);
-                expect($part)->toBe([
-                    '"name"."field"' => '"name"."field" AS "F1"',
-                    '"name2"."field2"' => '"name2"."field2" AS "F2"'
-                ]);
+        });
+
+        it("escapes field name with a table prefix", function() {
+
+            $part = $this->sql->names('tablename.fieldname');
+            expect($part)->toBe('"tablename"."fieldname"');
+
+        });
+
+        it("escapes aliased fields with a table prefix name using an array syntax", function() {
+
+            $part = $this->sql->names(['tablename.fieldname' => 'F1']);
+            expect($part)->toBe('"tablename"."fieldname" AS "F1"');
+
+        });
+
+        it("escapes aliased fields name with a table prefix using an array syntax", function() {
+
+            $fields = [
+                'name1' => ['field1' => 'F1', 'field2' => 'F2'],
+                'name2' => ['field3' => 'F3', 'field4' => 'F4']
+            ];
+            $part = $this->sql->names($fields);
+            expect($part)->toBe(join(', ', [
+                '"name1"."field1" AS "F1"',
+                '"name1"."field2" AS "F2"',
+                '"name2"."field3" AS "F3"',
+                '"name2"."field4" AS "F4"'
+            ]));
+
+        });
+
+        it("handle mixed syntax", function() {
+
+            $fields = [
+                'prefix.field1',
+                'prefix.field1' => 'F1',
+                'prefix' => ['field2', 'field3' => 'F3', ['field3' => 'F33']],
+            ];
+            $part = $this->sql->names($fields);
+            expect($part)->toBe(join(', ', [
+                '"prefix"."field1"',
+                '"prefix"."field1" AS "F1"',
+                '"prefix"."field2"',
+                '"prefix"."field3" AS "F3"',
+                '"prefix"."field3" AS "F33"'
+            ]));
+
+        });
+
+        it("casts objects as string", function() {
+
+            $this->select = $this->sql->statement('select');
+            $this->select->from('table2')->alias('t2');
+
+            $part = $this->sql->names([$this->select, 'name2' => ['field2' => 'F2']]);
+            expect($part)->toBe(join(', ', [
+                '(SELECT * FROM "table2") AS "t2"',
+                '"name2"."field2" AS "F2"'
+            ]));
+
+        });
+
+        it("supports operators", function() {
+
+            $part = $this->sql->names([':count()' => [':distinct' => [ [':name' => 'table.firstname']]]]);
+            expect($part)->toBe('COUNT(DISTINCT "table"."firstname")');
+
+        });
+
+        it("supports formatter operators", function() {
+
+            $part = $this->sql->names([':plain' => 'COUNT(*)']);
+            expect($part)->toBe("COUNT(*)");
+
+        });
+
+        it("ignores duplicates", function() {
+
+            $fields = [
+                'prefix.field1',
+                'prefix.field1',
+                'prefix.field2',
+                'prefix.field2',
+                'prefix' => [
+                    'field1', 'field2', 'field1', 'field2',
+                    ['field3' => 'F3'],
+                    ['field4' => 'F4'],
+                    ['field3' => 'F5'],
+                    ['field4' => 'F6']
+                ]
+            ];
+            $part = $this->sql->names($fields, false);
+            expect($part)->toBe(join(', ', [
+                '"prefix"."field1"',
+                '"prefix"."field2"',
+                '"prefix"."field3" AS "F3"',
+                '"prefix"."field4" AS "F4"',
+                '"prefix"."field3" AS "F5"',
+                '"prefix"."field4" AS "F6"'
+            ]));
+
+        });
+
+        it("supports nested arrays", function() {
+
+            $part = $this->sql->names([[[[[['tablename.fieldname' => 'F1']]]]]]);
+            expect($part)->toBe('"tablename"."fieldname" AS "F1"');
+
+        });
+
+        it("nested arrays keeps prefix", function() {
+
+            $fields = ['prefix' => [
+                'field1', ['field1' => 'F1'], ['field1' => 'F11']
+            ]];
+            $part = $this->sql->names($fields, false);
+            expect($part)->toBe(join(', ', [
+                '"prefix"."field1"',
+                '"prefix"."field1" AS "F1"',
+                '"prefix"."field1" AS "F11"',
+            ]));
+
+        });
+
+        context("with field query mode (i.e. not escaping star)", function() {
+
+            it("doesn't escapes star", function() {
+
+                $fields = ['prefix.*'];
+                $part = $this->sql->names($fields, false);
+                expect($part)->toBe('"prefix".*');
 
             });
 
-            context("with a table or an alias prefix", function() {
+            it("doesn't escapes star using an array syntax", function() {
 
-                it("generates a table/alias star", function() {
-
-                    $fields = ['name.*'];
-                    $part = $this->sql->names($fields);
-                    expect($part)->toBe(['"name".*' => '"name".*']);
-
-                });
-
-                it("generates a table/alias star using an array syntax", function() {
-
-                    $fields = ['name' => ['*']];
-                    $part = $this->sql->names($fields);
-                    expect($part)->toBe(['"name".*' => '"name".*']);
-
-                });
-
-                it("generates fields from multiple tables/aliases", function() {
-
-                    $fields = [
-                        'name.*',
-                        'name2.field'
-                    ];
-                    $part = $this->sql->names($fields);
-                    expect($part)->toBe([
-                        '"name".*' => '"name".*',
-                        '"name2"."field"' => '"name2"."field"'
-                    ]);
-
-                });
-
-                it("generates fields from multiple tables/aliases with an array syntax", function() {
-
-                    $fields = [
-                        'name' => ['*'],
-                        'name2' => ['field1', 'field2']
-                    ];
-                    $part = $this->sql->names($fields);
-                    expect($part)->toBe([
-                        '"name".*' => '"name".*',
-                        '"name2"."field1"' => '"name2"."field1"',
-                        '"name2"."field2"' => '"name2"."field2"'
-                    ]);
-
-                });
-
-                it("ignores duplicates", function() {
-
-                    $fields = [
-                        'name.field1',
-                        'name.field2',
-                        'name' => ['field1', 'field2', 'field1', 'field2']
-                    ];
-                    $part = $this->sql->names($fields);
-                    expect($part)->toBe([
-                        '"name"."field1"' => '"name"."field1"',
-                        '"name"."field2"' => '"name"."field2"'
-                    ]);
-
-                });
-
-            });
-
-            it("manages subquery", function() {
-
-                $this->select = $this->sql->statement('select');
-                $this->select->from('table2')->alias('t2');
-
-                $part = $this->sql->names([$this->select, 'name2' => ['field2' => 'F2']]);
-                expect($part)->toBe([
-                    '(SELECT * FROM "table2") AS "t2"',
-                    '"name2"."field2"' => '"name2"."field2" AS "F2"'
-                ]);
-
-            });
-
-            it("allows plain SQL string", function() {
-
-                $part = $this->sql->names([[':plain' => 'COUNT(*)']]);
-                expect($part)->toBe([
-                    "COUNT(*)"
-                ]);
-
-            });
-
-            it("manages function call", function() {
-
-                $part = $this->sql->names([
-                    [':count()' => [':distinct' => [ [':name' => 'table.firstname']]]]
-                ]);
-                expect($part)->toBe([
-                    'COUNT(DISTINCT "table"."firstname")'
-                ]);
+                $fields = ['prefix' => ['*']];
+                $part = $this->sql->names($fields, false);
+                expect($part)->toBe('"prefix".*');
 
             });
 

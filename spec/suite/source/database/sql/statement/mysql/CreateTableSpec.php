@@ -12,9 +12,9 @@ describe("CreateTable", function() {
         $this->create = $this->adapter->sql()->statement('create table');
     });
 
-    describe("->table()", function() {
+    describe("->ifNotExists()", function() {
 
-        it("generates a soft CREATE TABLE statement", function() {
+        it("sets the `IF NOT EXISTS` flag", function() {
 
             $this->create->table('table1')
                 ->ifNotExists(false)
@@ -27,7 +27,11 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with primary key constraint if an id column is present", function() {
+    });
+
+    describe("->columns()", function() {
+
+        it("sets a primary key", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -39,7 +43,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with specific metas", function() {
+        it("sets specific columns meta", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -52,7 +56,11 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with specific metas", function() {
+    });
+
+    describe("->meta()", function() {
+
+        it("sets specific table meta", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -71,7 +79,11 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a primary key constraint", function() {
+    });
+
+    describe("->constraint()", function() {
+
+        it("sets a primary key constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -84,7 +96,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a mulit key primary key constraint", function() {
+        it("sets a mulit key primary key constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -98,7 +110,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a CHECK constraint", function() {
+        it("sets a `CHECK` constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -119,7 +131,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a named CHECK constraint", function() {
+        it("sets a named `CHECK` constraint", function() {
 
             $this->create->table('table1')
                 ->columns([
@@ -138,7 +150,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a UNIQUE constraint", function() {
+        it("sets a `UNIQUE` constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -151,7 +163,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a UNIQUE constraint", function() {
+        it("sets a `UNIQUE` constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -165,7 +177,7 @@ describe("CreateTable", function() {
 
         });
 
-         it("generates a CREATE TABLE statement with a UNIQUE INDEX constraint", function() {
+         it("sets a `UNIQUE INDEX` constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -179,7 +191,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a UNIQUE KEY constraint if both index & key are set", function() {
+        it("sets a `UNIQUE KEY` constraint if both index & key are set", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -193,7 +205,7 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with a FOREIGN KEY constraint", function() {
+        it("sets a `FOREIGN KEY` constraint", function() {
 
              $this->create->table('table1')
                 ->columns([
@@ -214,71 +226,71 @@ describe("CreateTable", function() {
 
         });
 
-        it("generates a CREATE TABLE statement with columns metas & constraints", function() {
+    });
 
-            $this->create->table('table1')
-                ->columns([
-                    'id' => ['type' => 'serial'],
-                    'table_id' => ['type' => 'integer'],
-                    'published' => [
-                        'type' => 'datetime',
-                        'null' => false,
-                        'default' => [':plain' => 'CURRENT_TIMESTAMP']
-                    ],
-                    'decimal' => [
-                        'type' => 'float',
-                        'length' => 10,
-                        'precision' => 2
-                    ],
-                    'integer' => [
-                        'type' => 'integer',
-                        'use' => 'numeric',
-                        'length' => 10,
-                        'precision' => 2
-                    ],
-                    'date' => [
-                        'type' => 'date',
-                        'null' => false,
-                    ],
-                    'text' => [
-                        'type' => 'text',
-                        'null' => false,
-                    ]
-                ])
-                ->meta([
-                    'charset' => 'utf8',
-                    'collate' => 'utf8_unicode_ci',
-                    'engine' => 'InnoDB'
-                ])
-                ->constraint([
-                    'type' => 'check',
-                    'expr' => [
-                       'integer' => ['<' => 10]
-                    ]
-                ])
-                ->constraint([
-                    'type' => 'foreign key',
-                    'foreignKey' => 'table_id',
-                    'to' => 'other_table',
-                    'primaryKey' => 'id',
-                    'on' => 'DELETE NO ACTION'
-                ]);
+    it("generates a `CREATE TABLE` statement with columns, metas & constraints", function() {
 
-            $expected = 'CREATE TABLE `table1` (';
-            $expected .= '`id` int NOT NULL AUTO_INCREMENT,';
-            $expected .= ' `table_id` int,';
-            $expected .= ' `published` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,';
-            $expected .= ' `decimal` decimal(10,2),';
-            $expected .= ' `integer` numeric(10,2),';
-            $expected .= ' `date` date NOT NULL,';
-            $expected .= ' `text` text NOT NULL,';
-            $expected .= ' CHECK (`integer` < 10),';
-            $expected .= ' FOREIGN KEY (`table_id`) REFERENCES `other_table` (`id`) ON DELETE NO ACTION,';
-            $expected .= ' PRIMARY KEY (`id`))';
-            $expected .= ' DEFAULT CHARSET utf8 COLLATE utf8_unicode_ci ENGINE InnoDB';
-            expect($this->create->toString())->toBe($expected);
+        $this->create->table('table1')
+            ->columns([
+                'id' => ['type' => 'serial'],
+                'table_id' => ['type' => 'integer'],
+                'published' => [
+                    'type' => 'datetime',
+                    'null' => false,
+                    'default' => [':plain' => 'CURRENT_TIMESTAMP']
+                ],
+                'decimal' => [
+                    'type' => 'float',
+                    'length' => 10,
+                    'precision' => 2
+                ],
+                'integer' => [
+                    'type' => 'integer',
+                    'use' => 'numeric',
+                    'length' => 10,
+                    'precision' => 2
+                ],
+                'date' => [
+                    'type' => 'date',
+                    'null' => false,
+                ],
+                'text' => [
+                    'type' => 'text',
+                    'null' => false,
+                ]
+            ])
+            ->meta([
+                'charset' => 'utf8',
+                'collate' => 'utf8_unicode_ci',
+                'engine' => 'InnoDB'
+            ])
+            ->constraint([
+                'type' => 'check',
+                'expr' => [
+                   'integer' => ['<' => 10]
+                ]
+            ])
+            ->constraint([
+                'type' => 'foreign key',
+                'foreignKey' => 'table_id',
+                'to' => 'other_table',
+                'primaryKey' => 'id',
+                'on' => 'DELETE NO ACTION'
+            ]);
 
-        });
+        $expected = 'CREATE TABLE `table1` (';
+        $expected .= '`id` int NOT NULL AUTO_INCREMENT,';
+        $expected .= ' `table_id` int,';
+        $expected .= ' `published` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,';
+        $expected .= ' `decimal` decimal(10,2),';
+        $expected .= ' `integer` numeric(10,2),';
+        $expected .= ' `date` date NOT NULL,';
+        $expected .= ' `text` text NOT NULL,';
+        $expected .= ' CHECK (`integer` < 10),';
+        $expected .= ' FOREIGN KEY (`table_id`) REFERENCES `other_table` (`id`) ON DELETE NO ACTION,';
+        $expected .= ' PRIMARY KEY (`id`))';
+        $expected .= ' DEFAULT CHARSET utf8 COLLATE utf8_unicode_ci ENGINE InnoDB';
+        expect($this->create->toString())->toBe($expected);
 
     });
 

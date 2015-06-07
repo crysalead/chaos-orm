@@ -82,7 +82,7 @@ class DropTable extends Statement
 
         return 'DROP TABLE' .
             $this->_buildFlag('IF EXISTS', $this->_parts['ifExists']) .
-            $this->_buildChunk($this->sql()->tables($this->_parts['table'])) .
+            $this->_buildChunk($this->sql()->names($this->_parts['table'], true)) .
             $this->_buildFlag('CASCADE', $this->_parts['cascade']) .
             $this->_buildFlag('RESTRICT', $this->_parts['restrict']);
     }

@@ -222,17 +222,10 @@ class Sql
     }
 
     /**
-     * Escapes a list of table names.
+     * Generates a list of escaped table/field names identifier.
      */
-    public function tables($tables) {
-        return (string) join(", ", $this->names(is_array($tables) ? $tables : [$tables], true));
-    }
-
-    /**
-     * Escapes a list of field names.
-     */
-    public function fields($fields, $escapeStar = false, $default = '') {
-        $result = (string) join(", ", $this->names(is_array($fields) ? $fields : [$fields], $escapeStar));
+    public function names($fields, $escapeStar = true, $default = '') {
+        $result = (string) join(", ", $this->_names(is_array($fields) ? $fields : [$fields], $escapeStar));
         return $result ?: $default;
     }
 
@@ -242,33 +235,29 @@ class Sql
      * Note: it ignores duplicates.
      *
      */
-    public function names($names, $escapeStar = false, $prefix = null)
+    protected function _names($names, $escapeStar = true, $prefix = null)
     {
+        $names = is_array($names) ? $names : [$names];
         $sql = [];
         foreach ($names as $key => $value) {
-            if (is_string($value)) {
+            if ($this->isOperator($key)) {
+                $sql[] = $this->conditions($names);
+            } elseif (is_string($value)) {
                 $value = $this->name($value, $escapeStar);
                 if (!is_numeric($key)) {
                     $name = $this->name($key);
-                    $name = $prefix ? "{$prefix}.{$name}" : $name;
-                    $sql[$name] = "{$name} AS {$value}";
+                    $name = $prefix ? "{$prefix}.{$name} AS {$value}" : "{$name} AS {$value}";
+                    $sql[$name] = $name;
                 } else {
                     $name = $value;
                     $name = $prefix ? "{$prefix}.{$name}" : $name;
                     $sql[$name] = $name;
                 }
-                continue;
-            }
-            if (!is_array($value)) {
+            } elseif (!is_array($value)) {
                 $sql[] = (string) $value;
-                continue;
-            }
-            $op = key($value);
-            if (isset($op[0]) && $op[0] === ':') {
-                $sql[] = $this->conditions($value);
             } else {
-                $prefix = $this->name($key);
-                $sql = array_merge($sql, $this->names($value, $escapeStar, $prefix));
+                $prefix = is_numeric($key) ? $prefix : $this->name($key);
+                $sql = array_merge($sql, $this->_names($value, $escapeStar, $prefix));
             }
         }
         return $sql;
@@ -435,6 +424,9 @@ class Sql
      */
     public function name($name, $escapeStar = false, &$alias = null, &$field = null)
     {
+        if (!is_string($name)) {
+            return $this->names($name, $escapeStar);
+        }
         list($alias, $field) = $this->undot($name);
         return $alias ? $this->_escape($alias) . '.' . $this->_escape($field, $escapeStar) : $this->_escape($name, $escapeStar);
     }

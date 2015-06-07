@@ -14,7 +14,7 @@ describe("DropTable", function() {
 
     describe("->table()", function() {
 
-        it("generates a DROP TABLE statement", function() {
+        it("sets the `TABLE` clause", function() {
 
             $this->drop->table('table1');
 
@@ -23,7 +23,11 @@ describe("DropTable", function() {
 
         });
 
-        it("generates a soft DROP TABLE statement", function() {
+    });
+
+    describe("->ifExists()", function() {
+
+        it("sets the `IF EXISTS` flag", function() {
 
             $this->drop->table('table1')
                 ->ifExists();
@@ -33,20 +37,28 @@ describe("DropTable", function() {
 
         });
 
-        it("generates a DROP TABLE with CASCADE enabled", function() {
+    });
+
+    describe("->cascade()", function() {
+
+        it("sets the `CASCADE` flag", function() {
 
             $this->drop->table('table1')
-                ->cascade(true);
+                ->cascade();
 
             $expected  = 'DROP TABLE `table1` CASCADE';
             expect($this->drop->toString())->toBe($expected);
 
         });
 
-        it("generates a DROP TABLE with RESTRICT enabled", function() {
+    });
+
+    describe("->restrict()", function() {
+
+        it("sets the `RESTRICT` flag", function() {
 
             $this->drop->table('table1')
-                ->restrict(true);
+                ->restrict();
 
             $expected  = 'DROP TABLE `table1` RESTRICT';
             expect($this->drop->toString())->toBe($expected);
