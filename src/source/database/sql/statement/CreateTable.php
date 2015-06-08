@@ -6,7 +6,7 @@ use chaos\SourceException;
 /**
  * `CREATE TABLE` statement.
  */
-class CreateTable extends Statement
+class CreateTable extends \chaos\source\database\sql\Statement
 {
     /**
      * The SQL parts.

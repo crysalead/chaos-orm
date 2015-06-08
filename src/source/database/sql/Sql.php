@@ -80,6 +80,7 @@ class Sql
         ':all'         => ['type' => 'list'],
         ':any'         => ['type' => 'list'],
         ':some'        => ['type' => 'list'],
+        ':as'          => ['type' => 'alias'],
         // logical operators
         ':not'         => ['type' => 'prefix'],
         ':and'         => [],
@@ -167,6 +168,10 @@ class Sql
             },
             'set' => function ($operator, $parts) {
                 return join(" {$operator} ", $parts);
+            },
+            'alias' => function ($operator, $parts) {
+                $expr = array_shift($parts);
+                return "({$expr}) {$operator} " . array_shift($parts);
             }
         ];
     }

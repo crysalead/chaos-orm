@@ -6,7 +6,7 @@ use chaos\SourceException;
 /**
  * `DELETE` statement.
  */
-class Delete extends Statement
+class Delete extends \chaos\source\database\sql\Statement
 {
     /**
      * The SQL parts.
@@ -96,11 +96,11 @@ class Delete extends Statement
 
         return 'DELETE' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildClause('FROM', $this->sql()->tables($this->_parts['from'])) .
+            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'], true)) .
             $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
             $this->_buildClause('ORDER BY', join(', ', $this->_parts['order'])) .
-            $this->_buildClause('LIMIT', $this->_parts['limit']).
-            $this->_buildClause('RETURNING', $this->sql()->fields($this->_parts['returning'], false, ''));
+            $this->_buildClause('LIMIT', $this->_parts['limit']) .
+            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning'], false, ''));
     }
 
 }

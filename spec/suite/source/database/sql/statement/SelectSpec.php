@@ -124,12 +124,21 @@ describe("Select", function() {
 
         });
 
-        it("sets a `LEFT JOIN` clause using a subquery", function() {
+        it("sets a `LEFT JOIN` clause using a subquery instance", function() {
 
-            $subquery = $this->sql->statement('select');
-            $subquery->from('table2')->alias('t2');
+            $subquery = $this->sql->statement('select')->from('table2')->alias('t2');
 
             $this->select->from('table')->join($subquery);
+            expect($this->select->toString())->toBe('SELECT * FROM "table" LEFT JOIN (SELECT * FROM "table2") AS "t2"');
+
+        });
+
+
+        it("sets a `LEFT JOIN` clause using a subquery instance (the long way)", function() {
+
+            $subquery = $this->sql->statement('select')->from('table2');
+
+            $this->select->from('table')->join([':as' => [$subquery, [':name' => 't2']]]);
             expect($this->select->toString())->toBe('SELECT * FROM "table" LEFT JOIN (SELECT * FROM "table2") AS "t2"');
 
         });
@@ -203,10 +212,13 @@ describe("Select", function() {
 
         it("ignores empty parameters", function() {
 
-            $this->select->from('table')->group();
-            $this->select->from('table')->group('');
-            $this->select->from('table')->group([]);
-            $this->select->from('table')->group(null);
+            $this->select
+                ->from('table')
+                ->group()
+                ->group('')
+                ->group([])
+                ->group(null);
+
             expect($this->select->toString())->toBe('SELECT * FROM "table"');
 
         });
@@ -298,10 +310,13 @@ describe("Select", function() {
 
         it("ignores empty parameters", function() {
 
-            $this->select->from('table')->order();
-            $this->select->from('table')->order('');
-            $this->select->from('table')->order([]);
-            $this->select->from('table')->order(null);
+            $this->select
+                ->from('table')
+                ->order()
+                ->order('')
+                ->order([])
+                ->order(null);
+
             expect($this->select->toString())->toBe('SELECT * FROM "table"');
 
         });
@@ -326,8 +341,11 @@ describe("Select", function() {
 
         it("doesn't generate an `ORDER BY` with an invalid field names", function() {
 
-            $this->select->from('table')->limit();
-            $this->select->from('table')->limit(0, 0);
+            $this->select
+                ->from('table')
+                ->limit()
+                ->limit(0, 0);
+
             expect($this->select->toString())->toBe('SELECT * FROM "table"');
 
         });
@@ -357,19 +375,6 @@ describe("Select", function() {
 
             $this->select->alias(null);
             expect($this->select->toString())->toBe('SELECT * FROM "table2"');
-
-        });
-
-    });
-
-    describe("->toString()" , function() {
-
-        it("throws an exception if no source is defined", function() {
-
-            $closure = function() {
-                $this->select->toString();
-            };
-            expect($closure)->toThrow(new SourceException("Invalid `SELECT` statement missing `FORM` clause."));
 
         });
 

@@ -6,7 +6,7 @@ use chaos\SourceException;
 /**
  * `UPDATE` statement.
  */
-class Update extends Statement
+class Update extends \chaos\source\database\sql\Statement
 {
     /**
      * The SQL parts.
@@ -16,7 +16,7 @@ class Update extends Statement
     protected $_parts = [
         'flags'     => [],
         'table'     => [],
-        'values'    => []
+        'values'    => [],
         'where'     => [],
         'order'     => [],
         'limit'     => '',
@@ -107,14 +107,18 @@ class Update extends Statement
             throw new SourceException("Invalid `UPDATE` statement missing table name.");
         }
 
+        if (!$this->_parts['values']) {
+            throw new SourceException("Invalid `UPDATE` statement missing values.");
+        }
+
         return 'UPDATE' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildChunk($this->sql()->tables($this->_parts['table'])) .
+            $this->_buildChunk($this->sql()->names($this->_parts['table'], true)) .
             $this->_buildValues() .
             $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
             $this->_buildClause('ORDER BY', join(', ', $this->_parts['order'])) .
             $this->_buildClause('LIMIT', $this->_parts['limit']) .
-            $this->_buildClause('RETURNING', $this->sql()->fields($this->_parts['returning'], false, ''));
+            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning'], false, ''));
     }
 
     protected function _buildValues()
@@ -123,6 +127,6 @@ class Update extends Statement
         foreach ($this->_parts['values'] as $key => $value) {
             $values[] = $this->sql()->name($key) . ' = ' . $this->sql()->value($value);
         }
-        return $values ? ' SET' . join(', ', $values) : '';
+        return $values ? ' SET ' . join(', ', $values) : '';
     }
 }

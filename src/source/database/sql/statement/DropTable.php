@@ -6,7 +6,7 @@ use chaos\SourceException;
 /**
  * `DROP TABLE` statement.
  */
-class DropTable extends Statement
+class DropTable extends \chaos\source\database\sql\Statement
 {
     /**
      * The SQL parts.

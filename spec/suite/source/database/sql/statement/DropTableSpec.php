@@ -8,8 +8,8 @@ use kahlan\plugin\Stub;
 describe("DropTable", function() {
 
     beforeEach(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.mysql');
-        $this->drop = $this->adapter->sql()->statement('drop table');
+        $this->sql = new Sql();
+        $this->drop = $this->sql->statement('drop table');
     });
 
     describe("->table()", function() {
@@ -18,7 +18,7 @@ describe("DropTable", function() {
 
             $this->drop->table('table1');
 
-            $expected = 'DROP TABLE `table1`';
+            $expected = 'DROP TABLE "table1"';
             expect($this->drop->toString())->toBe($expected);
 
         });
@@ -32,7 +32,7 @@ describe("DropTable", function() {
             $this->drop->table('table1')
                 ->ifExists();
 
-            $expected  = 'DROP TABLE IF EXISTS `table1`';
+            $expected  = 'DROP TABLE IF EXISTS "table1"';
             expect($this->drop->toString())->toBe($expected);
 
         });
@@ -46,7 +46,7 @@ describe("DropTable", function() {
             $this->drop->table('table1')
                 ->cascade();
 
-            $expected  = 'DROP TABLE `table1` CASCADE';
+            $expected  = 'DROP TABLE "table1" CASCADE';
             expect($this->drop->toString())->toBe($expected);
 
         });
@@ -60,7 +60,7 @@ describe("DropTable", function() {
             $this->drop->table('table1')
                 ->restrict();
 
-            $expected  = 'DROP TABLE `table1` RESTRICT';
+            $expected  = 'DROP TABLE "table1" RESTRICT';
             expect($this->drop->toString())->toBe($expected);
 
         });

@@ -6,7 +6,7 @@ use chaos\SourceException;
 /**
  * INSERT statement.
  */
-class Insert extends Statement
+class Insert extends \chaos\source\database\sql\Statement
 {
     /**
      * The SQL parts.
@@ -14,8 +14,10 @@ class Insert extends Statement
      * @var string
      */
     protected $_parts = [
-        'into'   => '',
-        'values' => []
+        'flags'     => [],
+        'into'      => '',
+        'values'    => [],
+        'returning' => []
     ];
 
     /**
@@ -58,10 +60,11 @@ class Insert extends Statement
         $values = array_values($this->_parts['values']);
 
         return 'INSERT' .
-            $this->_buildClause('INTO', $this->sql()->name($this->_parts['into'])) .
-            $this->_buildChunk('(' . join(', ', $this->sql()->fields($fields, true)) . ')', false) .
+            $this->_buildFlags($this->_parts['flags']) .
+            $this->_buildClause('INTO', $this->sql()->name($this->_parts['into'], true)) .
+            $this->_buildChunk('(' . $this->sql()->names($fields, true) . ')', false) .
             $this->_buildChunk('VALUES (' . join(', ', array_map([$this->sql(), 'value'], $values)) . ')') .
-            $this->_buildClause('RETURNING', $this->sql()->fields($this->_parts['returning'], false, ''));
+            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning'], false, ''));
     }
 
 }

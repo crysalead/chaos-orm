@@ -6,7 +6,7 @@ use chaos\SourceException;
 /**
  * `SELECT` statement.
  */
-class Select extends Statement
+class Select extends \chaos\source\database\sql\Statement
 {
     /**
      * Subquery alias
@@ -203,10 +203,6 @@ class Select extends Statement
      */
     public function toString()
     {
-        if (!$this->_parts['from']) {
-            throw new SourceException("Invalid `SELECT` statement missing `FORM` clause.");
-        }
-
         $sql = 'SELECT' .
             $this->_buildFlags($this->_parts['flags']) .
             $this->_buildChunk($this->sql()->names($this->_parts['fields'], false, '*')) .

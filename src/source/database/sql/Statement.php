@@ -1,5 +1,5 @@
 <?php
-namespace chaos\source\database\sql\statement;
+namespace chaos\source\database\sql;
 
 use chaos\SourceException;
 
