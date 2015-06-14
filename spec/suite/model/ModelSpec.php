@@ -788,68 +788,6 @@ describe("Model", function() {
 
     });
 
-    describe("::find()", function() {
-
-        it("throws an exception", function() {
-            $closure = function() {
-                Model::find();
-            };
-            expect($closure)->toThrow(new SourceException("The `find()` method is not supported by `chaos\model\Model`."));
-
-        });
-
-    });
-
-    describe("::update()", function() {
-
-        it("throws an exception", function() {
-            $closure = function() {
-                Model::update(['enabled' => true]);
-            };
-            expect($closure)->toThrow(new SourceException("The `update()` method is not supported by `chaos\model\Model`."));
-
-        });
-
-    });
-
-    describe("::remove()", function() {
-
-        it("throws an exception", function() {
-            $closure = function() {
-                Model::remove();
-            };
-            expect($closure)->toThrow(new SourceException("The `remove()` method is not supported by `chaos\model\Model`."));
-
-        });
-
-    });
-
-    describe("->save()", function() {
-
-        it("throws an exception", function() {
-            $closure = function() {
-                $entity = new Model();
-                $entity->save();
-            };
-            expect($closure)->toThrow(new SourceException("The `save()` method is not supported by `chaos\model\Model`."));
-
-        });
-
-    });
-
-    describe("->delete()", function() {
-
-        it("throws an exception", function() {
-            $closure = function() {
-                $entity = new Model();
-                $entity->delete();
-            };
-            expect($closure)->toThrow(new SourceException("The `delete()` method is not supported by `chaos\model\Model`."));
-
-        });
-
-    });
-
     describe("::reset()", function() {
 
         it("resets the class", function() {

@@ -13,7 +13,13 @@ describe("MySql", function() {
     beforeEach(function() {
         $this->adapter = box('chaos.spec')->get('source.database.mysql');
         $this->fixtures = new Fixtures([
-            'connection' => $this->adapter
+            'classes'    => [
+                'model' => 'chaos\source\database\model\Model'
+            ],
+            'connection' => $this->adapter,
+            'fixtures'   => [
+                'gallery' => 'chaos\spec\fixture\sample\Gallery'
+            ]
         ]);
     });
 
@@ -24,13 +30,14 @@ describe("MySql", function() {
     describe("->sources()", function() {
 
         it("shows sources", function() {
-            $this->fixtures->populate('gallery');
 
+            $this->fixtures->populate('gallery');
             $sources = $this->adapter->sources();
 
             expect($sources)->toBe([
                 'gallery' => 'gallery'
             ]);
+
         });
 
     });
@@ -40,7 +47,24 @@ describe("MySql", function() {
         it("describe a source", function() {
 
             $this->fixtures->populate('gallery');
-            //print_r($this->adapter->describe('gallery'));
+
+            $schema = $this->adapter->describe('gallery');
+
+            expect($schema->field('id'))->toBe([
+                'type' => 'integer',
+                'length' => 11,
+                'null' => false,
+                'default' => null,
+                'array' => false
+            ]);
+
+            expect($schema->field('name'))->toBe([
+                'type' => 'string',
+                'length' => 255,
+                'null' => true,
+                'default' => null,
+                'array' => false
+            ]);
 
             //$statement = $this->adapter->execute("SELECT row_to_json(aa) FROM aa");
             //print_r($statement->fetchAll(PDO::FETCH_ASSOC));

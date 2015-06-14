@@ -569,9 +569,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         if (!$this->_cursor || !$this->_cursor->valid()) {
             return;
         }
-        $data = $this->_cursor->current();
-        $result = $this->_set($data, null, ['exists' => true]);
-
+        $result = $this->_set($this->_cursor->current(), null, ['exists' => true]);
+        $this->_cursor->next();
         return $result;
     }
 
@@ -604,6 +603,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function data()
     {
+        $this->offsetGet(null);
         return static::toArray($this);
     }
 

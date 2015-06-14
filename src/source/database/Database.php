@@ -244,15 +244,13 @@ abstract class Database
      */
     protected function _sources($sql)
     {
-        $statement = $this->_pdo->query($sql);
-        $result = $statement->fetchAll(PDO::FETCH_NUM);
+        $result = $this->query($sql);
 
         $sources = [];
         foreach($result as $source) {
             $name = reset($source);
             $sources[$name] = $name;
         }
-
         return $sources;
     }
 
@@ -310,7 +308,7 @@ abstract class Database
     }
 
     /**
-     * Get/set an internal type casting definition
+     * Gets/sets an internal type casting definition
      *
      * @param  string   $type          The type name.
      * @param  callable $importHandler The callable import handler.
@@ -378,9 +376,11 @@ abstract class Database
      * @return PDOStatement A PDOStatement
      * @throws chaos\SourceException
      */
-    public function execute($sql, $data = []){
-        $statement = $this->_pdo->query($sql);
-        return $statement;
+    public function query($sql, $data = []){
+        $statement = $this->_pdo->prepare($sql);
+        $statement->execute($data);
+        $cursor = $this->_classes['cursor'];
+        return new $cursor(['resource' => $statement]);
     }
 
     /**

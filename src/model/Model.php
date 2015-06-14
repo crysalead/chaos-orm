@@ -13,7 +13,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var array
      */
     protected static $_classes = [
-        'entity'       => 'chaos\model\Model',
         'set'          => 'chaos\model\collection\Collection',
         'schema'       => 'chaos\model\Schema',
         'relationship' => 'chaos\model\Relationship',
@@ -99,6 +98,244 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected $_skipNext = false;
 
+    /**************************
+     *  Model related methods
+     **************************/
+
+    /**
+     * Configures the Model.
+     *
+     * @param array $config Possible options are:
+     *                      - `'classes'` _array_: Dependencies array.
+     */
+    public static function config($config = [])
+    {
+        static::reset();
+        $defaults = [
+            'classes' => static::$_classes,
+            'schema'      => null,
+            'connection'  => null,
+            'conventions' => null
+        ];
+        $config = Set::merge($defaults, $config);
+
+        if ($config['schema']) {
+            static::$_schemas[static::class] = $config['schema'];
+        }
+        static::$_classes = $config['classes'];
+        static::$_connection = $config['connection'];
+        static::$_conventions = $config['conventions'];
+    }
+
+    /**
+     * (Method to override)
+     * Return all meta-information for this class, including the name of the data source.
+     *
+     * Possible options are:
+     * - `'key'`    _string_: The primary key or identifier key, i.e. `'id'`.
+     * - `'source'` _string_: The name of the source to bind to (i.e the table or collection name).
+     *
+     * @var array
+     */
+    protected static function _meta()
+    {
+        return [];
+    }
+
+    /**
+     * This function called once for initializing the model's schema.
+     *
+     * Example of schema initialization:
+     * ```php
+     * $schema->add('id', ['type' => 'id']);
+     *
+     * $schema->add('title', ['type' => 'string', 'default' => true]);
+     *
+     * $schema->add('body', ['type' => 'string', 'use' => 'longtext']);
+     *
+     * // Custom object
+     * $schema->add('comments',       ['type' => 'object', 'array' => true, 'default' => []]);
+     * $schema->add('comments.id',    ['type' => 'id']);
+     * $schema->add('comments.email', ['type' => 'string']);
+     * $schema->add('comments.body',  ['type' => 'string']);
+     *
+     * // Custom object with a dedicated class
+     * $schema->add('comments', [
+     *     'type' => 'object',
+     *     'class' => 'name\space\model\Comment',
+     *     'array' => true,
+     *     'default' => []
+     * ]);
+     *
+     * $schema->bind('tags', [
+     *     'relation'    => 'hasManyThrough',
+     *     'through'     => 'post_tag'
+     *     'using'       => 'tag'
+     *     'constraints' => ['{:to}.enabled' => true]
+     * ]);
+     *
+     * $schema->bind('post_tag', [
+     *     'relation'    => 'hasMany',
+     *     'to'          => 'name\space\model\PostTag',
+     *     'key'         => ['id' => 'post_id'],
+     *     'constraints' => ['{:to}.enabled' => true]
+     * ]);
+     * ```
+     *
+     */
+    protected static function _schema($schema)
+    {
+    }
+
+    /**
+     * Instantiates a new record or document object, initialized with any data passed in. For example:
+     *
+     * ```php
+     * $post = Posts::create(['title' => 'New post']);
+     * echo $post->title; // echoes 'New post'
+     * $success = $post->save();
+     * ```
+     *
+     * Note that while this method creates a new object, there is no effect on the database until
+     * the `save()` method is called.
+     *
+     * In addition, this method can be used to simulate loading a pre-existing object from the
+     * database, without actually querying the database:
+     *
+     * ```php
+     * $post = Posts::create(['id' => $id, 'moreData' => 'foo'], ['exists' => true]);
+     * $post->title = 'New title';
+     * $success = $post->save();
+     * ```
+     *
+     * This will create an update query against the object with an ID matching `$id`. Also note that
+     * only the `title` field will be updated.
+     *
+     * @param  array  $data    Any data that this object should be populated with initially.
+     * @param  array  $options Options to be passed to item.
+     * @return object          Returns a new, un-saved record or document object. In addition to
+     *                         the values passed to `$data`, the object will also contain any values
+     *                         assigned to the `'default'` key of each field defined in the schema.
+     */
+    public static function create($data = [], $options = [])
+    {
+        $defaults = [
+            'type' => 'entity',
+            'exists' => false,
+            'model' => static::class
+        ];
+        $options += $defaults;
+        $options['defaults'] = !$options['exists'];
+
+        if ($options['defaults'] && $options['type'] === 'entity') {
+            $data = Set::merge(Set::expand(static::schema()->fields('default')), $data);
+        }
+
+        $type = $options['type'];
+        $class = $type === 'entity' ? $options['model'] : static::$_classes[$options['type']];
+
+        $options = ['data' => $data] + $options;
+        return new $class($options);
+    }
+
+    /**
+     * Gets/sets the connection object to which this model is bound.
+     *
+     * @param  object $connection The connection instance to set or `null` to get the current one.
+     * @return object             Returns a connection instance.
+     */
+    public static function connection($connection = null) {
+        if (func_num_args()) {
+            static::$_connection = $connection;
+        }
+        return static::$_connection;
+    }
+
+    /**
+     * Returns the schema of this instance.
+     *
+     * @return object
+     */
+    public static function schema()
+    {
+        $class = static::class;
+        if (isset(static::$_schemas[$class])) {
+            return static::$_schemas[$class];
+        }
+        $conventions = static::conventions();
+
+        $config = static::_meta() + [
+            'classes'     => ['entity' => $class] + static::$_classes,
+            'connection'  => static::$_connection,
+            'conventions' => $conventions
+        ];
+        $class = $config['classes']['schema'];
+        $schema = static::$_schemas[$class] = new $class($config);
+        $schema->source = $conventions->apply('source', $config['classes']['entity']);
+        static::_schema($schema);
+        return $schema;
+    }
+
+    /**
+     * Returns a relationship instance (shortcut).
+     *
+     * @param  string $name The name of a relation.
+     * @return object       Returns a relationship intance or `null` if it doesn't exists.
+     */
+    public static function relation($name)
+    {
+         return static::schema()->relation($name);
+    }
+
+    /**
+     * Returns an array of relation names (shortcut).
+     *
+     * @param  string $type A relation type name.
+     * @return array        Returns an array of relation names.
+     */
+    public static function relations($type = null)
+    {
+        return static::schema()->relations($type);
+    }
+
+    /**
+     * Gets/sets the conventions object to which this model is bound.
+     *
+     * @param  object $conventions The conventions instance to set or `null` to get the current one.
+     * @return object              Returns a connection instance.
+     */
+    public static function conventions($conventions = null) {
+        if (func_num_args()) {
+            static::$_conventions = $conventions;
+        }
+        if (!static::$_conventions) {
+            $conventions = static::$_classes['conventions'];
+            static::$_conventions = new $conventions();
+        }
+        return static::$_conventions;
+    }
+
+    /**
+     * Reseting the model.
+     */
+    public static function reset()
+    {
+        static::$_classes = [
+            'entity'       => 'chaos\model\Model',
+            'set'          => 'chaos\model\collection\Collection',
+            'schema'       => 'chaos\model\Schema',
+            'relationship' => 'chaos\model\Relationship',
+            'conventions'  => 'chaos\model\Conventions'
+        ];
+        static::$_schemas = [];
+        static::$_connection = null;
+        static::$_conventions = null;
+    }
+
+    /***************************
+     *  Entity related methods
+     ***************************/
+
     /**
      * Creates a new record object with default values.
      *
@@ -168,7 +405,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function primaryKey()
     {
         if (!$key = static::schema()->primaryKey()) {
-            $class = get_called_class();
+            $class = static::class;
             throw new SourceException("No primary key has been defined for `{$class}`'s schema.");
         }
         return isset($this->$key) ? $this->$key : null;
@@ -250,7 +487,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
         $defaults = [
             'parent'   => $this,
-            'model'    => get_called_class(),
+            'model'    => static::class,
             'rootPath' => $this->_rootPath,
             'defaults' => !$this->_exists,
             'exists'   => $this->_exists
@@ -612,22 +849,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Needs to be overrided using a database specific implementation.
-     */
-    public function save($options = [])
-    {
-        throw new SourceException('The `save()` method is not supported by `'. get_called_class() . '`.');
-    }
-
-    /**
-     * Needs to be overrided using a database specific implementation.
-     */
-    public function delete($options = [])
-    {
-        throw new SourceException('The `delete()` method is not supported by `'. get_called_class() . '`.');
-    }
-
-    /**
      * Returns a string representation of the instance.
      *
      * @return string Returns the generated title of the object.
@@ -661,259 +882,5 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             break;
         }
         return $result;
-    }
-
-    /**
-     * Configures the model.
-     *
-     * @param array $config Possible options are:
-     *                      - `'classes'` _array_: Dependencies array.
-     */
-    public static function config($config = [])
-    {
-        $defaults = [
-            'classes' => [
-                'schema'       => 'chaos\model\Schema',
-                'relationship' => 'chaos\model\Relationship',
-                'conventions'  => 'chaos\model\Conventions'
-            ],
-            'schema'      => null,
-            'connection'  => null,
-            'conventions' => null
-        ];
-        $config = Set::merge($defaults, $config);
-
-        if ($config['schema']) {
-            static::$_schemas[get_called_class()] = $config['schema'];
-        }
-        static::$_classes = $config['classes'];
-        static::$_connection = $config['connection'];
-        static::$_conventions = $config['conventions'];
-    }
-
-    /**
-     * Instantiates a new record or document object, initialized with any data passed in. For example:
-     *
-     * ```php
-     * $post = Posts::create(['title' => 'New post']);
-     * echo $post->title; // echoes 'New post'
-     * $success = $post->save();
-     * ```
-     *
-     * Note that while this method creates a new object, there is no effect on the database until
-     * the `save()` method is called.
-     *
-     * In addition, this method can be used to simulate loading a pre-existing object from the
-     * database, without actually querying the database:
-     *
-     * ```php
-     * $post = Posts::create(['id' => $id, 'moreData' => 'foo'], ['exists' => true]);
-     * $post->title = 'New title';
-     * $success = $post->save();
-     * ```
-     *
-     * This will create an update query against the object with an ID matching `$id`. Also note that
-     * only the `title` field will be updated.
-     *
-     * @param  array  $data    Any data that this object should be populated with initially.
-     * @param  array  $options Options to be passed to item.
-     * @return object          Returns a new, un-saved record or document object. In addition to
-     *                         the values passed to `$data`, the object will also contain any values
-     *                         assigned to the `'default'` key of each field defined in the schema.
-     */
-    public static function create($data = [], $options = [])
-    {
-        $defaults = [
-            'type' => 'entity',
-            'exists' => false,
-            'model' => get_called_class()
-        ];
-        $options += $defaults;
-        $options['defaults'] = !$options['exists'];
-
-        if ($options['defaults'] && $options['type'] === 'entity') {
-            $data = Set::merge(Set::expand(static::schema()->fields('default')), $data);
-        }
-
-        $class = isset($options['model']) ? $options['model'] : static::$_classes[$options['type']];
-        $options = ['data' => $data] + $options;
-        return new $class($options);
-    }
-
-    /**
-     * Needs to be overrided using a database specific implementation.
-     */
-    public static function find($options = [])
-    {
-        throw new SourceException('The `find()` method is not supported by `'. get_called_class() . '`.');
-    }
-
-    /**
-     * Needs to be overrided using a database specific implementation.
-     */
-    public static function update($data, $conditions = [], $options = [])
-    {
-        throw new SourceException('The `update()` method is not supported by `'. get_called_class() . '`.');
-    }
-
-    /**
-     * Needs to be overrided using a database specific implementation.
-     */
-    public static function remove($conditions = [], $options = [])
-    {
-        throw new SourceException('The `remove()` method is not supported by `'. get_called_class() . '`.');
-    }
-
-    /**
-     * Gets/sets the connection object to which this model is bound.
-     *
-     * @param  object $connection The connection instance to set or `null` to get the current one.
-     * @return object             Returns a connection instance.
-     */
-    public static function connection($connection = null) {
-        if (func_num_args()) {
-            static::$_connection = $connection;
-        }
-        return static::$_connection;
-    }
-
-    /**
-     * Gets/sets the conventions object to which this model is bound.
-     *
-     * @param  object $conventions The conventions instance to set or `null` to get the current one.
-     * @return object              Returns a connection instance.
-     */
-    public static function conventions($conventions = null) {
-        if (func_num_args()) {
-            static::$_conventions = $conventions;
-        }
-        if (!static::$_conventions) {
-            $conventions = static::$_classes['conventions'];
-            static::$_conventions = new $conventions();
-        }
-        return static::$_conventions;
-    }
-
-    /**
-     * Returns the schema of this instance.
-     *
-     * @return object
-     */
-    public static function schema()
-    {
-        $class = get_called_class();
-        if (isset(static::$_schemas[$class])) {
-            return static::$_schemas[$class];
-        }
-        $conventions = static::conventions();
-
-        $config = static::_meta() + [
-            'classes'     => ['entity' => $class] + static::$_classes,
-            'connection'  => static::$_connection,
-            'conventions' => $conventions
-        ];
-        $class = $config['classes']['schema'];
-        $schema = static::$_schemas[$class] = new $class($config);
-        $schema->source = $conventions->apply('source', $config['classes']['entity']);
-        static::_schema($schema);
-        return $schema;
-    }
-
-    /**
-     * Returns a relationship instance (shortcut).
-     *
-     * @param  string $name The name of a relation.
-     * @return object       Returns a relationship intance or `null` if it doesn't exists.
-     */
-    public static function relation($name)
-    {
-         return static::schema()->relation($name);
-    }
-
-    /**
-     * Returns an array of relation names (shortcut).
-     *
-     * @param  string $type A relation type name.
-     * @return array        Returns an array of relation names.
-     */
-    public static function relations($type = null)
-    {
-        return static::schema()->relations($type);
-    }
-
-    /**
-     * Return all meta-information for this class, including the name of the data source.
-     *
-     * Possible options are:
-     * - `'key'`    _string_: The primary key or identifier key, i.e. `'id'`.
-     * - `'source'` _string_: The name of the source to bind to (i.e the table or collection name).
-     *
-     * @var array
-     */
-    protected static function _meta()
-    {
-        return [];
-    }
-
-    /**
-     * This function called once for initializing the model's schema.
-     *
-     * Example of schema initialization:
-     * ```php
-     * $schema->add('id', ['type' => 'id']);
-     *
-     * $schema->add('title', ['type' => 'string', 'default' => true]);
-     *
-     * $schema->add('body', ['type' => 'string', 'use' => 'longtext']);
-     *
-     * // Custom object
-     * $schema->add('comments',       ['type' => 'object', 'array' => true, 'default' => []]);
-     * $schema->add('comments.id',    ['type' => 'id']);
-     * $schema->add('comments.email', ['type' => 'string']);
-     * $schema->add('comments.body',  ['type' => 'string']);
-     *
-     * // Custom object with a dedicated class
-     * $schema->add('comments', [
-     *     'type' => 'object',
-     *     'class' => 'name\space\model\Comment',
-     *     'array' => true,
-     *     'default' => []
-     * ]);
-     *
-     * $schema->bind('tags', [
-     *     'relation'    => 'hasManyThrough',
-     *     'through'     => 'post_tag'
-     *     'using'       => 'tag'
-     *     'constraints' => ['{:to}.enabled' => true]
-     * ]);
-     *
-     * $schema->bind('post_tag', [
-     *     'relation'    => 'hasMany',
-     *     'to'          => 'name\space\model\PostTag',
-     *     'key'         => ['id' => 'post_id'],
-     *     'constraints' => ['{:to}.enabled' => true]
-     * ]);
-     * ```
-     *
-     */
-    protected static function _schema($schema)
-    {
-    }
-
-    /**
-     * Reseting the model.
-     */
-    public static function reset()
-    {
-        static::$_classes = [
-            'entity'       => 'chaos\model\Model',
-            'set'          => 'chaos\model\collection\Collection',
-            'schema'       => 'chaos\model\Schema',
-            'relationship' => 'chaos\model\Relationship',
-            'conventions'  => 'chaos\model\Conventions'
-        ];
-        static::$_schemas = [];
-        static::$_connection = null;
-        static::$_conventions = null;
     }
 }

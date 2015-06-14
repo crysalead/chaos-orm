@@ -8,7 +8,7 @@ use chaos\SourceException;
 /**
  * The Query wrapper.
  */
-class QueryWrapper implements IteratorAggregate
+class Query implements IteratorAggregate
 {
     /**
      * The connection to the datasource.
@@ -18,25 +18,18 @@ class QueryWrapper implements IteratorAggregate
     protected $_connection = null;
 
     /**
-     * The fully namespaced model class name.
+     * The fully namespaced model class name on which this query is starting.
      *
      * @var string
      */
     protected $_model = null;
 
     /**
-     * The statement instance.
+     * The `SELECT` statement instance.
      *
      * @var string
      */
-    protected $_statement = null;
-
-    /**
-     * The type.
-     *
-     * @var string
-     */
-    protected $_type = null;
+    protected $_select = null;
 
     /**
      * Count the number of identical models in a query for building
@@ -80,22 +73,38 @@ class QueryWrapper implements IteratorAggregate
      *                      - `'type'`       _string_ : The type of query.
      *                      - `'connection'` _object_ : The connection instance.
      *                      - `'model'`      _string_ : The model class.
-     *                      - `'query'`      _array_  : The query data.
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'type'       => 'all',
             'connection' => null,
-            'model'      => null,
-            'query'      => [],
+            'model'      => null
         ];
         $config = Set::merge($defaults, $config);
-        $this->_type = $config['type'];
-        $this->_model = $config['model'];
-        $this->_entity = $config['entity'];
-        $this->_fieldName = $config['fieldName'];
-        $this->_statement = $this->connection()->sql()->statement('select');
+        $model = $this->_model = $config['model'];
+        $this->_connection = $config['connection'];
+        //$this->_fieldName = $config['fieldName'];
+        $this->_alias = 'Model';
+        $this->_select = $this->connection()->sql()->statement('select'); //TODO pass this as parameter
+        $this->_select->from($model::schema()->source());
+    }
+
+    /**
+     * When not supported, delegate the call to the sql statement.
+     *
+     * @param  string $name   The name of the matcher.
+     * @param  array  $params The parameters to pass to the matcher.
+     * @return object         Returns `$this`.
+     */
+    public function __call($name, $params = [])
+    {
+        if (method_exists($this->_model, $scope = 'scope' . ucfirst($name))) {
+            array_unshift($params, $this);
+            call_user_func_array([$this->_model, $scope], $params);
+        } else {
+            call_user_func_array([$this->_select, $name], $params);
+        }
+        return $this;
     }
 
     /**
@@ -113,63 +122,83 @@ class QueryWrapper implements IteratorAggregate
     }
 
     /**
-     * When not supported, delegate the call to the sql statement.
+     * Executes the query and returns the result (must implements the `Iterator` interface).
      *
-     * @param  string $name   The name of the matcher.
-     * @param  array  $params The parameters to pass to the matcher.
-     * @return object         Returns `$this`.
+     * (Automagically called on `foreach`)
+     *
+     * @return object An iterator instance.
      */
-    public function __call($name, $params = [])
+    public function getIterator()
     {
-        if (method_exists($this->_model, $scope = 'scope' . ucfirst($name))) {
-            array_unshift($params, $this);
-            call_user_func_array([$this->_model, $scope], $params);
-        } else {
-            call_user_func_array([$this->_statement, $name], $params);
-        }
-        return  $this;
+        return $this->get();
     }
 
+    /**
+     * Executes the query and returns the result.
+     *
+     * @return object An iterator instance.
+     */
+    public function get()
+    {
+        $query = $this;
+        $with = Set::normalize($this->_with);
+        $cursor = $this->connection()->query($this->_select->toString());  //TODO pass connection to statement and run it directly
+        $model = $this->_model;
+        return $model::create([], compact('query', 'cursor') + [
+            'type' => 'set', 'defaults' => false
+        ]);
+    }
+
+    /**
+     * Alias for `get()`
+     *
+     * @return object An iterator instance.
+     */
+    public function all()
+    {
+        return $this->get();
+    }
+
+    /**
+     * Executes the query and returns the first result only.
+     *
+     * @return object An entity instance.
+     */
+    public function first()
+    {
+        $result = $this->get();
+        return is_object($result) ? $result->rewind() : $result;
+    }
+
+    /**
+     * Executes the query and returns the count number.
+     *
+     * @return integer The number of rows in result.
+     */
+    public function count()
+    {
+        $this->_select->fields([':plain' => 'COUNT(*)']);
+        $cursor = $this->connection()->query($this->_select->toString());
+        $result = $cursor->current();
+        return (int) current($result);
+    }
+
+    /**
+     * Sets the relations to retrieve.
+     *
+     * @param array The relations to load with the query.
+     */
     public function with($relations)
     {
         if (is_string($relations)) {
             $relations = func_get_args();
         }
         $this->_with = $relations;
-    }
-
-    public function getIterator()
-    {
-        return $this->get();
-    }
-
-    public function get()
-    {
-        return $this->{$this->_type}();
-    }
-
-    public function all()
-    {
-        return $this->_get();
-    }
-
-    public function first()
-    {
-        $result = $this->_get();
-        return is_object($result) ? $data->rewind() : $result;
-    }
-
-    protected function _get() {
-        $with = Set::normalize($this->_with);
-        $result = $this->connection()->execute((string) $this->_statement);
-    }
-
-    public function count()
-    {
+        return $this;
     }
 
     /**
-     * Get or Set a unique alias for the query or a query's relation if `$relpath` is set.
+     * Gets or Sets a unique alias for the query or a query's relation if `$relpath` is set.
      *
      * @param  mixed  $alias   The value of the alias to set for the passed `$relpath`. For getting an
      *                         alias value set alias to `true`.
@@ -217,15 +246,19 @@ class QueryWrapper implements IteratorAggregate
 
     public function applyStrategy()
     {
+        $options = ['strategy' => 'joined'];
+        $model = $context->model();
+
         $schema = $this->schema()->fields();
         $alias = $this->_alias();
 
 
-        $fields = $this->_statement->data('fields');
+        $fields = $this->_select->data('fields');
         $this->_map = $this->_map($fields);
     }
 
     /**
+     * The query map.
      *
      * @param array $fields Array of formatted fields.
      */
@@ -277,24 +310,26 @@ class QueryWrapper implements IteratorAggregate
         return $result;
     }
 
-    protected function _joinStrategy($alias, $with)
+    protected function _joinStrategy()
     {
-        $tree = Set::expand(array_fill_keys(array_keys($with), false));
+        $alias = $this->_alias;
+        $tree = Set::expand(array_fill_keys(array_keys($this->_with), false));
         $deps = [$alias => []];
 
-        $this->_join($model, $tree, '', $alias, $deps);
+        $this->_join($this->_model, $tree, '', $alias, $deps);
 
         $models = $this->_models;
-        foreach ($this->_fields() as $field) {
+        $fields = $this->_select->data('fields');
+        foreach ($fields as $field) {
             if (!is_string($field)) {
                 continue;
             }
-            list($alias, $field) = $self->invokeMethod('_splitFieldname', array($field));
+            list($alias, $field) = $this->connection()->sql()->undot($field);
             $alias = $alias ?: $field;
             if ($alias && isset($models[$alias])) {
                 foreach ($deps[$alias] as $depAlias) {
                     $depModel = $models[$depAlias];
-                    $this->_fields(array($depAlias => (array) $depModel::meta('key')));
+                    $this->_select->fields([$depAlias => [$depModel::schema()->primaryKey()]]);
                 }
             }
         }

@@ -20,7 +20,7 @@ class Schema extends \chaos\model\Schema
         $options += $defaults;
 
         if (!isset($this->_source)) {
-            throw new SourceException("Missing table name (source) for this schema.");
+            throw new SourceException("Missing table name for this schema.");
         }
         $query = $this->connection()->sql()->statement('create table');
         $query
@@ -30,7 +30,7 @@ class Schema extends \chaos\model\Schema
             ->constraints($this->meta('constraints'))
             ->meta($this->meta());
 
-        return $this->connection()->execute((string) $query);
+        return $this->connection()->query($query->toString());
     }
 
     /**
@@ -50,7 +50,7 @@ class Schema extends \chaos\model\Schema
         $options += $defaults;
 
         if (!isset($this->_source)) {
-            throw new SourceException("Missing table name (source) for this schema.");
+            throw new SourceException("Missing table name for this schema.");
         }
         $query = $this->connection()->sql()->statement('drop table');
         $query
@@ -59,6 +59,6 @@ class Schema extends \chaos\model\Schema
             ->cascade($options['cascade'])
             ->restrict($options['restrict']);
 
-        return $this->connection()->execute((string) $query);
+        return $this->connection()->query($query->toString());
     }
 }

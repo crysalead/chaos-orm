@@ -29,7 +29,7 @@ class Cursor extends \chaos\source\Cursor
             return false;
         }
         try {
-            if ($result = $this->_resource->fetch(PDO::FETCH_NUM)) {
+            if ($result = $this->_resource->fetch(PDO::FETCH_ASSOC)) {
                 $this->_key = $this->_iterator++;
                 $this->_current = $result;
                 return true;

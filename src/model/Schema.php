@@ -173,6 +173,22 @@ class Schema
     }
 
     /**
+     * Sets the schema fields.
+     *
+     * @param  string $fields The fields data.
+     * @return object         Returns `$this`.
+     */
+    public function set($fields = [], $append = false)
+    {
+        if (!$append) {
+            $this->_fields = [];
+        }
+        foreach ($fields as $name => $value) {
+            $this->add($name, $value);
+        }
+    }
+
+    /**
      * Adds a field into the schema.
      *
      * @param  string $name The field name.
@@ -250,9 +266,9 @@ class Schema
     }
 
     /**
-     * Gets/sets the source schema
+     * Gets/sets the source name.
      *
-     * @param  string $source The name or the source (i.e table/collection name) or `null` to get the defined one.
+     * @param  string $source The source name (i.e table/collection name) or `null` to get the defined one.
      * @return string
      */
     public function source($source = null)
@@ -279,9 +295,9 @@ class Schema
     }
 
     /**
-     * Gets/sets all schema fields attributes or all fields.
+     * Gets all fields.
      *
-     * @param  array $attribute  An attribute name. If `null` returns all fields.
+     * @param  array $attribute  An attribute name to filter on. If `null` returns all attributes.
      * @return array
      */
     public function fields($attribute = null)

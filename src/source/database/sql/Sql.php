@@ -3,7 +3,7 @@ namespace chaos\source\database\sql;
 
 use stdClass;
 use set\Set;
-use string\String;
+use text\Text;
 use chaos\SourceException;
 
 /**
@@ -636,6 +636,6 @@ class Sql
             }
         }
 
-        return trim(String::insert($template, $data, ['clean' => ['method' => 'text']]));
+        return trim(Text::insert($template, $data, ['clean' => ['method' => 'text']]));
     }
 }

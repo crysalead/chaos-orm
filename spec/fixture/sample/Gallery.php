@@ -3,21 +3,31 @@ namespace chaos\spec\fixture\sample;
 
 class Gallery extends \chaos\spec\fixture\Fixture
 {
+    protected $_source = 'gallery';
+
+    protected $_schema = [
+        'fields'     => [
+            'id'   => ['type' => 'serial'],
+            'name' => ['type' => 'string']
+        ]
+    ];
+
     public function all()
     {
-        $this->table();
+        $this->create();
+        $this->records();
     }
 
-    public function table() {
+    public function create()
+    {
+        $this->schema()->create();
+    }
 
-        $schema = $this->_classes['schema'];
-        $gallery = new $schema();
-
-        $gallery
-            ->connection($this->connection())
-            ->source('gallery')
-            ->add('id', ['type' => 'id'])
-            ->add('name', ['type' => 'string'])
-            ->create();
+    public function records()
+    {
+        $this->populate([
+            ['id' => 1, 'name' => 'Foo Gallery'],
+            ['id' => 2, 'name' => 'Bar Gallery']
+        ]);
     }
 }

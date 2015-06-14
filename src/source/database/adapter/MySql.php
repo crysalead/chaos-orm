@@ -170,23 +170,19 @@ class MySql extends \chaos\source\database\Database
         $schema = $this->_classes['schema'];
 
         if (func_num_args() === 1) {
-            $statement = $this->execute("DESCRIBE {$name}");
-
-            $cursor = $this->_classes['cursor'];
-
-            $columns = new $cursor(['resource' => $statement]);
+            $columns = $this->query("DESCRIBE {$name}");
 
             foreach ($columns as $column) {
-                $field = $this->_column($column[1]);
-                $default = $column[4];
+                $field = $this->_column($column['Type']);
+                $default = $column['Default'];
 
                 if ($default === 'CURRENT_TIMESTAMP') {
                     $default = null;
-                } elseif ($column[1] === 'boolean') {
+                } elseif ($column['Type'] === 'boolean') {
                     $default = !!$default;
                 }
-                $fields[$column[0]] = $field + [
-                    'null'     => ($column[2] === 'YES' ? true : false),
+                $fields[$column['Field']] = $field + [
+                    'null'     => ($column['Null'] === 'YES' ? true : false),
                     'default'  => $default
                 ];
             }

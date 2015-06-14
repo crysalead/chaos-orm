@@ -6,53 +6,57 @@ use chaos\SourceException;
 use chaos\model\Relationship;
 
 /**
- * The `Crud` trait implements all methods to perform CRUD database operations.
+ * A Model layer compatible with PDO connections.
  */
-trait Crud {
+class Model extends \chaos\model\Model {
 
     /**
      * Default query parameters for the model finders.
      *
-     * - `'conditions'`: The conditional query elements, e.g.
-     *                   `'conditions' => ['published' => true]`
-     * - `'fields'`    : The fields that should be retrieved. When set to `null`, defaults to
-     *                   all fields.
-     * - `'order'`     : The order in which the data will be returned, e.g. `'order' => 'ASC'`.
-     * - `'limit'`     : The maximum number of records to return.
-     * - `'page'`      : For pagination of data.
-     * - `'with'`      : An array of relationship names to be included in the query.
-     *
-     * @return array
+     * @var array
      */
-    protected static $_query = [
-        'conditions' => null,
-        'fields'     => null,
-        'order'      => null,
-        'limit'      => null,
-        'page'       => null,
-        'with'       => []
-    ];
+    protected static $_query = [];
 
     /**
-     * The `find` method allows you to retrieve data from the connected data source.
+     * Finds a record by its primary key.
      *
-     * @param array $options Options for the query. By default, accepts:
-     *                       - `conditions`: The conditional query elements, e.g.
-     *                       `'conditions' => array('published' => true)`
-     *                       - `fields`: The fields that should be retrieved. When set to `null`, defaults to
-     *                       all fields.
-     *                       - `order`: The order in which the data will be returned, e.g. `'order' => 'ASC'`.
-     *                       - `limit`: The maximum number of records to return.
-     *                       - `page`: For pagination of data.
-     * @return object        A `Query` instance.
-    */
-    public static function find($options = [])
+     * @param array  $options Options for the query. By default, accepts:
+     *                        -`'fields'` : The fields that should be retrieved.
+     *                        -`'order'`  : The order in which the data will be returned (e.g. `'order' => 'ASC'`).
+     *                        -`'group'`  : The group by array.
+     *                        -`'having'` : The having conditions array.
+     *                        -`'limit'`  : The maximum number of records to return.
+     *                        -`'page'`   : For pagination of data.
+     *                        -`'with'`   : An array of relationship names to be included in the query.
+     *
+     * @return mixed          The finded entity or `null` if not found.
+     */
+    public static function find($id, $options = [])
     {
-        return new Query([
-            'model'      => get_called_class(),
-            'connection' => static::connection(),
-            'query'      => Set::merge(static::$_query, $options)
+        unset($options['where']);
+        $query = static::where([static::schema()->primaryKey() => $id], $options);
+        return $query->first();
+    }
+
+    /**
+     * Returns a query to retrieve data from the connected data source.
+     *
+     * @param  array  $conditions The conditional query elements.
+     * @return object             An instance of `Query`.
+     */
+    public static function where($conditions = [], $options = [])
+    {
+        $query = new Query([
+            'model'      => static::class,
+            'connection' => static::connection()
         ]);
+        $options = Set::merge(static::$_query, $options);
+        $options['where'] = $conditions + (isset($options['where']) ? $options['where'] : []);
+
+        foreach ($options as $name => $value) {
+            $query->{$name}($value);
+        }
+        return $query->where($conditions);
     }
 
     /**
@@ -74,8 +78,13 @@ trait Crud {
         $defaults = ['model' => get_called_class()];
         $options += $defaults;
 
-        $statement = $this->connection()->sql()->statement('update');
-        return static::connection()->execute((string) $statement);
+        $update = static::connection()->sql()->statement('update');
+
+        $update->table(static::schema()->source())
+            ->where($conditions)
+            ->values($data);
+
+        return static::connection()->execute($update->toString());
     }
 
     /**
@@ -98,7 +107,26 @@ trait Crud {
         $options += $defaults;
 
         $statement = $this->connection()->sql()->statement('delete');
-        return static::connection()->execute((string) $statement);
+
+        $update->table(static::schema()->source())
+            ->where($conditions);
+
+        return static::connection()->execute($statement->toString());
+    }
+
+    /**
+     * When not supported, looks for scopes.
+     *
+     * @param  string $method Method name caught by `__callStatic()`.
+     * @param  array  $params The parameters to pass to the matcher.
+     * @return mixed          The query instance if a scope exists.
+     */
+    public static function __callStatic($method, $params = [])
+    {
+        if (method_exists(static::class, $scope = 'scope' . ucfirst($method))) {
+            array_unshift($params, static::where());
+            return call_user_func_array([static::class, $scope], $params);
+        }
     }
 
     /**
@@ -162,12 +190,18 @@ trait Crud {
             $whitelist = $whitelist ?: array_keys($this->schema()->fields());
         }
 
-        if ($entity->exists()) {
-            $statement = $this->connection()->sql()->statement('update');
+        $connection = static::connection();
+        $source = static::schema()->source();
+
+        if ($this->exists()) {
+            $statement = $connection->sql()->statement('update');
+            $statement->table($source);
         } else {
-            $statement = $this->connection()->sql()->statement('insert');
+            $statement = $connection->sql()->statement('insert');
+            $statement->into($source);
         }
-        $result = static::connection()->execute((string) $statement);
+        $statement->values($this->data());
+        $result = $connection->query($statement->toString());
 
         $hasRelations = ['hasManyThrough', 'hasMany', 'hasOne'];
 
@@ -183,7 +217,8 @@ trait Crud {
      *
      * @param array $types Type of relations to save.
      */
-    protected function _save($types, $options = []) {
+    protected function _save($types, $options = [])
+    {
         $defaults = ['with' => false];
         $options += $defaults;
 
@@ -213,14 +248,15 @@ trait Crud {
      * @return boolean Success.
      * @filter
      */
-    public function delete($options = []) {
+    public function delete($options = [])
+    {
         $defaults = ['model' => get_called_class()];
         $options += $defaults;
 
         //Add entity conditions
 
         $statement = $this->connection()->sql()->statement('delete');
-        $result = static::connection()->execute((string) $statement);
+        $result = static::connection()->execute($statement->toString());
     }
 
 }

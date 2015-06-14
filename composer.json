@@ -7,7 +7,7 @@
         "php": ">=5.4",
         "crysalead/box": "~1.0",
         "crysalead/set": "~1.0",
-        "crysalead/string": "dev-master",
+        "crysalead/text": "dev-master",
         "crysalead/inflector": "~1.0",
         "crysalead/collection": "dev-master"
     },
