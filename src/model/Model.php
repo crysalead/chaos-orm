@@ -14,10 +14,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected static $_classes = [
         'set'          => 'chaos\model\collection\Collection',
-        'schema'       => 'chaos\model\Schema',
         'relationship' => 'chaos\model\Relationship',
         'conventions'  => 'chaos\model\Conventions'
     ];
+
+    /**
+     * Stores the default schema class dependency.
+     *
+     * @var array
+     */
+    protected static $_schema = 'chaos\model\Schema';
 
     /**
      * Stores model's schema.
@@ -32,6 +38,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var object The connection instance.
      */
     protected static $_connection = null;
+
+    /**
+     * Default query parameters for the model finders.
+     *
+     * @var array
+     */
+    protected static $_query = [];
 
     /**
      * MUST BE re-defined in sub-classes which require some different conventions.
@@ -99,7 +112,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     protected $_skipNext = false;
 
     /**************************
+     *
      *  Model related methods
+     *
      **************************/
 
     /**
@@ -110,9 +125,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function config($config = [])
     {
-        static::reset();
         $defaults = [
-            'classes' => static::$_classes,
+            'classes'     => static::$_classes,
             'schema'      => null,
             'connection'  => null,
             'conventions' => null
@@ -147,20 +161,20 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * Example of schema initialization:
      * ```php
-     * $schema->add('id', ['type' => 'id']);
+     * $schema->set('id', ['type' => 'id']);
      *
-     * $schema->add('title', ['type' => 'string', 'default' => true]);
+     * $schema->set('title', ['type' => 'string', 'default' => true]);
      *
-     * $schema->add('body', ['type' => 'string', 'use' => 'longtext']);
+     * $schema->set('body', ['type' => 'string', 'use' => 'longtext']);
      *
      * // Custom object
-     * $schema->add('comments',       ['type' => 'object', 'array' => true, 'default' => []]);
-     * $schema->add('comments.id',    ['type' => 'id']);
-     * $schema->add('comments.email', ['type' => 'string']);
-     * $schema->add('comments.body',  ['type' => 'string']);
+     * $schema->set('comments',       ['type' => 'object', 'array' => true, 'default' => []]);
+     * $schema->set('comments.id',    ['type' => 'id']);
+     * $schema->set('comments.email', ['type' => 'string']);
+     * $schema->set('comments.body',  ['type' => 'string']);
      *
      * // Custom object with a dedicated class
-     * $schema->add('comments', [
+     * $schema->set('comments', [
      *     'type' => 'object',
      *     'class' => 'name\space\model\Comment',
      *     'array' => true,
@@ -185,6 +199,45 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected static function _schema($schema)
     {
+    }
+
+    /**
+     * Finds a record by its primary key.
+     *
+     * @param array  $options Options for the query. By default, accepts:
+     *                        -`'fields'` : The fields that should be retrieved.
+     *                        -`'order'`  : The order in which the data will be returned (e.g. `'order' => 'ASC'`).
+     *                        -`'group'`  : The group by array.
+     *                        -`'having'` : The having conditions array.
+     *                        -`'limit'`  : The maximum number of records to return.
+     *                        -`'page'`   : For pagination of data.
+     *                        -`'with'`   : An array of relationship names to be included in the query.
+     *
+     * @return mixed          The finded entity or `null` if not found.
+     */
+    public static function find($id, $options = [])
+    {
+        unset($options['where']);
+        $query = static::where([static::schema()->primaryKey() => $id], $options);
+        return $query->first();
+    }
+
+    /**
+     * Returns a query to retrieve data from the connected data source.
+     *
+     * @param  array  $conditions The conditional query elements.
+     * @return object             An instance of `Query`.
+     */
+    public static function where($conditions = [], $options = [])
+    {
+        $query = $this->schema->query(['model' => static::class]);
+        $options = Set::merge(static::$_query, $options);
+        $options['where'] = $conditions + (isset($options['where']) ? $options['where'] : []);
+
+        foreach ($options as $name => $value) {
+            $query->{$name}($value);
+        }
+        return $query->where($conditions);
     }
 
     /**
@@ -244,7 +297,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @param  object $connection The connection instance to set or `null` to get the current one.
      * @return object             Returns a connection instance.
      */
-    public static function connection($connection = null) {
+    public static function connection($connection = null)
+    {
         if (func_num_args()) {
             static::$_connection = $connection;
         }
@@ -269,7 +323,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'connection'  => static::$_connection,
             'conventions' => $conventions
         ];
-        $class = $config['classes']['schema'];
+        $class = static::$_schema;
         $schema = static::$_schemas[$class] = new $class($config);
         $schema->source = $conventions->apply('source', $config['classes']['entity']);
         static::_schema($schema);
@@ -304,7 +358,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @param  object $conventions The conventions instance to set or `null` to get the current one.
      * @return object              Returns a connection instance.
      */
-    public static function conventions($conventions = null) {
+    public static function conventions($conventions = null)
+    {
         if (func_num_args()) {
             static::$_conventions = $conventions;
         }
@@ -320,20 +375,15 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function reset()
     {
-        static::$_classes = [
-            'entity'       => 'chaos\model\Model',
-            'set'          => 'chaos\model\collection\Collection',
-            'schema'       => 'chaos\model\Schema',
-            'relationship' => 'chaos\model\Relationship',
-            'conventions'  => 'chaos\model\Conventions'
-        ];
-        static::$_schemas = [];
+        unset(static::$_schemas[static::class]);
         static::$_connection = null;
         static::$_conventions = null;
     }
 
     /***************************
+     *
      *  Entity related methods
+     *
      ***************************/
 
     /**
@@ -360,6 +410,19 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $this->_loaded = $options['data'];
         $this->set($this->_loaded);
         $this->_loaded = $this->_data;
+    }
+
+    /**
+     * When not supported, delegate the call to the schema.
+     *
+     * @param  string $name   The name of the matcher.
+     * @param  array  $params The parameters to pass to the matcher.
+     * @return object         Returns `$this`.
+     */
+    public function __call($name, $params = [])
+    {
+        array_unshift($params, $this);
+        return call_user_func_array([$this->schema(), $name], $params);
     }
 
     /**

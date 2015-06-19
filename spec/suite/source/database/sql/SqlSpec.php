@@ -19,13 +19,6 @@ describe("Sql", function() {
 
         });
 
-        it("escapes star by default", function() {
-
-            $part = $this->sql->names(['schema.*']);
-            expect($part)->toBe('"schema"."*"');
-
-        });
-
         it("escapes field name with a table prefix", function() {
 
             $part = $this->sql->names('tablename.fieldname');
@@ -61,7 +54,7 @@ describe("Sql", function() {
             $fields = [
                 'prefix.field1',
                 'prefix.field1' => 'F1',
-                'prefix' => ['field2', 'field3' => 'F3', ['field3' => 'F33']],
+                'prefix' => ['field2', 'field3' => 'F3', ['field3' => 'F33']]
             ];
             $part = $this->sql->names($fields);
             expect($part)->toBe(join(', ', [
@@ -70,6 +63,31 @@ describe("Sql", function() {
                 '"prefix"."field2"',
                 '"prefix"."field3" AS "F3"',
                 '"prefix"."field3" AS "F33"'
+            ]));
+
+        });
+
+        it("handle mixed syntax and uses an alias lookup", function() {
+
+            $fields = [
+                'pr.ef.ix.field1',
+                'pr.ef.ix.field1' => 'F1',
+                'pr.ef.ix' => ['field2', 'field3' => 'F3', ['field3' => 'F33']],
+                'field4'
+            ];
+
+            $part = $this->sql->names($fields, [
+                ''         => 'default',
+                'pr.ef.ix' => 'prefix'
+            ]);
+
+            expect($part)->toBe(join(', ', [
+                '"prefix"."field1"',
+                '"prefix"."field1" AS "F1"',
+                '"prefix"."field2"',
+                '"prefix"."field3" AS "F3"',
+                '"prefix"."field3" AS "F33"',
+                '"default"."field4"',
             ]));
 
         });
@@ -116,7 +134,7 @@ describe("Sql", function() {
                     ['field4' => 'F6']
                 ]
             ];
-            $part = $this->sql->names($fields, false);
+            $part = $this->sql->names($fields);
             expect($part)->toBe(join(', ', [
                 '"prefix"."field1"',
                 '"prefix"."field2"',
@@ -140,7 +158,7 @@ describe("Sql", function() {
             $fields = ['prefix' => [
                 'field1', ['field1' => 'F1'], ['field1' => 'F11']
             ]];
-            $part = $this->sql->names($fields, false);
+            $part = $this->sql->names($fields);
             expect($part)->toBe(join(', ', [
                 '"prefix"."field1"',
                 '"prefix"."field1" AS "F1"',
@@ -154,7 +172,7 @@ describe("Sql", function() {
             it("doesn't escapes star", function() {
 
                 $fields = ['prefix.*'];
-                $part = $this->sql->names($fields, false);
+                $part = $this->sql->names($fields);
                 expect($part)->toBe('"prefix".*');
 
             });
@@ -162,7 +180,7 @@ describe("Sql", function() {
             it("doesn't escapes star using an array syntax", function() {
 
                 $fields = ['prefix' => ['*']];
-                $part = $this->sql->names($fields, false);
+                $part = $this->sql->names($fields);
                 expect($part)->toBe('"prefix".*');
 
             });

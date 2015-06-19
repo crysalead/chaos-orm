@@ -18,7 +18,7 @@ describe("MySql", function() {
             ],
             'connection' => $this->adapter,
             'fixtures'   => [
-                'gallery' => 'chaos\spec\fixture\sample\Gallery'
+                'gallery' => 'chaos\spec\fixture\schema\Gallery'
             ]
         ]);
     });

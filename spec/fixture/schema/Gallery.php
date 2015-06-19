@@ -1,26 +1,14 @@
 <?php
-namespace chaos\spec\fixture\sample;
+namespace chaos\spec\fixture\schema;
 
 class Gallery extends \chaos\spec\fixture\Fixture
 {
-    protected $_source = 'gallery';
-
-    protected $_schema = [
-        'fields'     => [
-            'id'   => ['type' => 'serial'],
-            'name' => ['type' => 'string']
-        ]
-    ];
+    public $_model = 'chaos\spec\fixture\model\Gallery';
 
     public function all()
     {
         $this->create();
         $this->records();
-    }
-
-    public function create()
-    {
-        $this->schema()->create();
     }
 
     public function records()

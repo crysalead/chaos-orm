@@ -59,7 +59,9 @@ class Delete extends \chaos\source\database\sql\Statement
         if (!$fields) {
             return $this;
         }
-        $this->_parts['order'][] = $this->_sort($fields);
+        if ($fields = is_array($fields) ? $fields : func_get_args()) {
+            $this->_parts['order'] = array_merge($this->_parts['order'], $this->_order($fields));
+        }
         return $this;
     }
 
@@ -96,11 +98,11 @@ class Delete extends \chaos\source\database\sql\Statement
 
         return 'DELETE' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'], true)) .
+            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'])) .
             $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
-            $this->_buildClause('ORDER BY', join(', ', $this->_parts['order'])) .
+            $this->_buildOrder($this->_parts['order']) .
             $this->_buildClause('LIMIT', $this->_parts['limit']) .
-            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning'], false, ''));
+            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning']));
     }
 
 }

@@ -1,8 +1,9 @@
 <?php
 namespace chaos\spec\fixture;
 
-use Exception;
 use set\Set;
+use Exception;
+use chaos\SourceException;
 
 class Fixtures
 {
@@ -45,7 +46,7 @@ class Fixtures
     {
         $defaults = [
             'classes'      => [
-                'schema'       => 'chaos\source\database\Schema',
+                'schema' => 'chaos\source\database\Schema',
                 'model'  => 'chaos\model\Model'
             ],
             'connection'   => null,
@@ -87,11 +88,15 @@ class Fixtures
         if (isset($this->_instances[$name])) {
             return $this->_instances[$name];
         }
+        if (!isset($this->_fixtures[$name])) {
+            throw new SourceException("Error, the fixture `'{$name}'` hasn't been defined.");
+        }
         $fixture = $this->_fixtures[$name];
 
         return $this->_instances[$name] = new $fixture([
             'classes' => $this->_classes,
-            'connection' => $this->connection()
+            'connection' => $this->connection(),
+            'fixtures' => $this
         ]);
     }
 
@@ -154,7 +159,7 @@ class Fixtures
     public function drop()
     {
         foreach ($this->_instances as $instance) {
-            $instance->schema()->drop();
+            $instance->drop();
         }
     }
 }

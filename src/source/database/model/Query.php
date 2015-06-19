@@ -25,11 +25,11 @@ class Query implements IteratorAggregate
     protected $_model = null;
 
     /**
-     * The `SELECT` statement instance.
+     * The finder statement instance.
      *
      * @var string
      */
-    protected $_select = null;
+    protected $_statement = null;
 
     /**
      * Count the number of identical models in a query for building
@@ -37,7 +37,7 @@ class Query implements IteratorAggregate
      *
      * @var array
      */
-    protected $_alias = [];
+    protected $_aliases = 0;
 
     /**
      * Map beetween generated aliases and corresponding relation paths
@@ -62,9 +62,25 @@ class Query implements IteratorAggregate
     protected $_map = [];
 
     /**
-     * The relations to load
+     * Map beetween generated aliases and corresponding models.
+     *
+     * @var array
+     */
+    protected $_relationships = [];
+
+    /**
+     * The relations to include.
+     *
+     * @var array
      */
     protected $_with = [];
+
+    /**
+     * Some conditions over some relations.
+     *
+     * @var array
+     */
+    protected $_has = [];
 
     /**
      * Creates a new record object with default values.
@@ -83,10 +99,9 @@ class Query implements IteratorAggregate
         $config = Set::merge($defaults, $config);
         $model = $this->_model = $config['model'];
         $this->_connection = $config['connection'];
-        //$this->_fieldName = $config['fieldName'];
-        $this->_alias = 'Model';
-        $this->_select = $this->connection()->sql()->statement('select'); //TODO pass this as parameter
-        $this->_select->from($model::schema()->source());
+        $source = $model::schema()->source();
+        $this->_statement = $this->connection()->sql()->statement('select');
+        $this->_statement->from([$source => $this->_alias()]);
     }
 
     /**
@@ -98,13 +113,17 @@ class Query implements IteratorAggregate
      */
     public function __call($name, $params = [])
     {
-        if (method_exists($this->_model, $scope = 'scope' . ucfirst($name))) {
-            array_unshift($params, $this);
-            call_user_func_array([$this->_model, $scope], $params);
-        } else {
-            call_user_func_array([$this->_select, $name], $params);
+        if (method_exists($this->_statement, $name)) {
+            call_user_func_array([$this->_statement, $name], $params);
+            return $this;
         }
-        return $this;
+        array_unshift($params, $this);
+        return call_user_func_array([$this->_model, $name], $params);
+    }
+
+    public function statement()
+    {
+        return $this->_statement;
     }
 
     /**
@@ -141,8 +160,8 @@ class Query implements IteratorAggregate
     public function get()
     {
         $query = $this;
-        $with = Set::normalize($this->_with);
-        $cursor = $this->connection()->query($this->_select->toString());  //TODO pass connection to statement and run it directly
+        $this->_applyHas();
+        $cursor = $this->connection()->query($this->_statement->toString($this->_paths));  //TODO pass connection to statement and run it directly
         $model = $this->_model;
         return $model::create([], compact('query', 'cursor') + [
             'type' => 'set', 'defaults' => false
@@ -177,8 +196,8 @@ class Query implements IteratorAggregate
      */
     public function count()
     {
-        $this->_select->fields([':plain' => 'COUNT(*)']);
-        $cursor = $this->connection()->query($this->_select->toString());
+        $this->_statement->fields([':plain' => 'COUNT(*)']);
+        $cursor = $this->connection()->query($this->_statement->toString());
         $result = $cursor->current();
         return (int) current($result);
     }
@@ -188,200 +207,108 @@ class Query implements IteratorAggregate
      *
      * @param array The relations to load with the query.
      */
-    public function with($relations)
+    public function with($with = null)
     {
-        if (is_string($relations)) {
-            $relations = func_get_args();
+        if (!$with) {
+            return $this->_with;
         }
-        $this->_with = $relations;
+        if (!is_array($with)) {
+            $with = func_get_args();
+        }
+        $with = Set::normalize($with);
+        $this->_has = Set::merge($this->_has, array_filter($with));
+        $this->_with = Set::merge($this->_with, Set::expand(array_fill_keys(array_keys($with), [])));
         return $this;
     }
 
     /**
-     * Gets or Sets a unique alias for the query or a query's relation if `$relpath` is set.
+     * Sets the conditionnal dependency over some relations.
+     *
+     * @param array The conditionnal dependency.
+     */
+    public function has($has = null, $conditions = [])
+    {
+        if (!$has) {
+            return $this->_has;
+        }
+        if (!is_array($has)) {
+            $has = [$has => $conditions];
+        }
+        $this->_has = array_merge($this->_has, $has);
+        return $this;
+    }
+
+    /**
+     * Gets a unique alias for the query or a query's relation if `$relpath` is set.
      *
      * @param  mixed  $alias   The value of the alias to set for the passed `$relpath`. For getting an
      *                         alias value set alias to `true`.
      * @param  string $relpath A dotted relation name or `null` for identifying the query's model.
      * @return string          An alias value or `null` for an unexisting `$relpath` alias.
      */
-    public function _alias($alias = true, $relpath = null)
+    public function _alias($relpath = '')
     {
-        if ($alias === true) {
-            if (!$relpath) {
-                return $this->_alias;
-            }
-            $return = array_search($relpath, $this->_paths);
-            return $return ?: null;
+        if (isset($this->_paths[$relpath])) {
+            return $this->_paths[$relpath];
         }
 
-        if ($relpath === null) {
-            $this->_alias = $alias;
-        }
+        $alias = "t" . $this->_aliases;
+        $this->_paths[$relpath] = $alias;
 
-        if ($relpath === null) {
-            $class = is_object($this->_entity) ? get_class($this->_entity) : $this->_entity;
-            $source = Conventions::get('source');
-            $this->_models[$alias] = $source($class);
-        }
-
-        $relpath = (string) $relpath;
-        unset($this->_paths[array_search($relpath, $this->_paths)]);
-
-        if (!$alias && $relpath) {
-            $last = strrpos($relpath, '.');
-            $alias = $last ? substr($relpath, $last + 1) : $relpath;
-        }
-
-        if (isset($this->_aliases[$alias])) {
-            $this->_aliases[$alias]++;
-            $alias .= '__' . $this->_aliases[$alias];
-        } else {
-            $this->_aliases[$alias] = 1;
-        }
-
-        $this->_paths[$alias] = $relpath;
+        $this->_aliases++;
         return $alias;
     }
 
-    public function applyStrategy()
+    protected function _applyHas()
     {
-        $options = ['strategy' => 'joined'];
-        $model = $context->model();
-
-        $schema = $this->schema()->fields();
-        $alias = $this->_alias();
-
-
-        $fields = $this->_select->data('fields');
-        $this->_map = $this->_map($fields);
-    }
-
-    /**
-     * The query map.
-     *
-     * @param array $fields Array of formatted fields.
-     */
-    protected function _map($fields = [])
-    {
-        $model = $this->_model;
-        $paths = $this->_paths;
-        $result = [];
-
-        if (!$fields) {
-            foreach ($paths as $alias => $relation) {
-                $model = $models[$alias];
-                $result[$relation] = $model::schema()->names();
-            }
-            return $result;
-        }
-
-        $unalias = function ($value) {
-            if (is_object($value) && isset($value->scalar)) {
-                $value = $value->scalar;
-            }
-            $aliasing = preg_split("/\s+as\s+/i", $value);
-            return isset($aliasing[1]) ? $aliasing[1] : $value;
-        };
-
-        if (isset($fields[0])) {
-            $raw = array_map($unalias, $fields[0]);
-            unset($fields[0]);
-        }
-
-        $models = $this->_models;
-        $alias = $this->_alias;
-        $fields = isset($fields[$alias]) ? [$alias => $fields[$alias]] + $fields : $fields;
-
-        foreach ($fields as $field => $value) {
-            if (is_array($value)) {
-                if (isset($value['*'])) {
-                    $relModel = $models[$field];
-                    $result[$paths[$field]] = $relModel::schema()->names();
-                } else {
-                    $result[$paths[$field]] = array_map($unalias, array_keys($value));
-                }
-            }
-        }
-
-        if (isset($raw)) {
-            $result[''] = isset($result['']) ? array_merge($raw, $result['']) : $raw;
-        }
-        return $result;
-    }
-
-    protected function _joinStrategy()
-    {
-        $alias = $this->_alias;
         $tree = Set::expand(array_fill_keys(array_keys($this->_with), false));
+        $alias = $this->_alias();
         $deps = [$alias => []];
 
-        $this->_join($this->_model, $tree, '', $alias, $deps);
-
-        $models = $this->_models;
-        $fields = $this->_select->data('fields');
-        foreach ($fields as $field) {
-            if (!is_string($field)) {
-                continue;
-            }
-            list($alias, $field) = $this->connection()->sql()->undot($field);
-            $alias = $alias ?: $field;
-            if ($alias && isset($models[$alias])) {
-                foreach ($deps[$alias] as $depAlias) {
-                    $depModel = $models[$depAlias];
-                    $this->_select->fields([$depAlias => [$depModel::schema()->primaryKey()]]);
-                }
-            }
-        }
+        //$this->_applyJoin($this->_model, $tree, '', $alias, $deps);
     }
 
-    protected function _join($model, $tree, $path, $from, &$deps)
+    protected function _applyJoin($model, $tree, $path, $from, &$deps)
     {
         foreach ($tree as $name => $childs) {
-            if (!$rel = $model::relations($name)) {
+            if (!$rel = $model::relation($name)) {
                 throw new SourceException("Model relationship `{$name}` not found.");
             }
 
-            $constraints = [];
             $alias = $name;
             $relPath = $path ? $path . '.' . $name : $name;
-            if (isset($with[$relPath])) {
-                list($unallowed, $allowed) = Set::slice($with[$relPath], ['alias', 'constraints']);
-                if ($unallowed) {
-                    throw new SourceException("Only `'alias'` and `'constraints'` are allowed.");
-                }
-                extract($with[$relPath]);
-            }
 
-            if ($rel->type() !== 'hasMany') {
-                $this->_joinClassic($rel, $from, $this->_alias($alias, $path), $constraints, $relPath, $deps);
+            $to = $this->_alias($relPath);
+
+            if ($rel->type() !== 'hasAndBelongsToMany') {
+                $this->_joinClassic($rel, $from, $to, $relPath, $deps);
             } else {
-                $this->_joinHabtm($rel, $from, $to, $constraints, $relPath, $deps);
+                $this->_joinHabtm($rel, $from, $to, $relPath, $deps);
             }
 
             if (!empty($childs)) {
-                $this->_join($rel->to(), $childs, $relPath, $to, $deps);
+                $this->_applyJoin($rel->to(), $childs, $relPath, $to, $deps);
             }
         }
     }
 
-    protected function _joinClassic($rel, $from, $to, $constraints, $path, &$deps)
+    protected function _joinClassic($rel, $from, $to, $path, &$deps)
     {
         $deps[$to] = $deps[$from];
         $deps[$to][] = $from;
 
-        if ($this->_relationships($path) === null) {
-            $this->_relationships($path, array(
+        if ($this->relationships($path) === null) {
+            $this->relationships($path, array(
                 'type' => $rel->type(),
                 'model' => $rel->to(),
                 'fieldName' => $rel->fieldName(),
                 'alias' => $to
             ));
-            $this->_join($rel, $from, $to, $constraints);
+            $this->_join($rel, $from, $to);
         }
     }
 
-    protected function _joinHabtm($rel, $from, $to, $constraints, $path, &$deps)
+    protected function _joinHabtm($rel, $from, $to, $path, &$deps)
     {
         $nameVia = $rel->data('via');
         $relnameVia = $path ? $path . '.' . $nameVia : $nameVia;
@@ -391,9 +318,9 @@ class Query implements IteratorAggregate
             throw new SourceException($message);
         }
 
-        if (!$config = $this->_relationships($relnameVia)) {
-            $aliasVia = $this->_alias($nameVia, $relnameVia);
-            $this->_relationships($relnameVia, array(
+        if (!$config = $this->relationships($relnameVia)) {
+            $aliasVia = $this->_alias($relnameVia);
+            $this->relationships($relnameVia, array(
                 'type' => $relVia->type(),
                 'model' => $relVia->to(),
                 'fieldName' => $relVia->fieldName(),
@@ -407,25 +334,134 @@ class Query implements IteratorAggregate
         $deps[$aliasVia] = $deps[$from];
         $deps[$aliasVia][] = $from;
 
-        if (!$this->_relationships($relPath)) {
-            $to = $this->_alias($alias, $relPath);
-            $modelVia = $relVia->data('to');
-            if (!$relTo = $modelVia::relations($name)) {
-                $message = "Model relationship `{$name}` ";
-                $message .= "via `{$nameVia}` not found.";
-                throw new SourceException($message);
-            }
-            $this->_relationships($relPath, array(
-                'type' => $rel->type(),
-                'model' => $relTo->to(),
-                'fieldName' => $rel->fieldName(),
-                'alias' => $to
-            ));
-             $this->_join($relTo, $aliasVia, $to, $constraints);
+        if ($this->relationships($relPath)) {
+            return;
         }
+
+        $to = $this->_alias($relPath);
+        $modelVia = $relVia->data('to');
+        if (!$relTo = $modelVia::relations($name)) {
+            $message = "Model relationship `{$name}` ";
+            $message .= "via `{$nameVia}` not found.";
+            throw new SourceException($message);
+        }
+        $this->relationships($relPath, array(
+            'type' => $rel->type(),
+            'model' => $relTo->to(),
+            'fieldName' => $rel->fieldName(),
+            'alias' => $to
+        ));
+        $this->_join($relTo, $aliasVia, $to);
 
         $deps[$to] = $deps[$aliasVia];
         $deps[$to][] = $aliasVia;
     }
 
+    /**
+     * Set a query's join according a Relationship.
+     *
+     * @param object $rel A Relationship instance
+     * @param string $fromAlias Set a specific alias for the `'from'` `Model`.
+     * @param string $toAlias Set a specific alias for `'to'` `Model`.
+     * @param mixed $constraints If `$constraints` is an array, it will be merged to defaults
+     *        constraints. If `$constraints` is an object, defaults won't be merged.
+     */
+    protected function _join($rel, $fromAlias = null, $toAlias = null, $constraints = [])
+    {
+        $model = $rel->to();
+        if ($fromAlias === null) {
+            $from = $rel->from();
+            $fromAlias = $this->alias();
+        }
+        if ($toAlias === null) {
+            $toAlias = $this->alias($rel->name());
+        }
+        if (!is_object($constraints)) {
+            $constraints = $this->on($rel, $fromAlias, $toAlias, $constraints);
+        } else {
+            $constraints = (array) $constraints;
+        }
+
+        $this->join([$model::schema()->source() => $toAlias], $constraints, 'LEFT');
+    }
+
+    /**
+     * Build the `ON` constraints from a `Relationship` instance
+     *
+     * @param object $rel A Relationship instance
+     * @param string $fromAlias Set a specific alias for the `'from'` `Model`.
+     * @param string $toAlias Set a specific alias for `'to'` `Model`.
+     * @param array $constraints Array of additionnal $constraints.
+     * @return array A constraints array.
+     */
+    public function on($rel, $aliasFrom = null, $aliasTo = null, $constraints = [])
+    {
+        if ($rel->type() === 'hasAndBelongsToMany') {
+            return $constraints;
+        }
+        $model = $rel->from();
+        $aliasFrom = $aliasFrom ?: $model::schema()->source();
+        $aliasTo = $aliasTo ?: $rel->name();
+        $keyConstraints = array();
+        $from = $model::schema()->primaryKey();
+        $to = $rel->key();
+        $keyConstraints = ['=' => [[':name' =>"{$aliasFrom}.{$from}"], [':name' => "{$aliasTo}.{$to}"]]];
+
+        $mapAlias = [$model::schema()->source() => $aliasFrom, $rel->name() => $aliasTo];
+        $relConstraints = $this->_on((array) $rel->constraints(), $aliasFrom, $aliasTo, $mapAlias);
+        $constraints = $this->_on($constraints, $aliasFrom, $aliasTo, array());
+        return $constraints + $relConstraints + $keyConstraints;
+    }
+
+    protected function _on(array $constraints, $aliasFrom, $aliasTo, $mapAlias = array())
+    {
+        $result = array();
+        foreach ($constraints as $key => $value) {
+            $isAliasable = (
+                !is_numeric($key) &&
+                !isset($this->_constraintTypes[$key]) &&
+                !isset($this->_operators[$key])
+            );
+            if ($isAliasable) {
+                $key = $this->_aliasing($key, $aliasFrom, $mapAlias);
+            }
+            if (is_string($value)) {
+                $result[$key] = $this->_aliasing($value, $aliasTo, $mapAlias);
+            } elseif (is_array($value)) {
+                $result[$key] = $this->_on($value, $aliasFrom, $aliasTo, $mapAlias);
+            } else {
+                $result[$key] = $value;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Sets and gets the relationships.
+     *
+     * @param  string $relpath A dotted path.
+     * @param  array  $config  The config array to set.
+     * @return mixed           The relationships array or a relationship array if `$relpath` is set. Returns
+     *                         `null` if a join doesn't exist.
+     * @throws InvalidArgumentException
+     */
+    public function relationships($relpath = null, $config = null)
+    {
+        if ($config) {
+            if (!$relpath) {
+                throw new InvalidArgumentException("The relation dotted path is empty.");
+            }
+            if (isset($config['model']) && isset($config['alias'])) {
+                $this->_models[$config['alias']] = $config['model'];
+            }
+            $this->_relationships[$relpath] = $config;
+            return $this;
+        }
+        if (!$relpath) {
+            return $this->_relationships;
+        }
+        if (isset($this->_relationships[$relpath])) {
+            return $this->_relationships[$relpath];
+        }
+    }
 }

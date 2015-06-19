@@ -72,7 +72,9 @@ class Update extends \chaos\source\database\sql\Statement
         if (!$fields) {
             return $this;
         }
-        $this->_parts['order'][] = $this->_sort($fields);
+        if ($fields = is_array($fields) ? $fields : func_get_args()) {
+            $this->_parts['order'] = array_merge($this->_parts['order'], $this->_order($fields));
+        }
         return $this;
     }
 
@@ -113,12 +115,12 @@ class Update extends \chaos\source\database\sql\Statement
 
         return 'UPDATE' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildChunk($this->sql()->names($this->_parts['table'], true)) .
+            $this->_buildChunk($this->sql()->names($this->_parts['table'])) .
             $this->_buildValues() .
             $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
-            $this->_buildClause('ORDER BY', join(', ', $this->_parts['order'])) .
+            $this->_buildOrder($this->_parts['order']) .
             $this->_buildClause('LIMIT', $this->_parts['limit']) .
-            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning'], false, ''));
+            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning']));
     }
 
     protected function _buildValues()

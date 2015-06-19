@@ -95,8 +95,7 @@ class Select extends \chaos\source\database\sql\Statement
      */
     public function where($conditions)
     {
-        $conditions = is_array($conditions) && func_num_args() === 1 ? $conditions : func_get_args();
-        if ($conditions = $this->sql()->conditions($conditions)) {
+        if ($conditions = is_array($conditions) && func_num_args() === 1 ? $conditions : func_get_args()) {
             $this->_parts['where'][] = $conditions;
         }
         return $this;
@@ -110,8 +109,7 @@ class Select extends \chaos\source\database\sql\Statement
      */
     public function having($conditions)
     {
-        $conditions = is_array($conditions) && func_num_args() === 1 ? $conditions : func_get_args();
-        if ($conditions = $this->sql()->conditions($conditions)) {
+        if ($conditions = is_array($conditions) && func_num_args() === 1 ? $conditions : func_get_args()) {
             $this->_parts['having'][] = $conditions;
         }
         return $this;
@@ -128,8 +126,9 @@ class Select extends \chaos\source\database\sql\Statement
         if (!$fields) {
             return $this;
         }
-        $fields = is_array($fields) ? $fields : func_get_args();
-        $this->_parts['group'][] = $this->_sort($fields, false);
+        if ($fields = is_array($fields) ? $fields : func_get_args()) {
+            $this->_parts['group'] = array_merge($this->_parts['group'], array_fill_keys($fields, true));
+        }
         return $this;
     }
 
@@ -144,7 +143,9 @@ class Select extends \chaos\source\database\sql\Statement
         if (!$fields) {
             return $this;
         }
-        $this->_parts['order'][] = $this->_sort($fields);
+        if ($fields = is_array($fields) ? $fields : func_get_args()) {
+            $this->_parts['order'] = array_merge($this->_parts['order'], $this->_order($fields));
+        }
         return $this;
     }
 
@@ -201,21 +202,32 @@ class Select extends \chaos\source\database\sql\Statement
      * @return string The generated SQL string.
      * @throws chaos\SourceException
      */
-    public function toString()
+    public function toString($aliases = [])
     {
+        $fields = $this->sql()->names($this->_parts['fields']);
+
         $sql = 'SELECT' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildChunk($this->sql()->names($this->_parts['fields'], false, '*')) .
-            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'], true)) .
+            $this->_buildChunk($fields ?: '*') .
+            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'])) .
             $this->_buildJoins() .
-            $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
-            $this->_buildClause('GROUP BY', join(', ', $this->_parts['group'])) .
-            $this->_buildClause('HAVING', join(' AND ', $this->_parts['having'])) .
-            $this->_buildClause('ORDER BY', join(', ', $this->_parts['order'])) .
+            $this->_buildClause('WHERE', $this->sql()->conditions($this->_parts['where']), ['aliases' => $aliases]) .
+            $this->_buildClause('GROUP BY', $this->_group($this->_parts['group'], $aliases)) .
+            $this->_buildClause('HAVING', $this->sql()->conditions($this->_parts['having'], ['aliases' => $aliases])) .
+            $this->_buildOrder($this->_parts['order'], $aliases) .
             $this->_buildClause('LIMIT', $this->_parts['limit']) .
             $this->_buildFlag('FOR UPDATE', $this->_parts['forUpdate']);
 
         return $this->_alias ? "({$sql}) AS " . $this->sql()->name($this->_alias) : $sql;
+    }
+
+    protected function _group($fields)
+    {
+        $result = [];
+        foreach ($fields as $name => $value) {
+            $result[] = $this->sql()->name($name);
+        }
+        return $fields = join(', ', $result);
     }
 
     protected function _buildJoins()

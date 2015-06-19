@@ -1,7 +1,8 @@
 <?php
 namespace chaos\spec\suite;
 
-use chaos\source\database\model\Model;
+use set\Set;
+use chaos\model\Model;
 use chaos\source\database\model\Query;
 
 use kahlan\plugin\Stub;
@@ -18,8 +19,10 @@ describe("Query", function() {
             ],
             'connection' => $this->connection,
             'fixtures'   => [
-                'gallery' => 'chaos\spec\fixture\sample\Gallery',
-                'image'   => 'chaos\spec\fixture\sample\Image'
+                'gallery'   => 'chaos\spec\fixture\schema\Gallery',
+                'image'     => 'chaos\spec\fixture\schema\Image',
+                'image_tag' => 'chaos\spec\fixture\schema\ImageTag',
+                'tag'       => 'chaos\spec\fixture\schema\Tag'
             ]
         ]);
 
@@ -31,7 +34,7 @@ describe("Query", function() {
             'connection' => $this->connection
         ]);
 
-        $this->query->order('id');
+        $this->query->order(['id']);
 
     });
 
@@ -104,14 +107,14 @@ describe("Query", function() {
 
     describe("->__call()", function() {
 
-        it("delegates the call up to the model if a corresponding scope method exists", function() {
+        it("delegates the call up to the model if a method exists", function() {
 
             $gallery = Stub::classname([
                 'extends' => Model::class,
-                'methods' => ['::scopeBar']
+                'methods' => ['::bar']
             ]);
 
-            Stub::on($gallery)->method('::scopeBar', function($query) {
+            Stub::on($gallery)->method('::bar', function($query) {
                 return $query->where(['name' => 'Bar Gallery']);
             });
 
@@ -124,6 +127,8 @@ describe("Query", function() {
                 'model'      => $gallery,
                 'connection' => $this->connection
             ]);
+
+            expect($gallery)->toReceive('::bar')->with($query);
 
             $result = $query->bar()->first()->data();
             expect($result)->toBe(['id' => '2', 'name' => 'Bar Gallery']);
@@ -147,12 +152,14 @@ describe("Query", function() {
 
         beforeEach(function() {
             $this->fixtures->populate('image');
+            $this->fixtures->populate('image_tag');
+            $this->fixtures->populate('tag');
         });
 
         it("finds all records with their relation", function() {
 
-            $result = $this->query->with(['Image'])->all()->data();
-            expect($result)->toBe([]);
+            $result = $this->query->with(['image' => ['super' => 1], 'image.tags' => ['toto' => 2]])->all()->data();
+            expect($this->query->with())->toBe([]);
 
         });
 

@@ -68,7 +68,7 @@ class Schema
      *
      * @var array
      */
-    protected $_relationTypes = ['belongsTo', 'hasOne', 'hasMany'];
+    protected $_relationTypes = ['belongsTo', 'hasOne', 'hasMany', 'hasManyThrough'];
 
     /**
      * Relations configuration.
@@ -173,37 +173,21 @@ class Schema
     }
 
     /**
-     * Sets the schema fields.
-     *
-     * @param  string $fields The fields data.
-     * @return object         Returns `$this`.
-     */
-    public function set($fields = [], $append = false)
-    {
-        if (!$append) {
-            $this->_fields = [];
-        }
-        foreach ($fields as $name => $value) {
-            $this->add($name, $value);
-        }
-    }
-
-    /**
-     * Adds a field into the schema.
+     * Set a field.
      *
      * @param  string $name The field name.
      * @return object       Returns `$this`.
      */
-    public function add($name, $value = [])
+    public function set($name, $value = [])
     {
         $field = $this->_fields[$name] = $this->_initField($value);
 
-        if (isset($field['class'])) {
+        if ($field['type'] === 'object') {
             $relationship = $this->_classes['relationship'];
 
             $this->bind($name, [
                 'relation' => $field['array'] ? 'hasMany' : 'hasOne',
-                'to'       => $field['class'],
+                'to'       => isset($field['class']) ? $field['class'] : 'chaos\model\Model',
                 'link'     => $relationship::LINK_EMBEDDED
             ]);
         }
@@ -426,6 +410,7 @@ class Schema
         }
 
         $this->_relations[$name] = $config;
+        $this->_relationships[$name] = null;
         return true;
     }
 
@@ -483,7 +468,7 @@ class Schema
                 }
             }
         }
-        return result;
+        return $result;
     }
 
     /**
@@ -495,7 +480,7 @@ class Schema
      */
     protected function _relationship($name, $config = [])
     {
-        $conventions = $this->conventions;
+        $conventions = $this->_conventions;
         $config += compact('name', 'conventions');
         $relationship = $this->_classes['relationship'];
         return new $relationship($config);

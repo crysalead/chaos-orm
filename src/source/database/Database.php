@@ -244,7 +244,7 @@ abstract class Database
      */
     protected function _sources($sql)
     {
-        $result = $this->query($sql);
+        $result = $this->query($sql->toString());
 
         $sources = [];
         foreach($result as $source) {
@@ -376,7 +376,8 @@ abstract class Database
      * @return PDOStatement A PDOStatement
      * @throws chaos\SourceException
      */
-    public function query($sql, $data = []){
+    public function query($sql, $data = [])
+    {
         $statement = $this->_pdo->prepare($sql);
         $statement->execute($data);
         $cursor = $this->_classes['cursor'];

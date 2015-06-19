@@ -183,13 +183,13 @@ class Sql
      */
     protected function _formatters() {
         return [
-            ':name' => function ($value) {
-                return $this->name($value);
+            ':name' => function ($value, $type, $states) {
+                return $this->name($value, isset($states['paths']) ? $states['paths'] : []);
             },
-            ':value' => function ($value, $type) {
+            ':value' => function ($value, $type, $states) {
                 return $this->value($value, $type);
             },
-            ':plain' => function ($value) {
+            ':plain' => function ($value, $type, $states) {
                 return (string) $value;
             }
         ];
@@ -229,9 +229,9 @@ class Sql
     /**
      * Generates a list of escaped table/field names identifier.
      */
-    public function names($fields, $escapeStar = true, $default = '') {
-        $result = (string) join(", ", $this->_names(is_array($fields) ? $fields : [$fields], $escapeStar));
-        return $result ?: $default;
+    public function names($fields, $paths = [])
+    {
+        return (string) join(", ", $this->_names(is_array($fields) ? $fields : [$fields], '', $paths));
     }
 
     /**
@@ -240,7 +240,7 @@ class Sql
      * Note: it ignores duplicates.
      *
      */
-    protected function _names($names, $escapeStar = true, $prefix = null)
+    protected function _names($names, $prefix, $paths)
     {
         $names = is_array($names) ? $names : [$names];
         $sql = [];
@@ -248,21 +248,24 @@ class Sql
             if ($this->isOperator($key)) {
                 $sql[] = $this->conditions($names);
             } elseif (is_string($value)) {
-                $value = $this->name($value, $escapeStar);
                 if (!is_numeric($key)) {
-                    $name = $this->name($key);
-                    $name = $prefix ? "{$prefix}.{$name} AS {$value}" : "{$name} AS {$value}";
-                    $sql[$name] = $name;
+                    $name = $this->name($key, $paths);
+                    $value = $this->name($value);
+                    $name = "{$name} AS {$value}";
                 } else {
-                    $name = $value;
-                    $name = $prefix ? "{$prefix}.{$name}" : $name;
-                    $sql[$name] = $name;
+                    $name = $this->name($value, $paths);
                 }
+                $name = $prefix ? "{$prefix}.{$name}" : $name;
+                $sql[$name] = $name;
             } elseif (!is_array($value)) {
                 $sql[] = (string) $value;
             } else {
-                $prefix = is_numeric($key) ? $prefix : $this->name($key);
-                $sql = array_merge($sql, $this->_names($value, $escapeStar, $prefix));
+                $pfx = $prefix;
+                if (!is_numeric($key)) {
+                    $key = isset($paths[$key]) ? $paths[$key] : $key;
+                    $pfx = $this->_escape($key);
+                }
+                $sql = array_merge($sql, $this->_names($value, $pfx, $pfx ? [] : $paths));
             }
         }
         return $sql;
@@ -287,7 +290,7 @@ class Sql
         if (!$conditions) {
             return '';
         }
-        $defaults = ['prepend' => false, 'operator' => ':and', 'schemas' => []];
+        $defaults = ['prepend' => false, 'operator' => ':and', 'schemas' => [], 'paths' => []];
         $options += $defaults;
 
         if (!is_numeric(key($conditions))) {
@@ -295,6 +298,7 @@ class Sql
         }
 
         $states = [
+            'paths' => [],
             'schemas' => $options['schemas'],
             'schema' => null,
             'name' => null,
@@ -353,7 +357,7 @@ class Sql
         foreach ($conditions as $name => $value) {
             $operator = strtolower($name);
             if (isset($this->_formatters[$operator])) {
-                $parts[] = $this->format($operator, $value, $this->_type($states));
+                $parts[] = $this->format($operator, $value, $this->_type($states), $states);
             } elseif ($this->isOperator($operator)) {
                 $parts[] = $this->_operator($operator, $value, $states);
             } elseif (is_numeric($name)) {
@@ -383,7 +387,8 @@ class Sql
      */
     protected function _name($name, $value, &$states)
     {
-        $escaped = $this->name($name, false, $alias, $field);
+        list($alias, $field) = $this->undot($name);
+        $escaped = $this->name($name, $states['paths']);
         $schema = isset($states['schemas'][$alias]) ? $states['schemas'][$alias] : null;
         $states['name'] = $field;
         $states['schema'] = $schema;
@@ -411,13 +416,13 @@ class Sql
      * @param  string $type     The value type.
      * @return string           Returns a SQL string.
      */
-    public function format($operator, $value, $type = null)
+    public function format($operator, $value, $type = null, $states = [])
     {
         if (!isset($this->_formatters[$operator])) {
             throw new SourceException("Unexisting formatter `'{$operator}'`.");
         }
         $formatter = $this->_formatters[$operator];
-        return $formatter($value, $type);
+        return $formatter($value, $type, $states);
     }
 
     /**
@@ -427,13 +432,16 @@ class Sql
      * @param  string $alias The filled alias name if present.
      * @return string        The escaped identifien.
      */
-    public function name($name, $escapeStar = false, &$alias = null, &$field = null)
+    public function name($name, $paths = [])
     {
         if (!is_string($name)) {
-            return $this->names($name, $escapeStar);
+            return $this->names($name, $paths);
         }
         list($alias, $field) = $this->undot($name);
-        return $alias ? $this->_escape($alias) . '.' . $this->_escape($field, $escapeStar) : $this->_escape($name, $escapeStar);
+        if (isset($paths[$alias])) {
+            $alias = $paths[$alias];
+        }
+        return $alias ? $this->_escape($alias) . '.' . $this->_escape($field) : $this->_escape($name);
     }
 
     /**
@@ -442,9 +450,9 @@ class Sql
      * @param  string $name Identifier name.
      * @return string
      */
-    protected function _escape($name, $escapeStar = false)
+    protected function _escape($name)
     {
-        return (!$escapeStar && $name === '*') ? '*' : $this->_escape . $name . $this->_escape;
+        return $name === '*' ? '*' : $this->_escape . $name . $this->_escape;
     }
 
     /**
@@ -455,8 +463,8 @@ class Sql
      */
     public function undot($field)
     {
-        if (is_string($field) && preg_match('/^[a-z0-9_-]+\.([a-z 0-9_-]+|\*)$/i', $field)) {
-            return explode('.', $field, 2);
+        if (is_string($field) && (($pos = strrpos($field, ".")) !== false)) {
+            return [substr($field, 0, $pos), substr($field, $pos + 1)];
         }
         return [null, $field];
     }

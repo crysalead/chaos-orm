@@ -63,36 +63,31 @@ class Statement
     }
 
     /**
-     * Helper method
+     * Order formatter helper method
      *
      * @param  string|array $fields The fields.
      * @return string       Formatted fields.
      */
-    protected function _sort($fields, $direction = true)
-    {
-        $direction = $direction ? ' ASC' : '';
 
-        if (is_string($fields)) {
-            if (preg_match('/^(.*?)\s+((?:a|de)sc)$/i', $fields, $match)) {
-                $fields = $match[1];
-                $direction = $match[2];
-            }
-            $fields = [$fields => $direction];
-        }
+    protected function _order($fields)
+    {
+        $direction = ' ASC';
 
         $result = [];
-
-        foreach ($fields as $column => $dir) {
-            if (is_int($column)) {
-                $column = $dir;
+        foreach ($fields as $field => $value) {
+            if (!is_int($field)) {
+                $result[$field] = $value;
+                continue;
+            }
+            if (preg_match('/^(.*?)\s+((?:a|de)sc)$/i', $value, $match)) {
+                $value = $match[1];
+                $dir = $match[2];
+            } else {
                 $dir = $direction;
             }
-            $dir = preg_match('/^(asc|desc)$/i', $dir) ? " {$dir}" : $direction;
-
-            $column = $this->sql()->name($column);
-            $result[] = "{$column}{$dir}";
+            $result[$value] = $dir;
         }
-        return $fields = join(', ', $result);
+        return $result;
     }
 
     /**
@@ -141,4 +136,20 @@ class Statement
         return $sql ? " {$sql}" : '';
     }
 
+    protected function _buildOrder($fields, $paths = [])
+    {
+        $result = [];
+
+        foreach ($fields as $column => $dir) {
+            if (is_int($column)) {
+                $column = $dir;
+                $dir = ' ASC';
+            }
+            $dir = preg_match('/^(asc|desc)$/i', $dir) ? " {$dir}" : ' ASC';
+
+            $column = $this->sql()->name($column, $paths);
+            $result[] = "{$column}{$dir}";
+        }
+        return $this->_buildClause('ORDER BY', join(', ', $result));
+    }
 }

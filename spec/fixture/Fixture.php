@@ -1,19 +1,11 @@
 <?php
 namespace chaos\spec\fixture;
 
-use Exception;
 use set\Set;
-use kahlan\plugin\Stub;
+use chaos\SourceException;
 
 class Fixture
 {
-    /**
-     * Class dependencies.
-     *
-     * @var array
-     */
-    protected $_classes = [];
-
     /**
      * The connection to the datasource.
      *
@@ -22,11 +14,11 @@ class Fixture
     protected $_connection = null;
 
     /**
-     * The source name.
+     * The meta definition.
      *
-     * @var string
+     * @var array
      */
-    protected $_source = null;
+    protected $_meta = [];
 
     /**
      * The schema definition.
@@ -50,30 +42,36 @@ class Fixture
     protected $_model = null;
 
     /**
+     * The parent fixtures.
+     *
+     * @var object
+     */
+    protected $_fixtures = null;
+
+    /**
      * Constructor.
      *
      * @param array $config Possible options are:
-     *                      - `'classes'`     _array_  : The class dependencies.
      *                      - `'connection'`  _object_ : The connection instance.
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'classes'    => [
-                'schema' => 'chaos\source\database\Schema',
-                'model'  => 'chaos\model\Model'
-            ],
             'connection' => null,
-            'alters'     => []
+            'model'      => $this->_model,
+            'meta'       => [],
+            'alters'     => $this->_alters
         ];
 
         $config = Set::merge($defaults, $config);
 
-        $this->_classes = $config['classes'];
         $this->_connection = $config['connection'];
+        $this->_meta = $config['meta'];
         $this->_alters = $config['alters'];
+        $this->_model = $config['model'];
 
-        $this->model($this->_classes['model']);
+        $model = $this->_model;
+        $model::config(['connection' => $this->connection()]);
     }
 
     /**
@@ -96,30 +94,11 @@ class Fixture
     /**
      * Returns a dynamically created model based on the model class name passed as parameter.
      *
-     * @param  string $model A model class name to extends from or `null` to get the default binded model.
-     * @return string        A dynamically created model class name.
+     * @return string A model class name.
      */
-    public function model($model = null)
+    public function model()
     {
-        if (!func_num_args()) {
-            return $this->_model;
-        }
-        $stub = Stub::classname(['extends' => $model]);
-        $stub::config([
-            'connection' => $this->connection(),
-            'schema'     => $this->schema()
-        ]);
-        return $this->_model = $stub;
-    }
-
-    /**
-     * Returns the source name of the fixture.
-     *
-     * @return string
-     */
-    public function source()
-    {
-        return $this->_source;
+        return $this->_model;
     }
 
     /**
@@ -135,18 +114,17 @@ class Fixture
         if ($cache) {
             return $cache;
         }
-        $schema = $this->_classes['schema'];
 
-        $options = $this->_schema;
+        $model = $this->model();
+        $cache = $model::schema();
 
-        if ($options['fields']) {
-            $options['fields'] = $this->_alterFields($options['fields']);
+        $alteredFields = $this->_alterFields($cache->fields());
+
+        foreach ($alteredFields as $name => $value) {
+            $cache->set($name, $value);
         }
 
-        return $cache = new $schema($options + [
-            'connection' => $this->connection(),
-            'source'     => $this->source()
-        ]);
+        return $cache;
     }
 
     /**
@@ -231,5 +209,15 @@ class Fixture
             }
         }
         return $result;
+    }
+
+    public function create()
+    {
+        $this->schema()->create();
+    }
+
+    public function drop()
+    {
+        $this->schema()->drop();
     }
 }
