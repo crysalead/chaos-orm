@@ -12,7 +12,11 @@ class Schema
      *
      * @var array
      */
-    protected $_classes = [];
+    protected $_classes = [
+        'entity'       => 'chaos\model\Model',
+        'set'          => 'collection\Collection',
+        'relationship' => 'chaos\model\Relationship'
+    ];
 
     /**
      * The connection to the datasource.
@@ -118,11 +122,7 @@ class Schema
     public function __construct($config = [])
     {
         $defaults = [
-            'classes'      => [
-                'entity'       => 'chaos\model\Model',
-                'set'          => 'collection\Collection',
-                'relationship' => 'chaos\model\Relationship'
-            ],
+            'classes'      => $this->_classes,
             'source'       => null,
             'connection'   => null,
             'conventions'  => null,

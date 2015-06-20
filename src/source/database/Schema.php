@@ -11,7 +11,10 @@ class Schema extends \chaos\model\Schema
      * @var array
      */
     protected $_classes = [
-        'query' => 'chaos\source\database\model\Query'
+        'entity'       => 'chaos\model\Model',
+        'set'          => 'collection\Collection',
+        'relationship' => 'chaos\model\Relationship',
+        'query'        => 'chaos\source\database\model\query'
     ];
 
     /**

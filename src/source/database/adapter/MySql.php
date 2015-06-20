@@ -273,30 +273,4 @@ class MySql extends \chaos\source\database\Database
             return false;
         }
     }
-
-    /**
-     * Execute a given query.
-     *
-     * @param  string $sql     The sql string to execute
-     * @param  array  $options Available options:
-     *                         - `'buffered'`: If set to `false` uses mysql_unbuffered_query which
-     *                           sends the SQL query query to MySQL without automatically fetching and
-     *                           buffering the result rows as `mysql_query()` does (for less memory usage).
-     * @return object          Returns the result resource handle if the query is successful.
-     */
-    protected function _execute($sql, $options = [])
-    {
-        $defaults = ['buffered' => true];
-        $options += $defaults;
-
-        $pdo = $this->_pdo;
-        $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $options['buffered']);
-
-        try {
-            $resource = $pdo->query($sql);
-        } catch(PDOException $e) {
-            $self->invokeMethod('_error', [$sql]);
-        };
-        return $self->invokeMethod('_instance', ['result', compact('resource')]);
-    }
 }

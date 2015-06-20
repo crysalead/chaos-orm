@@ -78,6 +78,26 @@ describe("Query", function() {
 
         });
 
+        it("finds all records using array hydration", function() {
+
+            $result = $this->query->get(['return' => 'array']);
+            expect($result)->toBe([
+                ['id' => '1', 'name' => 'Foo Gallery'],
+                ['id' => '2', 'name' => 'Bar Gallery']
+            ]);
+
+        });
+
+        it("finds all records using object hydration", function() {
+
+            $result = $this->query->get(['return' => 'object']);
+            expect($result)->toEqual([
+                json_decode(json_encode(['id' => '1', 'name' => 'Foo Gallery']), false),
+                json_decode(json_encode(['id' => '2', 'name' => 'Bar Gallery']), false),
+            ]);
+
+        });
+
     });
 
     describe("->first()", function() {
@@ -148,7 +168,7 @@ describe("Query", function() {
 
     });
 
-    describe("->with()", function() {
+    fdescribe("->with()", function() {
 
         beforeEach(function() {
             $this->fixtures->populate('image');

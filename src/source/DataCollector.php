@@ -3,7 +3,7 @@ namespace chaos\source;
 
 use chaos\SourceException;
 
-class DataSet
+class DataCollector
 {
     protected $_data = [];
 

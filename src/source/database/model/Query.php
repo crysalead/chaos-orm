@@ -1,6 +1,7 @@
 <?php
 namespace chaos\source\database\model;
 
+use PDO;
 use IteratorAggregate;
 use set\Set;
 use chaos\SourceException;
@@ -10,6 +11,15 @@ use chaos\SourceException;
  */
 class Query implements IteratorAggregate
 {
+    /**
+     * Class dependencies.
+     *
+     * @var array
+     */
+    protected $_classes = [
+        'data-collector' => 'chaos\source\DataCollector'
+    ];
+
     /**
      * The connection to the datasource.
      *
@@ -157,15 +167,57 @@ class Query implements IteratorAggregate
      *
      * @return object An iterator instance.
      */
-    public function get()
+    public function get($options = [])
     {
-        $query = $this;
+        $defaults = [
+            'return'    => 'record',
+            'fetchMode' => PDO::FETCH_ASSOC
+        ];
+        $options += $defaults;
+
+        $dataCollector = $this->_classes['data-collector'];
+        $collector = isset($options['collector']) ? $options['collector'] : new $dataCollector();
+
         $this->_applyHas();
-        $cursor = $this->connection()->query($this->_statement->toString($this->_paths));  //TODO pass connection to statement and run it directly
+
         $model = $this->_model;
-        return $model::create([], compact('query', 'cursor') + [
-            'type' => 'set', 'defaults' => false
+        $schema = $model::schema();
+        $primaryKey = $schema->primaryKey();
+        $source = $schema->source();
+
+        $collection = [];
+        $return = $options['return'];
+        $cursor = $this->_statement->execute([
+            'paths'     => $this->_paths,
+            'fetchMode' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetchMode']
         ]);
+
+        switch ($return) {
+            case 'record':
+                foreach ($cursor as $key => $record) {
+                    $collector->set($source, $record[$primaryKey], $collection[] = $model::create($record, [
+                        'defaults' => false
+                    ]));
+                }
+                $collection = $model::create($collection, ['type' => 'set']);
+            break;
+            case 'array':
+                foreach ($cursor as $key => $record) {
+                    $collector->set($source, $record[$primaryKey], $collection[] = $record);
+                }
+            break;
+            case 'object':
+                foreach ($cursor as $key => $record) {
+                    $collector->set($source, $record->{$primaryKey}, $collection[] = $record);
+                }
+            break;
+            default:
+                throw new SourceException("Invalid value `'{$options['return']}'` as `'return'` option.");
+            break;
+        }
+        print_r($this->with());
+        //$this->embed($this->_with);
+        return $collection;
     }
 
     /**
@@ -173,9 +225,9 @@ class Query implements IteratorAggregate
      *
      * @return object An iterator instance.
      */
-    public function all()
+    public function all($options = [])
     {
-        return $this->get();
+        return $this->get($options);
     }
 
     /**
@@ -183,9 +235,9 @@ class Query implements IteratorAggregate
      *
      * @return object An entity instance.
      */
-    public function first()
+    public function first($options = [])
     {
-        $result = $this->get();
+        $result = $this->get($options);
         return is_object($result) ? $result->rewind() : $result;
     }
 
@@ -217,7 +269,7 @@ class Query implements IteratorAggregate
         }
         $with = Set::normalize($with);
         $this->_has = Set::merge($this->_has, array_filter($with));
-        $this->_with = Set::merge($this->_with, Set::expand(array_fill_keys(array_keys($with), [])));
+        $this->_with = Set::merge($this->_with, $with);
         return $this;
     }
 
@@ -261,11 +313,12 @@ class Query implements IteratorAggregate
 
     protected function _applyHas()
     {
-        $tree = Set::expand(array_fill_keys(array_keys($this->_with), false));
+        $tree = Set::expand(array_fill_keys(array_keys($this->with()), false));
+        print_r($tree);
         $alias = $this->_alias();
         $deps = [$alias => []];
 
-        //$this->_applyJoin($this->_model, $tree, '', $alias, $deps);
+        $this->_applyJoin($this->_model, $tree, '', $alias, $deps);
     }
 
     protected function _applyJoin($model, $tree, $path, $from, &$deps)

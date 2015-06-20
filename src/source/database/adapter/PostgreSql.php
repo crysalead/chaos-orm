@@ -369,25 +369,4 @@ class PostgreSql extends \chaos\source\database\Database {
             return false;
         }
     }
-
-    /**
-     * Execute a given query.
-     *
-     * @param  string $sql     The sql string to execute
-     * @param  array  $options No options available.
-     * @return object          Returns the result resource handle if the query is successful.
-     */
-    protected function _execute($sql, $options = [])
-    {
-        $pdo = $this->_pdo;
-
-        try {
-            $resource = $pdo->query($sql);
-        } catch(PDOException $e) {
-            $self->invokeMethod('_error', [$sql]);
-        };
-
-        return $self->invokeMethod('_instance', ['result', compact('resource')]);
-    }
-
 }

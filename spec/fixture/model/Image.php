@@ -23,17 +23,17 @@ class Image extends \chaos\model\Model
             'key'         => 'gallery_id'
         ]);
 
-        $schema->bind('image_tag', [
+        $schema->bind('images_tags', [
             'relation'    => 'hasMany',
             'to'          => 'chaos\spec\fixture\model\ImageTag',
             'key'         => 'image_id'
         ]);
 
-        $schema->bind('image', [
+        $schema->bind('tags', [
             'relation'    => 'hasManyThrough',
-            'to'          => 'chaos\spec\fixture\model\Image',
+            'to'          => 'chaos\spec\fixture\model\Tag',
             'key'         => 'tag_id',
-            'through'     => 'image_tag'
+            'through'     => 'images_tags'
         ]);
     }
 }

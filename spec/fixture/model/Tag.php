@@ -15,13 +15,13 @@ class Tag extends \chaos\model\Model
         $schema->set('id', ['type' => 'serial']);
         $schema->set('name', ['type' => 'string', 'length' => 50]);
 
-        $schema->bind('image_tag', [
+        $schema->bind('images_tags', [
             'relation'    => 'hasMany',
             'to'          => 'chaos\spec\fixture\model\ImageTag',
             'key'         => 'tag_id'
         ]);
 
-        $schema->bind('image', [
+        $schema->bind('images', [
             'relation'    => 'hasManyThrough',
             'to'          => 'chaos\spec\fixture\model\Image',
             'key'         => 'image_id',

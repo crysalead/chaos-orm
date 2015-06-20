@@ -14,7 +14,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected static $_classes = [
         'set'          => 'chaos\model\collection\Collection',
-        'relationship' => 'chaos\model\Relationship',
         'conventions'  => 'chaos\model\Conventions'
     ];
 
@@ -317,7 +316,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             return static::$_schemas[$class];
         }
         $conventions = static::conventions();
-
         $config = static::_meta() + [
             'classes'     => ['entity' => $class] + static::$_classes,
             'connection'  => static::$_connection,

@@ -119,7 +119,7 @@ abstract class Database
 
         if ($this->_sql === null) {
             $sql = $this->_classes['sql'];
-            $this->_sql = new $sql(['adapter' => $this]);
+            $this->_sql = new $sql(['connection' => $this]);
         }
 
         if ($this->_config['connect']) {
@@ -371,17 +371,17 @@ abstract class Database
     /**
      * Find records with custom SQL query.
      *
-     * @param  string       $sql  SQL query to execute.
-     * @param  array        $data Array of bound parameters to use as values for query.
-     * @return PDOStatement A PDOStatement
-     * @throws chaos\SourceException
+     * @param  string $sql  SQL query to execute.
+     * @param  array  $data Array of bound parameters to use as values for query.
+     * @return object       A `Cursor` instance.
      */
-    public function query($sql, $data = [])
+    public function query($sql, $data = [], $options = [])
     {
+        echo $sql."\n";
         $statement = $this->_pdo->prepare($sql);
         $statement->execute($data);
         $cursor = $this->_classes['cursor'];
-        return new $cursor(['resource' => $statement]);
+        return new $cursor($options + ['resource' => $statement]);
     }
 
     /**

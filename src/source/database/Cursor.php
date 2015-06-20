@@ -18,6 +18,26 @@ class Cursor extends \chaos\source\Cursor
     protected $_iterator = 0;
 
     /**
+     * The current position of the iterator.
+     */
+    protected $_fetchMode = null;
+
+    /**
+     * The constructor
+     *
+     * @param array $config
+     */
+    public function __construct($config = [])
+    {
+        parent::__construct($config);
+
+        $defaults = ['fetchMode' => PDO::FETCH_ASSOC];
+        $config += $defaults;
+
+        $this->_fetchMode = $config['fetchMode'];
+    }
+
+    /**
      * Fetches the result from the resource.
      *
      * @return boolean Return `true` on success or `false` if it is not valid.
@@ -29,7 +49,7 @@ class Cursor extends \chaos\source\Cursor
             return false;
         }
         try {
-            if ($result = $this->_resource->fetch(PDO::FETCH_ASSOC)) {
+            if ($result = $this->_resource->fetch($this->_fetchMode)) {
                 $this->_key = $this->_iterator++;
                 $this->_current = $result;
                 return true;

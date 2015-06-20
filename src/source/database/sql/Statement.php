@@ -41,10 +41,10 @@ class Statement
         $this->_sql = $config['sql'];
     }
 
-    public function sql($adapter = null)
+    public function sql($sql = null)
     {
-        if ($adapter !== null) {
-            $this->_sql = $adapter;
+        if ($sql !== null) {
+            $this->_sql = $sql;
         }
         return $this->_sql;
     }
@@ -99,6 +99,27 @@ class Statement
     public function __call($name, $params)
     {
         throw new SourceException("Invalid clause `{$name}` for `" . get_called_class() . "`");
+    }
+
+    /**
+     * Executes the query.
+     *
+     * @param  array  $options       An option array.
+     * @return object                A `Cursor` instance.
+     * @throws chaos\SourceException
+     */
+    public function execute($options = [])
+    {
+        $defaults = ['paths' => []];
+        $options += $defaults;
+
+        $connection = $this->sql()->connection();
+        if (!$connection) {
+            throw new SourceException("No valid connection available.");
+        }
+        $paths = $options['paths'];
+        unset($options['paths']);
+        return $connection->query($this->toString($paths), [], $options);
     }
 
     /**

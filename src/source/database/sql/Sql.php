@@ -19,11 +19,11 @@ class Sql
     protected $_classes = [];
 
     /**
-     * Pointer to the database adapter.
+     * Pointer to the database connection.
      *
      * @var object
      */
-    protected $_adapter = null;
+    protected $_connection = null;
 
     /**
      * Quoting identifier character.
@@ -125,7 +125,7 @@ class Sql
                 'create table' => 'chaos\source\database\sql\statement\CreateTable',
                 'drop table'   => 'chaos\source\database\sql\statement\DropTable'
             ],
-            'adapter' => null,
+            'connection' => null,
             'types' => [],
             'operators' => [],
             'builders' => $this->_builders(),
@@ -136,7 +136,7 @@ class Sql
         $config = Set::merge($defaults, $config);
 
         $this->_classes = $config['classes'];
-        $this->_adapter = $config['adapter'];
+        $this->_connection = $config['connection'];
         $this->_builders = $config['builders'];
         $this->_formatters = $config['formatters'];
         $this->_dateFormat = $config['dateFormat'];
@@ -149,7 +149,8 @@ class Sql
      *
      * @return array
      */
-    protected function _builders() {
+    protected function _builders()
+    {
         return [
             'function' => function ($operator, $parts) {
                 $operator = strtoupper(substr($operator, 0, -2));
@@ -181,7 +182,8 @@ class Sql
      *
      * @return array
      */
-    protected function _formatters() {
+    protected function _formatters()
+    {
         return [
             ':name' => function ($value, $type, $states) {
                 return $this->name($value, isset($states['paths']) ? $states['paths'] : []);
@@ -196,16 +198,17 @@ class Sql
     }
 
     /**
-     * Datasource adapter getter/setter
+     * Gets/sets the datasource adapter
      *
-     * @param  object|null $adapter The adapter instance to set to `null` if used as a getter.
-     * @return object|null          Returns the adatper or `null` if no adapter was set.
+     * @param  object|null $connection The connection instance to set to `null` if used as a getter.
+     * @return object|null             Returns the adatper or `null` if no connection was set.
      */
-    public function adapter($adapter = null) {
-        if ($adapter !== null) {
-            $this->_adapter = $adapter;
+    public function connection($connection = null)
+    {
+        if ($connection !== null) {
+            $this->_connection = $connection;
         }
-        return $this->_adapter;
+        return $this->_connection;
     }
 
     /**
@@ -340,7 +343,8 @@ class Sql
         return $builder($operator, $parts);
     }
 
-    public function isOperator($operator) {
+    public function isOperator($operator)
+    {
         return ($operator && $operator[0] === ':') || isset($this->_operators[$operator]);
     }
 
@@ -477,8 +481,8 @@ class Sql
      */
     public function quote($string)
     {
-        if ($this->_adapter) {
-            return $this->_adapter->quote($string);
+        if ($this->_connection) {
+            return $this->_connection->quote($string);
         }
         $replacements = array(
             "\x00"=>'\x00',
@@ -500,8 +504,8 @@ class Sql
      */
     public function value($value, $type = null)
     {
-        if ($type && $adapter = $this->adapter()) {
-            $value = $adapter->cast('export', $type, $value);
+        if ($type && $connection = $this->connection()) {
+            $value = $connection->cast('export', $type, $value);
         }
         switch (true) {
             case is_null($value):
@@ -534,7 +538,7 @@ class Sql
             throw new SourceException("Column name not defined.");
         }
 
-        $field += $this->adapter()->type($field['type']);
+        $field += $this->connection()->type($field['type']);
 
         $field += [
             'name' => null,
