@@ -178,7 +178,10 @@ describe("Query", function() {
 
         it("finds all records with their relation", function() {
 
-            $result = $this->query->with(['image' => ['super' => 1], 'image.tags' => ['toto' => 2]])->all()->data();
+            $result = $this->query->with([
+                'image' => ['super' => 1],
+                'image.tags' => ['toto' => 2]
+            ])->all()->data();
             expect($this->query->with())->toBe([]);
 
         });

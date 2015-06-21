@@ -42,26 +42,25 @@ class Query implements IteratorAggregate
     protected $_statement = null;
 
     /**
-     * Count the number of identical models in a query for building
-     * unique aliases
+     * Count the number of identical aliases in a query for building unique aliases.
      *
      * @var array
      */
-    protected $_aliases = 0;
+    protected $_aliasCounter = [];
 
     /**
-     * Map beetween generated aliases and corresponding relation paths
+     * Map beetween relation pathsand corresponding aliases.
      *
      * @var array
      */
-    protected $_paths = [];
+    protected $_aliases = [];
 
     /**
-     * Map beetween generated aliases and corresponding models.
+     * Map beetween generated aliases and corresponding schema.
      *
      * @var array
      */
-    protected $_models = [];
+    protected $_schemas = [];
 
     /**
      * Array containing mappings of relationship and field names, which allow database results to
@@ -102,9 +101,11 @@ class Query implements IteratorAggregate
         $config = Set::merge($defaults, $config);
         $model = $this->_model = $config['model'];
         $this->_connection = $config['connection'];
-        $source = $model::schema()->source();
+
+        $schema = $model::schema();
+        $source = $schema->source();
         $this->_statement = $this->connection()->sql()->statement('select');
-        $this->_statement->from([$source => $this->_alias()]);
+        $this->_statement->from([$source => $this->_alias('', $schema)]);
     }
 
     /**
@@ -181,7 +182,6 @@ class Query implements IteratorAggregate
         $collection = [];
         $return = $options['return'];
         $cursor = $this->_statement->execute([
-            'paths'     => $this->_paths,
             'fetchMode' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetchMode']
         ]);
 
@@ -247,9 +247,62 @@ class Query implements IteratorAggregate
     }
 
     /**
+     * Adds some where conditions to the query
+     *
+     * @param  string|array $conditions The conditions for this query.
+     * @return object                   Returns `$this`.
+     */
+    public function where($conditions, $alias = null)
+    {
+        $conditions = $this->_statement->sql()->prefix($conditions, $alias ?: $this->_alias());
+        $this->_statement->where($conditions);
+        return $this;
+    }
+
+    /**
+     * Adds some group by fields to the query
+     *
+     * @param  string|array $fields The fields.
+     * @return object               Returns `$this`.
+     */
+    public function group($fields, $alias = null)
+    {
+        $fields = $this->_statement->sql()->prefix($fields, $alias ?: $this->_alias());
+        $this->_statement->group($fields);
+        return $this;
+    }
+
+    /**
+     * Adds some having conditions to the query
+     *
+     * @param  string|array $conditions The conditions for this query.
+     * @return object                   Returns `$this`.
+     */
+    public function having($conditions, $alias = null)
+    {
+        $conditions = $this->_statement->sql()->prefix($conditions, $alias ?: $this->_alias());
+        $this->_statement->having($conditions);
+        return $this;
+    }
+
+    /**
+     * Adds some order by fields to the query
+     *
+     * @param  string|array $fields The fields.
+     * @return object               Returns `$this`.
+     */
+    public function order($fields, $alias = null)
+    {
+        $fields = $this->_statement->sql()->prefix($fields, $alias ?: $this->_alias());
+        $this->_statement->order($fields);
+        return $this;
+    }
+
+    /**
      * Sets the relations to retrieve.
      *
-     * @param array The relations to load with the query.
+     * @param  array  $with The relations to load with the query.
+     * @return object       Returns `$this`.
      */
     public function with($with = null)
     {
@@ -285,21 +338,28 @@ class Query implements IteratorAggregate
     /**
      * Gets a unique alias for the query or a query's relation if `$relpath` is set.
      *
-     * @param  mixed  $alias   The value of the alias to set for the passed `$relpath`. For getting an
-     *                         alias value set alias to `true`.
-     * @param  string $relpath A dotted relation name or `null` for identifying the query's model.
-     * @return string          An alias value or `null` for an unexisting `$relpath` alias.
+     * @param  string $path   A dotted relation name or for identifying the query's relation.
+     * @param  object $schema The corresponding schema to alias.
+     * @return string         A string alias.
      */
-    public function _alias($relpath = '')
+    public function _alias($path = '', $schema = null)
     {
-        if (isset($this->_paths[$relpath])) {
-            return $this->_paths[$relpath];
+        if (func_num_args() < 2) {
+            if (isset($this->_aliases[$path])) {
+                return $this->_aliases[$path];
+            } else {
+                throw new SourceException("No alias has been defined for `'{$path}'`", 1);
+            }
         }
 
-        $alias = "t" . $this->_aliases;
-        $this->_paths[$relpath] = $alias;
-
-        $this->_aliases++;
+        $alias = $schema->source();
+        if (!isset($this->_aliasCounter[$alias])) {
+            $this->_aliasCounter[$alias] = 0;
+            $this->_aliases[$path] = $alias;
+        } else {
+            $alias = $this->_aliases[$path] = $alias . '__' . $this->_aliasCounter[$alias]++;
+        }
+        $this->_schemas[$alias] = $schema;
         return $alias;
     }
 
@@ -308,7 +368,7 @@ class Query implements IteratorAggregate
         $tree = Set::expand(array_fill_keys(array_keys($this->has()), false));
         $this->_applyJoins($this->_model, $tree, '', $this->_alias());
         foreach ($this->has() as $path => $conditions) {
-            $this->where($conditions);
+            $this->where($conditions, $this->_alias($path));
         }
     }
 
@@ -329,7 +389,6 @@ class Query implements IteratorAggregate
                 $relThrough = $model::relation($nameThrough);
                 $aliasThrough = $this->_join($pathThrough, $relThrough, $aliasFrom);
 
-                $to = $this->_alias($path);
                 $modelThrough = $relThrough->to();
                 $relTo = $modelThrough::relation($name);
                 $to = $this->_join($path, $relTo, $aliasThrough);
@@ -355,11 +414,13 @@ class Query implements IteratorAggregate
             return $this->_aliases[$path];
         }
 
-        $toAlias = $this->_alias($path);
         $model = $rel->to();
+        $schema = $model::schema();
+        $source = $schema->source();
+        $toAlias = $this->_alias($path, $schema);
 
         $this->join(
-            [$model::schema()->source() => $toAlias],
+            [$source => $toAlias],
             $this->_on($rel, $fromAlias, $toAlias),
             'LEFT'
         );
@@ -381,7 +442,6 @@ class Query implements IteratorAggregate
         }
         $keys = $rel->keys();
         list($fromField, $toField) = each($keys);
-        $keyConstraints = ['=' => [[':name' =>"{$fromAlias}.{$fromField}"], [':name' => "{$toAlias}.{$toField}"]]];
-        return $keyConstraints;
+        return ['=' => [[':name' =>"{$fromAlias}.{$fromField}"], [':name' => "{$toAlias}.{$toField}"]]];
     }
 }

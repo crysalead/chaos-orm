@@ -67,31 +67,6 @@ describe("Sql", function() {
 
         });
 
-        it("handle mixed syntax and uses an alias lookup", function() {
-
-            $fields = [
-                'pr.ef.ix.field1',
-                'pr.ef.ix.field1' => 'F1',
-                'pr.ef.ix' => ['field2', 'field3' => 'F3', ['field3' => 'F33']],
-                'field4'
-            ];
-
-            $part = $this->sql->names($fields, [
-                ''         => 'default',
-                'pr.ef.ix' => 'prefix'
-            ]);
-
-            expect($part)->toBe(join(', ', [
-                '"prefix"."field1"',
-                '"prefix"."field1" AS "F1"',
-                '"prefix"."field2"',
-                '"prefix"."field3" AS "F3"',
-                '"prefix"."field3" AS "F33"',
-                '"default"."field4"',
-            ]));
-
-        });
-
         it("casts objects as string", function() {
 
             $this->select = $this->sql->statement('select');
@@ -319,6 +294,37 @@ describe("Sql", function() {
                 ]);
                 expect($part)->toBe('"score" BETWEEN 90 AND 100');
             });
+
+        });
+
+    });
+
+
+    describe("->prefix()", function() {
+
+        it("prefixes names", function() {
+
+            $part = $this->sql->conditions($this->sql->prefix([
+                'field1' => 'value',
+                'field2' => 10
+            ], 'prefix'));
+            expect($part)->toBe('"prefix"."field1" = \'value\' AND "prefix"."field2" = 10');
+
+        });
+
+        it("prefixes nested names", function() {
+
+            $part = $this->sql->conditions($this->sql->prefix([
+                ['=' => [
+                    [':name' => 'field1'],
+                    [':name' => 'field2']
+                ]],
+                ['=' => [
+                    [':name' => 'field3'],
+                    [':name' => 'field4']
+                ]]
+            ], 'prefix'));
+            expect($part)->toBe('"prefix"."field1" = "prefix"."field2" AND "prefix"."field3" = "prefix"."field4"');
 
         });
 

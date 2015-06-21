@@ -214,7 +214,6 @@ describe("Select", function() {
 
             $this->select
                 ->from('table')
-                ->group()
                 ->group('')
                 ->group([])
                 ->group(null);
@@ -312,7 +311,6 @@ describe("Select", function() {
 
             $this->select
                 ->from('table')
-                ->order()
                 ->order('')
                 ->order([])
                 ->order(null);

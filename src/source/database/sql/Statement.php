@@ -110,16 +110,11 @@ class Statement
      */
     public function execute($options = [])
     {
-        $defaults = ['paths' => []];
-        $options += $defaults;
-
         $connection = $this->sql()->connection();
         if (!$connection) {
             throw new SourceException("No valid connection available.");
         }
-        $paths = $options['paths'];
-        unset($options['paths']);
-        return $connection->query($this->toString($paths), [], $options);
+        return $connection->query($this->toString(), [], $options);
     }
 
     /**

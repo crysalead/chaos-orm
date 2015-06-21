@@ -186,7 +186,7 @@ class Sql
     {
         return [
             ':name' => function ($value, $type, $states) {
-                return $this->name($value, isset($states['paths']) ? $states['paths'] : []);
+                return $this->name($value);
             },
             ':value' => function ($value, $type, $states) {
                 return $this->value($value, $type);
@@ -232,9 +232,9 @@ class Sql
     /**
      * Generates a list of escaped table/field names identifier.
      */
-    public function names($fields, $paths = [])
+    public function names($fields)
     {
-        return (string) join(", ", $this->_names(is_array($fields) ? $fields : [$fields], '', $paths));
+        return (string) join(", ", $this->_names(is_array($fields) ? $fields : [$fields], ''));
     }
 
     /**
@@ -243,7 +243,7 @@ class Sql
      * Note: it ignores duplicates.
      *
      */
-    protected function _names($names, $prefix, $paths)
+    protected function _names($names, $prefix)
     {
         $names = is_array($names) ? $names : [$names];
         $sql = [];
@@ -252,11 +252,11 @@ class Sql
                 $sql[] = $this->conditions($names);
             } elseif (is_string($value)) {
                 if (!is_numeric($key)) {
-                    $name = $this->name($key, $paths);
+                    $name = $this->name($key);
                     $value = $this->name($value);
-                    $name = "{$name} AS {$value}";
+                    $name = $name !== $value ? "{$name} AS {$value}" : $name;
                 } else {
-                    $name = $this->name($value, $paths);
+                    $name = $this->name($value);
                 }
                 $name = $prefix ? "{$prefix}.{$name}" : $name;
                 $sql[$name] = $name;
@@ -265,13 +265,45 @@ class Sql
             } else {
                 $pfx = $prefix;
                 if (!is_numeric($key)) {
-                    $key = isset($paths[$key]) ? $paths[$key] : $key;
                     $pfx = $this->_escape($key);
                 }
-                $sql = array_merge($sql, $this->_names($value, $pfx, $pfx ? [] : $paths));
+                $sql = array_merge($sql, $this->_names($value, $pfx));
             }
         }
         return $sql;
+    }
+
+    public function prefix($data, $prefix)
+    {
+        $result = [];
+        foreach ($data as $key => $value) {
+            if ($this->isOperator($key)) {
+                if ($key === ':name') {
+                    $value = $this->_prefix($value, $prefix);
+                }
+                if (!is_array($value)) {
+                    $result[$key] = $value;
+                    continue;
+                }
+            }
+            if (is_array($value)) {
+                $result[$key] = $this->prefix($value, $prefix);
+                continue;
+            }
+            if (is_numeric($key)) {
+                $value = $this->_prefix($value, $prefix);
+            } else {
+                $key = $this->_prefix($key, $prefix);
+            }
+            $result[$key] = $value;
+        }
+        return $result;
+    }
+
+    public function _prefix($name, $prefix)
+    {
+        list($alias, $field) = $this->undot($name);
+        return $alias ? $name : "{$prefix}.{$field}";
     }
 
     /**
@@ -293,7 +325,7 @@ class Sql
         if (!$conditions) {
             return '';
         }
-        $defaults = ['prepend' => false, 'operator' => ':and', 'schemas' => [], 'paths' => []];
+        $defaults = ['prepend' => false, 'operator' => ':and', 'schemas' => []];
         $options += $defaults;
 
         if (!is_numeric(key($conditions))) {
@@ -301,7 +333,6 @@ class Sql
         }
 
         $states = [
-            'paths' => [],
             'schemas' => $options['schemas'],
             'schema' => null,
             'name' => null,
@@ -383,7 +414,7 @@ class Sql
     }
 
     /**
-     * Build a <name> <operator> <value> SQL statement.
+     * Build a <fieldname> = <value> SQL condition.
      *
      * @param  string $name    The field name.
      * @param  mixed  $value  The data value.
@@ -392,7 +423,7 @@ class Sql
     protected function _name($name, $value, &$states)
     {
         list($alias, $field) = $this->undot($name);
-        $escaped = $this->name($name, $states['paths']);
+        $escaped = $this->name($name);
         $schema = isset($states['schemas'][$alias]) ? $states['schemas'][$alias] : null;
         $states['name'] = $field;
         $states['schema'] = $schema;
@@ -436,15 +467,12 @@ class Sql
      * @param  string $alias The filled alias name if present.
      * @return string        The escaped identifien.
      */
-    public function name($name, $paths = [])
+    public function name($name)
     {
         if (!is_string($name)) {
-            return $this->names($name, $paths);
+            return $this->names($name);
         }
         list($alias, $field) = $this->undot($name);
-        if (isset($paths[$alias])) {
-            $alias = $paths[$alias];
-        }
         return $alias ? $this->_escape($alias) . '.' . $this->_escape($field) : $this->_escape($name);
     }
 
