@@ -17,15 +17,15 @@ class ImageTag extends \chaos\model\Model
         $schema->set('tag_id', ['type' => 'integer']);
 
         $schema->bind('image', [
-            'relation'    => 'belongsTo',
-            'to'          => 'chaos\spec\fixture\model\Image',
-            'key'         => 'image_id'
+            'relation' => 'belongsTo',
+            'to'       => 'chaos\spec\fixture\model\Image',
+            'keys'     => ['image_id' => 'id']
         ]);
 
         $schema->bind('tag', [
-            'relation'    => 'belongsTo',
-            'to'          => 'chaos\spec\fixture\model\Tag',
-            'key'         => 'tag_id'
+            'relation' => 'belongsTo',
+            'to'       => 'chaos\spec\fixture\model\Tag',
+            'keys'     => ['tag_id' => 'id']
         ]);
     }
 }

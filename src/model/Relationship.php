@@ -110,10 +110,6 @@ class Relationship
             throw new SourceException("Error, `'through'` option can't be empty for a has many through relation.");
         }
 
-        if ($config['through'] && !$config['using']) {
-            $config['using'] = $conventions->apply('fieldName', $config['through']);
-        }
-
         if (!$config['keys']) {
             $primaryKey = $conventions->apply('primaryKey');
             if ($config['type'] === 'belongsTo') {
@@ -131,6 +127,9 @@ class Relationship
             $config['name'] = $conventions->apply('fieldName', $config['to']);
         }
 
+        if ($config['through'] && !$config['using']) {
+            $config['using'] = $conventions->apply('usingName', $config['name']);
+        }
         $this->_config = $config;
     }
 

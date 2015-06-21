@@ -18,22 +18,22 @@ class Image extends \chaos\model\Model
         $schema->set('title', ['type' => 'string', 'length' => 50]);
 
         $schema->bind('gallery', [
-            'relation'    => 'belongsTo',
-            'to'          => 'chaos\spec\fixture\model\Gallery',
-            'key'         => 'gallery_id'
+            'relation' => 'belongsTo',
+            'to'       => 'chaos\spec\fixture\model\Gallery',
+            'keys'     => ['gallery_id' => 'id']
         ]);
 
         $schema->bind('images_tags', [
-            'relation'    => 'hasMany',
-            'to'          => 'chaos\spec\fixture\model\ImageTag',
-            'key'         => 'image_id'
+            'relation' => 'hasMany',
+            'to'       => 'chaos\spec\fixture\model\ImageTag',
+            'keys'     => ['id' => 'image_id']
         ]);
 
         $schema->bind('tags', [
-            'relation'    => 'hasManyThrough',
-            'to'          => 'chaos\spec\fixture\model\Tag',
-            'key'         => 'tag_id',
-            'through'     => 'images_tags'
+            'relation' => 'hasManyThrough',
+            'to'       => 'chaos\spec\fixture\model\Tag',
+            'keys'     => ['tag_id' => 'id'],
+            'through'  => 'images_tags'
         ]);
     }
 }

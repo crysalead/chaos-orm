@@ -12,7 +12,7 @@ describe("Relationship", function() {
 
         $this->from = Stub::classname(['extends' => 'chaos\model\Model']);
         $this->to = Stub::classname(['extends' => 'chaos\model\Model']);
-        $this->through = Stub::classname(['extends' => 'chaos\model\Model']);
+        $this->through = 'through_relation';
 
         $this->conventions = new Conventions();
         $this->primaryKey = $this->conventions->apply('primaryKey');
@@ -124,7 +124,11 @@ describe("Relationship", function() {
             expect($relation->from())->toBe($this->from);
             expect($relation->to())->toBe($this->to);
             expect($relation->through())->toBe($this->through);
-            expect($relation->using())->toBe($this->conventions->apply('fieldName', $this->through));
+            expect($relation->using())->toBe($this->conventions->apply(
+                'usingName',
+                $this->conventions->apply('fieldName',
+                $this->to
+            )));
             expect($relation->mode())->toBe('diff');
             expect($relation->link())->toBe(Relationship::LINK_KEY);
             expect($relation->fields())->toBe(true);

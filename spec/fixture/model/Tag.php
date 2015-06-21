@@ -16,15 +16,15 @@ class Tag extends \chaos\model\Model
         $schema->set('name', ['type' => 'string', 'length' => 50]);
 
         $schema->bind('images_tags', [
-            'relation'    => 'hasMany',
-            'to'          => 'chaos\spec\fixture\model\ImageTag',
-            'key'         => 'tag_id'
+            'relation' => 'hasMany',
+            'to'       => 'chaos\spec\fixture\model\ImageTag',
+            'key'      => ['id' => 'tag_id']
         ]);
 
         $schema->bind('images', [
             'relation'    => 'hasManyThrough',
             'to'          => 'chaos\spec\fixture\model\Image',
-            'key'         => 'image_id',
+            'key'         => ['image_id' => 'id'],
             'through'     => 'image_tag'
         ]);
     }

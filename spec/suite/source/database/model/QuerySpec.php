@@ -168,7 +168,7 @@ describe("Query", function() {
 
     });
 
-    fdescribe("->with()", function() {
+    describe("->with()", function() {
 
         beforeEach(function() {
             $this->fixtures->populate('image');

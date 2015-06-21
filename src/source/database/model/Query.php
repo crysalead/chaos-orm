@@ -72,13 +72,6 @@ class Query implements IteratorAggregate
     protected $_map = [];
 
     /**
-     * Map beetween generated aliases and corresponding models.
-     *
-     * @var array
-     */
-    protected $_relationships = [];
-
-    /**
      * The relations to include.
      *
      * @var array
@@ -215,7 +208,6 @@ class Query implements IteratorAggregate
                 throw new SourceException("Invalid value `'{$options['return']}'` as `'return'` option.");
             break;
         }
-        print_r($this->with());
         //$this->embed($this->_with);
         return $collection;
     }
@@ -313,208 +305,83 @@ class Query implements IteratorAggregate
 
     protected function _applyHas()
     {
-        $tree = Set::expand(array_fill_keys(array_keys($this->with()), false));
-        print_r($tree);
-        $alias = $this->_alias();
-        $deps = [$alias => []];
-
-        $this->_applyJoin($this->_model, $tree, '', $alias, $deps);
+        $tree = Set::expand(array_fill_keys(array_keys($this->has()), false));
+        $this->_applyJoins($this->_model, $tree, '', $this->_alias());
+        foreach ($this->has() as $path => $conditions) {
+            $this->where($conditions);
+        }
     }
 
-    protected function _applyJoin($model, $tree, $path, $from, &$deps)
+    protected function _applyJoins($model, $tree, $basePath, $aliasFrom)
     {
         foreach ($tree as $name => $childs) {
-            if (!$rel = $model::relation($name)) {
-                throw new SourceException("Model relationship `{$name}` not found.");
-            }
+            $rel = $model::relation($name);
+            $path = $basePath ? $basePath . '.' . $name : $name;
 
-            $alias = $name;
-            $relPath = $path ? $path . '.' . $name : $name;
-
-            $to = $this->_alias($relPath);
-
-            if ($rel->type() !== 'hasAndBelongsToMany') {
-                $this->_joinClassic($rel, $from, $to, $relPath, $deps);
+            if ($rel->type() !== 'hasManyThrough') {
+                $to = $this->_join($path, $rel, $aliasFrom);
             } else {
-                $this->_joinHabtm($rel, $from, $to, $relPath, $deps);
+                $name = $rel->using();
+                $nameThrough = $rel->through();
+                $pathThrough = $path ? $path . '.' . $nameThrough : $nameThrough;
+                $model = $rel->from();
+
+                $relThrough = $model::relation($nameThrough);
+                $aliasThrough = $this->_join($pathThrough, $relThrough, $aliasFrom);
+
+                $to = $this->_alias($path);
+                $modelThrough = $relThrough->to();
+                $relTo = $modelThrough::relation($name);
+                $to = $this->_join($path, $relTo, $aliasThrough);
             }
 
             if (!empty($childs)) {
-                $this->_applyJoin($rel->to(), $childs, $relPath, $to, $deps);
+                $this->_applyJoins($rel->to(), $childs, $path, $to);
             }
         }
-    }
-
-    protected function _joinClassic($rel, $from, $to, $path, &$deps)
-    {
-        $deps[$to] = $deps[$from];
-        $deps[$to][] = $from;
-
-        if ($this->relationships($path) === null) {
-            $this->relationships($path, array(
-                'type' => $rel->type(),
-                'model' => $rel->to(),
-                'fieldName' => $rel->fieldName(),
-                'alias' => $to
-            ));
-            $this->_join($rel, $from, $to);
-        }
-    }
-
-    protected function _joinHabtm($rel, $from, $to, $path, &$deps)
-    {
-        $nameVia = $rel->data('via');
-        $relnameVia = $path ? $path . '.' . $nameVia : $nameVia;
-
-        if (!$relVia = $model::relations($nameVia)) {
-            $message = "Model relationship `{$nameVia}` not found.";
-            throw new SourceException($message);
-        }
-
-        if (!$config = $this->relationships($relnameVia)) {
-            $aliasVia = $this->_alias($relnameVia);
-            $this->relationships($relnameVia, array(
-                'type' => $relVia->type(),
-                'model' => $relVia->to(),
-                'fieldName' => $relVia->fieldName(),
-                'alias' => $aliasVia
-            ));
-            $this->_join($relVia, $from, $aliasVia, $self->on($rel));
-        } else {
-            $aliasVia = $config['alias'];
-        }
-
-        $deps[$aliasVia] = $deps[$from];
-        $deps[$aliasVia][] = $from;
-
-        if ($this->relationships($relPath)) {
-            return;
-        }
-
-        $to = $this->_alias($relPath);
-        $modelVia = $relVia->data('to');
-        if (!$relTo = $modelVia::relations($name)) {
-            $message = "Model relationship `{$name}` ";
-            $message .= "via `{$nameVia}` not found.";
-            throw new SourceException($message);
-        }
-        $this->relationships($relPath, array(
-            'type' => $rel->type(),
-            'model' => $relTo->to(),
-            'fieldName' => $rel->fieldName(),
-            'alias' => $to
-        ));
-        $this->_join($relTo, $aliasVia, $to);
-
-        $deps[$to] = $deps[$aliasVia];
-        $deps[$to][] = $aliasVia;
     }
 
     /**
      * Set a query's join according a Relationship.
      *
-     * @param object $rel A Relationship instance
-     * @param string $fromAlias Set a specific alias for the `'from'` `Model`.
-     * @param string $toAlias Set a specific alias for `'to'` `Model`.
-     * @param mixed $constraints If `$constraints` is an array, it will be merged to defaults
-     *        constraints. If `$constraints` is an object, defaults won't be merged.
+     * @param  string $path      The relation path.
+     * @param  object $rel       A Relationship instance.
+     * @param  string $fromAlias The "from" model alias.
+     * @return string            The "to" model alias.
      */
-    protected function _join($rel, $fromAlias = null, $toAlias = null, $constraints = [])
+    protected function _join($path, $rel, $fromAlias)
     {
+        if (isset($this->_aliases[$path])) {
+            return $this->_aliases[$path];
+        }
+
+        $toAlias = $this->_alias($path);
         $model = $rel->to();
-        if ($fromAlias === null) {
-            $from = $rel->from();
-            $fromAlias = $this->alias();
-        }
-        if ($toAlias === null) {
-            $toAlias = $this->alias($rel->name());
-        }
-        if (!is_object($constraints)) {
-            $constraints = $this->on($rel, $fromAlias, $toAlias, $constraints);
-        } else {
-            $constraints = (array) $constraints;
-        }
 
-        $this->join([$model::schema()->source() => $toAlias], $constraints, 'LEFT');
+        $this->join(
+            [$model::schema()->source() => $toAlias],
+            $this->_on($rel, $fromAlias, $toAlias),
+            'LEFT'
+        );
+        return $toAlias;
     }
 
     /**
-     * Build the `ON` constraints from a `Relationship` instance
+     * Build the `ON` constraints from a `Relationship` instance.
      *
-     * @param object $rel A Relationship instance
-     * @param string $fromAlias Set a specific alias for the `'from'` `Model`.
-     * @param string $toAlias Set a specific alias for `'to'` `Model`.
-     * @param array $constraints Array of additionnal $constraints.
-     * @return array A constraints array.
+     * @param  object $rel       A Relationship instance.
+     * @param  string $fromAlias The "from" model alias.
+     * @param  string $toAlias   The "to" model alias.
+     * @return array             A constraints array.
      */
-    public function on($rel, $aliasFrom = null, $aliasTo = null, $constraints = [])
+    protected function _on($rel, $fromAlias, $toAlias)
     {
-        if ($rel->type() === 'hasAndBelongsToMany') {
-            return $constraints;
+        if ($rel->type() === 'hasManyThrough') {
+            return [];
         }
-        $model = $rel->from();
-        $aliasFrom = $aliasFrom ?: $model::schema()->source();
-        $aliasTo = $aliasTo ?: $rel->name();
-        $keyConstraints = array();
-        $from = $model::schema()->primaryKey();
-        $to = $rel->key();
-        $keyConstraints = ['=' => [[':name' =>"{$aliasFrom}.{$from}"], [':name' => "{$aliasTo}.{$to}"]]];
-
-        $mapAlias = [$model::schema()->source() => $aliasFrom, $rel->name() => $aliasTo];
-        $relConstraints = $this->_on((array) $rel->constraints(), $aliasFrom, $aliasTo, $mapAlias);
-        $constraints = $this->_on($constraints, $aliasFrom, $aliasTo, array());
-        return $constraints + $relConstraints + $keyConstraints;
-    }
-
-    protected function _on(array $constraints, $aliasFrom, $aliasTo, $mapAlias = array())
-    {
-        $result = array();
-        foreach ($constraints as $key => $value) {
-            $isAliasable = (
-                !is_numeric($key) &&
-                !isset($this->_constraintTypes[$key]) &&
-                !isset($this->_operators[$key])
-            );
-            if ($isAliasable) {
-                $key = $this->_aliasing($key, $aliasFrom, $mapAlias);
-            }
-            if (is_string($value)) {
-                $result[$key] = $this->_aliasing($value, $aliasTo, $mapAlias);
-            } elseif (is_array($value)) {
-                $result[$key] = $this->_on($value, $aliasFrom, $aliasTo, $mapAlias);
-            } else {
-                $result[$key] = $value;
-            }
-        }
-        return $result;
-    }
-
-    /**
-     * Sets and gets the relationships.
-     *
-     * @param  string $relpath A dotted path.
-     * @param  array  $config  The config array to set.
-     * @return mixed           The relationships array or a relationship array if `$relpath` is set. Returns
-     *                         `null` if a join doesn't exist.
-     * @throws InvalidArgumentException
-     */
-    public function relationships($relpath = null, $config = null)
-    {
-        if ($config) {
-            if (!$relpath) {
-                throw new InvalidArgumentException("The relation dotted path is empty.");
-            }
-            if (isset($config['model']) && isset($config['alias'])) {
-                $this->_models[$config['alias']] = $config['model'];
-            }
-            $this->_relationships[$relpath] = $config;
-            return $this;
-        }
-        if (!$relpath) {
-            return $this->_relationships;
-        }
-        if (isset($this->_relationships[$relpath])) {
-            return $this->_relationships[$relpath];
-        }
+        $keys = $rel->keys();
+        list($fromField, $toField) = each($keys);
+        $keyConstraints = ['=' => [[':name' =>"{$fromAlias}.{$fromField}"], [':name' => "{$toAlias}.{$toField}"]]];
+        return $keyConstraints;
     }
 }

@@ -440,12 +440,13 @@ class Schema
             return $this->_relationships[$name];
         }
 
-        if (isset($this->_relations[$name])) {
-            $config = $this->_relations[$name];
-            $config['type'] = $config['relation'];
-            unset($config['relation']);
-            return $this->_relationships[$name] = $this->_relationship($name, $config);
+        if (!isset($this->_relations[$name])) {
+            throw new SourceException("Relationship `{$name}` not found.");
         }
+        $config = $this->_relations[$name];
+        $config['type'] = $config['relation'];
+        unset($config['relation']);
+        return $this->_relationships[$name] = $this->_relationship($name, $config);
     }
 
     /**

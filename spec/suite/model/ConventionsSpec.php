@@ -64,7 +64,8 @@ describe("Conventions", function() {
                 'fieldName',
                 'foreignKey',
                 'primaryKey',
-                'source'
+                'source',
+                'usingName'
             ]);
 
         });
@@ -75,10 +76,11 @@ describe("Conventions", function() {
             $closures = $conventions->get();
             ksort($closures);
             expect(array_keys($closures))->toBe([
-                                'fieldName',
+                'fieldName',
                 'foreignKey',
                 'primaryKey',
-                'source'
+                'source',
+                'usingName'
             ]);
 
         });
