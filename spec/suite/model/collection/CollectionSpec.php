@@ -2,9 +2,12 @@
 namespace chaos\spec\suite\model\collection;
 
 use InvalidArgumentException;
-use kahlan\plugin\Stub;
 use chaos\model\Model;
 use chaos\model\collection\Collection;
+use chaos\source\database\model\Query;
+
+use kahlan\plugin\Stub;
+use chaos\spec\fixture\Fixtures;
 
 describe("Collection", function() {
 
@@ -80,18 +83,6 @@ describe("Collection", function() {
 
             $collection = new Collection(['meta' => ['page' => 5, 'limit' => 10]]);
             expect($collection->meta())->toBe(['page' => 5, 'limit' => 10]);
-
-        });
-
-    });
-
-    describe("->cursor()", function() {
-
-        it("returns the cursor attribute", function() {
-
-            $cursor = Stub::create();
-            $collection = new Collection(['cursor' => $cursor]);
-            expect($collection->cursor())->toBe($cursor);
 
         });
 
@@ -591,6 +582,49 @@ describe("Collection", function() {
             expect('chaos\model\collection\Collection')->toReceive('::toArray')->with($collection);
 
             $collection->data();
+
+        });
+
+    });
+
+    fdescribe("->embed()", function() {
+
+        beforeEach(function() {
+            $this->connection = box('chaos.spec')->get('source.database.mysql');
+            $this->fixtures = new Fixtures([
+                'connection' => $this->connection,
+                'fixtures'   => [
+                    'gallery'   => 'chaos\spec\fixture\schema\Gallery',
+                    'image'     => 'chaos\spec\fixture\schema\Image',
+                    'image_tag' => 'chaos\spec\fixture\schema\ImageTag',
+                    'tag'       => 'chaos\spec\fixture\schema\Tag'
+                ]
+            ]);
+
+            $this->fixtures->populate('gallery');
+            $gallery = $this->fixtures->get('gallery')->model();
+
+            $this->query = new Query([
+                'model'      => $gallery,
+                'connection' => $this->connection
+            ]);
+
+            $this->query->order(['id']);
+
+            $this->fixtures->populate('image');
+            $this->fixtures->populate('image_tag');
+            $this->fixtures->populate('tag');
+        });
+
+        afterEach(function() {
+            $this->fixtures->drop();
+        });
+
+        it("finds all records with their relation", function() {
+
+            $galleries = $this->query->all();
+            $galleries->embed(['image.tags']);
+            expect($galleries->data())->toBe([]);
 
         });
 

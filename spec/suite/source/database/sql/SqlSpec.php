@@ -176,6 +176,15 @@ describe("Sql", function() {
 
         });
 
+        it("generates a simple field equality", function() {
+
+            $part = $this->sql->conditions([
+                'field1' => [':name' => 'field2']
+            ]);
+            expect($part)->toBe('"field1" = "field2"');
+
+        });
+
         it("generates a equal expression between fields", function() {
 
             $part = $this->sql->conditions([
@@ -216,7 +225,16 @@ describe("Sql", function() {
 
         });
 
-        it("generates a subquery IN expression", function() {
+        it("generates a IN expression using the short syntax", function() {
+
+            $part = $this->sql->conditions([
+                'score' => [1, 2, 3, 4, 5]
+            ]);
+            expect($part)->toBe('"score" IN (1, 2, 3, 4, 5)');
+
+        });
+
+        it("generates a IN expression", function() {
 
             $part = $this->sql->conditions([
                 ':in' => [[':name' => 'score'], [1, 2, 3, 4, 5]]
@@ -225,7 +243,7 @@ describe("Sql", function() {
 
         });
 
-        it("generates a subquery NOT IN expression", function() {
+        it("generates a NOT IN expression", function() {
 
             $part = $this->sql->conditions([
                 ':not in' => [[':name' => 'score'], [1, 2, 3, 4, 5]]
@@ -258,6 +276,15 @@ describe("Sql", function() {
                 ]
             ]);
             expect($part)->toBe('"score" ANY (SELECT "s1" FROM "t1")');
+
+        });
+
+        it("generates a comparison with an array", function() {
+
+            $part = $this->sql->conditions([
+                'score' => [':value' => [1, 2, 3, 4, 5]]
+            ]);
+            expect($part)->toBe('"score" = {1, 2, 3, 4, 5}');
 
         });
 

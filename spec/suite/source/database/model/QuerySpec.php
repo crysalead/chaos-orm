@@ -14,9 +14,6 @@ describe("Query", function() {
 
         $this->connection = box('chaos.spec')->get('source.database.mysql');
         $this->fixtures = new Fixtures([
-            'classes'    => [
-                'model' => 'chaos\source\database\model\Model'
-            ],
             'connection' => $this->connection,
             'fixtures'   => [
                 'gallery'   => 'chaos\spec\fixture\schema\Gallery',

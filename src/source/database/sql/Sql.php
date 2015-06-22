@@ -428,19 +428,21 @@ class Sql
         $states['name'] = $field;
         $states['schema'] = $schema;
 
-        if (is_array($value)) {
-            $operator = strtolower(key($value));
-            if (isset($this->_operators[$operator])) {
-                $conditions = current($value);
-                if (!is_array($conditions)) {
-                    $conditions = [$conditions];
-                }
-                array_unshift($conditions, [':name' => $name]);
-                return $this->_operator($operator, $conditions, $states);
-            }
+        if (!is_array($value)) {
+            return "{$escaped} = " . $this->value($value, $this->_type($states));
         }
-        $type = $this->_type($states);
-        return "{$escaped} = {$this->value($value, $type)}";
+
+        $operator = strtolower(key($value));
+        if (isset($this->_formatters[$operator])) {
+            return "{$escaped} = " . $this->format($operator, current($value), $this->_type($states), $states);
+        } elseif (!isset($this->_operators[$operator])) {
+            return $this->_operator(':in', [[':name' => $name], $value], $states);
+        }
+
+        $conditions = current($value);
+        $conditions = (array) $conditions;
+        array_unshift($conditions, [':name' => $name]);
+        return $this->_operator($operator, $conditions, $states);
     }
 
     /**

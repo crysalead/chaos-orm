@@ -106,6 +106,9 @@ class Query implements IteratorAggregate
         $source = $schema->source();
         $this->_statement = $this->connection()->sql()->statement('select');
         $this->_statement->from([$source => $this->_alias('', $schema)]);
+        if (isset($config['conditions'])) {
+            $this->_statement->where($config['conditions']);
+        }
     }
 
     /**

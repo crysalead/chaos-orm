@@ -50,13 +50,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     protected $_model = null;
 
     /**
-     * An iterable instance.
-     *
-     * @var object
-     */
-    protected $_cursor = null;
-
-    /**
      * Loaded items on construct.
      *
      * @var array
@@ -128,7 +121,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
             'rootPath' => null,
             'model'    => null,
             'meta'     => [],
-            'cursor'   => null,
             'data'     => []
         ];
         $config += $defaults;
@@ -137,7 +129,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         $this->_rootPath = $config['rootPath'];
         $this->_model = $config['model'];
         $this->_meta = $config['meta'];
-        $this->_cursor = $config['cursor'];
         $this->_loaded = $config['data'];
         foreach ($this->_loaded as $key => $value) {
             $this[$key] = $value;
@@ -200,16 +191,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Return's the cursor instance.
-     *
-     * @return object
-     */
-    public function cursor()
-    {
-        return $this->_cursor;
-    }
-
-    /**
      * Handles dispatching of methods against all items in the collection.
      *
      * @param  string $method The name of the method to call on each instance in the collection.
@@ -241,7 +222,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetExists($offset)
     {
-        $this->offsetGet($offset);
         return array_key_exists($offset, $this->_data);
     }
 
@@ -253,8 +233,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetGet($offset)
     {
-        while (!array_key_exists($offset, $this->_data) && $this->_populate()) {}
-
         if (array_key_exists($offset, $this->_data)) {
             return $this->_data[$offset];
         }
@@ -271,7 +249,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetSet($offset, $data)
     {
-        $this->offsetGet($offset);
         return $this->_set($data, $offset);
     }
 
@@ -282,7 +259,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetUnset($offset)
     {
-        $this->offsetGet($offset);
         $this->_skipNext = $offset === key($this->_data);
         unset($this->_data[$offset]);
     }
@@ -295,7 +271,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *
      * @return object                Return the merged collection.
      */
-    public function merge($collection, $preserveKeys = false) {
+    public function merge($collection, $preserveKeys = false)
+    {
         foreach($collection as $key => $value) {
             $preserveKeys ? $this->_data[$key] = $value : $this->_data[] = $value;
         }
@@ -309,7 +286,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function keys()
     {
-        $this->offsetGet(null);
         return array_keys($this->_data);
     }
 
@@ -320,7 +296,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function values()
     {
-        $this->offsetGet(null);
         return array_values($this->_data);
     }
 
@@ -331,7 +306,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function raw()
     {
-        $this->offsetGet(null);
         return $this->_data;
     }
 
@@ -397,11 +371,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         $value = $this->_skipNext ? current($this->_data) : next($this->_data);
         $this->_skipNext = false;
         $this->_valid = key($this->_data) !== null;
-
-        if (!$this->_valid) {
-            $this->_valid = $this->_populate() !== null;
-        }
-        return $this->_valid ? $value : null;;
+        return $this->_valid ? $value : null;
     }
 
     /**
@@ -421,7 +391,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     {
         $this->_started = true;
         reset($this->_data);
-        $this->_valid = !empty($this->_data) || $this->_populate() !== null;
+        $this->_valid = !empty($this->_data);
         return current($this->_data);
     }
 
@@ -454,7 +424,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *
      * @return integer Returns the number of items in the collection.
      */
-    public function count() {
+    public function count()
+    {
         return count($this->_data);
     }
 
@@ -467,7 +438,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function find($closure, $options = [])
     {
-        $this->offsetGet(null);
         $data = array_filter($this->_data, $closure);
         return new static(compact('data'));
     }
@@ -481,7 +451,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function each($closure)
     {
-        $this->offsetGet(null);
         foreach ($this->_data as $key => $val) {
             $this->_data[$key] = $closure($val, $key, $this);
         }
@@ -498,7 +467,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function map($closure, $options = [])
     {
-        $this->offsetGet(null);
         $data = array_map($closure, $this->_data);
         return new static(compact('data'));
     }
@@ -513,7 +481,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function reduce($closure, $initial = false)
     {
-        $this->offsetGet(null);
         return array_reduce($this->_data, $closure, $initial);
     }
 
@@ -529,8 +496,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *
      * @return array
      */
-    public function slice($offset, $length = null, $preserveKeys = true) {
-        $this->offsetGet(null);
+    public function slice($offset, $length = null, $preserveKeys = true)
+    {
         $data = array_slice($this->_data, $offset, $length, $preserveKeys);
         return new static(compact('data'));
     }
@@ -547,8 +514,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *
      * @return object           Return the new sorted collection.
      */
-    public function sort($closure = null, $sorter = null) {
-        $this->offsetGet(null);
+    public function sort($closure = null, $sorter = null)
+    {
         if (!$sorter) {
             $sorter = $closure === null ? 'sort' : 'usort';
         }
@@ -561,20 +528,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Extract the next item from the result ressource and wraps it into a `Record` object.
-     *
-     * @return mixed Returns the next `Record` if exists. Returns `null` otherwise
-     */
-    protected function _populate() {
-        if (!$this->_cursor || !$this->_cursor->valid()) {
-            return;
-        }
-        $result = $this->_set($this->_cursor->current(), null, ['exists' => true]);
-        $this->_cursor->next();
-        return $result;
-    }
-
-    /**
      * Sets data to a specified offset and wraps all data array in its appropriate object type.
      *
      * @param  mixed  $data    An array or an entity instance to set.
@@ -582,7 +535,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * @param  array  $options Any additional options to pass to the `Entity`'s constructor.
      * @return object          Returns the inserted instance.
      */
-    protected function _set($data = null, $offset = null, $options = []) {
+    protected function _set($data = null, $offset = null, $options = [])
+    {
         $defaults = ['defaults' => false];
         $rootPath = $this->_rootPath;
         $model = $this->_model;
@@ -597,32 +551,24 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * Eager loads relations.
+     *
+     * @param array $relations The relations to eager load.
+     */
+    public function embed($relations)
+    {
+        $model = $this->_model;
+        $model::schema()->embed($this, $relations);
+    }
+
+    /**
      * Converts the current state of the data structure to an array.
      *
      * @return array Returns the array value of the data in this `Collection`.
      */
     public function data()
     {
-        $this->offsetGet(null);
         return static::toArray($this);
-    }
-
-    /**
-     * Clean up
-     */
-    public function close()
-    {
-        if ($this->_cursor) {
-            $this->_cursor->close();
-        }
-    }
-
-    /**
-     * Ensures that the data set's connection is closed when the object is destroyed.
-     */
-    public function __destruct()
-    {
-        $this->close();
     }
 
     /**

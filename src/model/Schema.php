@@ -488,6 +488,55 @@ class Schema
     }
 
     /**
+     * Eager loads relations.
+     *
+     * @param array $collection The collection to extend.
+     * @param array $relations  The relations to eager load.
+     */
+    public function embed($collection, $relations)
+    {
+        $relations = Set::normalize($relations);
+        $tree = Set::expand(array_fill_keys(array_keys($relations), []));
+
+        $indexes = $this->_keyIndex($collection);
+
+        foreach ($tree as $name => $subtree) {
+            $rel = $this->relation($name);
+            $keys = $rel->keys();
+            $to = $rel->to();
+            $query = $this->query([
+                'model'      => $rel->to(),
+                'conditions' => [current($keys) => array_keys($indexes)]
+            ]);
+            $result = $query->all();
+
+            $subrelations = [];
+            foreach ($relations as $path => $value) {
+                if (preg_match('~^'.$name.'\.(.*)$~', $path, $matches)) {
+                    $subrelations[] = $matches[1];
+                }
+            }
+            if ($subrelations) {
+                $result->embed($subrelations);
+            }
+        }
+    }
+
+    public function _keyIndex($collection)
+    {
+        $indexes = [];
+        $primaryKey = $this->primaryKey();
+        foreach ($collection as $key => $entity) {
+            if (is_object($entity)) {
+                $indexes[$entity->{$primaryKey}] = $key;
+            } else {
+                $indexes[$entity[$primaryKey]] = $key;
+            }
+        }
+        return $indexes;
+    }
+
+    /**
      * Cast data according to the schema definition.
      *
      * @param  array  $name    The field name.
