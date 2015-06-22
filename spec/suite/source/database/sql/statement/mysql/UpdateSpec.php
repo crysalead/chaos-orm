@@ -1,15 +1,11 @@
 <?php
 namespace chaos\spec\suite\source\database\sql\statement;
 
-use chaos\SourceException;
-use chaos\source\database\sql\Sql;
-use kahlan\plugin\Stub;
-
 describe("Update", function() {
 
     beforeEach(function() {
         $this->adapter = box('chaos.spec')->get('source.database.mysql');
-        $this->update = $this->adapter->sql()->statement('update');
+        $this->update = $this->adapter->dialect()->statement('update');
     });
 
     describe("->lowPriority()", function() {

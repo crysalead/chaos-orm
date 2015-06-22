@@ -1,9 +1,9 @@
 <?php
-namespace chaos\spec\suite;
+namespace chaos\spec\suite\database;
 
 use set\Set;
 use chaos\model\Model;
-use chaos\source\database\model\Query;
+use chaos\source\database\Query;
 
 use kahlan\plugin\Stub;
 use chaos\spec\fixture\Fixtures;

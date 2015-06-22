@@ -11,10 +11,14 @@ class Schema extends \chaos\model\Schema
      * @var array
      */
     protected $_classes = [
-        'entity'       => 'chaos\model\Model',
-        'set'          => 'collection\Collection',
-        'relationship' => 'chaos\model\Relationship',
-        'query'        => 'chaos\source\database\model\query'
+        'entity'         => 'chaos\model\Model',
+        'set'            => 'collection\Collection',
+        'relationship'   => 'chaos\model\Relationship',
+        'belongsTo'      => 'chaos\model\relationship\BelongsTo',
+        'hasOne'         => 'chaos\model\relationship\HasOne',
+        'hasMany'        => 'chaos\model\relationship\HasMany',
+        'hasManyThrough' => 'chaos\model\relationship\HasManyThrough',
+        'query'          => 'chaos\source\database\query'
     ];
 
     /**
@@ -47,7 +51,7 @@ class Schema extends \chaos\model\Schema
         if (!isset($this->_source)) {
             throw new SourceException("Missing table name for this schema.");
         }
-        $query = $this->connection()->sql()->statement('create table');
+        $query = $this->connection()->dialect()->statement('create table');
         $query
             ->ifNotExists($options['soft'])
             ->table($this->_source)
@@ -74,7 +78,7 @@ class Schema extends \chaos\model\Schema
      */
     public function update($data, $conditions = [], $options = [])
     {
-        $update = $this->connection()->sql()->statement('update');
+        $update = $this->connection()->dialect()->statement('update');
 
         $update->table($this->source())
             ->where($conditions)
@@ -99,7 +103,7 @@ class Schema extends \chaos\model\Schema
      */
     public function remove($conditions = [], $options = [])
     {
-        $statement = $this->connection()->sql()->statement('delete');
+        $statement = $this->connection()->dialect()->statement('delete');
 
         $update->table($this->source())
             ->where($conditions);
@@ -126,7 +130,7 @@ class Schema extends \chaos\model\Schema
         if (!isset($this->_source)) {
             throw new SourceException("Missing table name for this schema.");
         }
-        $query = $this->connection()->sql()->statement('drop table');
+        $query = $this->connection()->dialect()->statement('drop table');
         $query
             ->ifExists($options['soft'])
             ->table($this->_source)
@@ -202,10 +206,10 @@ class Schema extends \chaos\model\Schema
         $source = $this->source();
 
         if ($entity->exists()) {
-            $statement = $connection->sql()->statement('update');
+            $statement = $connection->dialect()->statement('update');
             $statement->table($source);
         } else {
-            $statement = $connection->sql()->statement('insert');
+            $statement = $connection->dialect()->statement('insert');
             $statement->into($source);
         }
         $statement->values($entity->data());
@@ -229,8 +233,7 @@ class Schema extends \chaos\model\Schema
         $defaults = ['with' => false];
         $options += $defaults;
 
-        $relationship = $this->_classes['relationship'];
-        if (!$with = $relationship::with($options['with'])) {
+        if (!$with = $this->with($options['with'])) {
             return true;
         }
 
@@ -259,7 +262,7 @@ class Schema extends \chaos\model\Schema
     public function delete($entity, $options = [])
     {
         //Adds entity conditions
-        $statement = $this->connection()->sql()->statement('delete');
+        $statement = $this->connection()->dialect()->statement('delete');
         $result = $this->connection()->execute($statement->toString());
     }
 }

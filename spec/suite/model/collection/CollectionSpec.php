@@ -4,7 +4,7 @@ namespace chaos\spec\suite\model\collection;
 use InvalidArgumentException;
 use chaos\model\Model;
 use chaos\model\collection\Collection;
-use chaos\source\database\model\Query;
+use chaos\source\database\Query;
 
 use kahlan\plugin\Stub;
 use chaos\spec\fixture\Fixtures;
@@ -587,7 +587,7 @@ describe("Collection", function() {
 
     });
 
-    fdescribe("->embed()", function() {
+    describe("->embed()", function() {
 
         beforeEach(function() {
             $this->connection = box('chaos.spec')->get('source.database.mysql');

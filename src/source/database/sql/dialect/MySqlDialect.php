@@ -6,7 +6,7 @@ use set\Set;
 /**
  * MySQL dialect
  */
-class MySqlDialect extends \chaos\source\database\sql\Sql
+class MySqlDialect extends \chaos\source\database\sql\Dialect
 {
     /**
      * Escape identifier character.

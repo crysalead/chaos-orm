@@ -1,5 +1,5 @@
 <?php
-namespace chaos\source\database\model;
+namespace chaos\source\database;
 
 use PDO;
 use IteratorAggregate;
@@ -104,7 +104,7 @@ class Query implements IteratorAggregate
 
         $schema = $model::schema();
         $source = $schema->source();
-        $this->_statement = $this->connection()->sql()->statement('select');
+        $this->_statement = $this->connection()->dialect()->statement('select');
         $this->_statement->from([$source => $this->_alias('', $schema)]);
         if (isset($config['conditions'])) {
             $this->_statement->where($config['conditions']);
@@ -257,9 +257,20 @@ class Query implements IteratorAggregate
      */
     public function where($conditions, $alias = null)
     {
-        $conditions = $this->_statement->sql()->prefix($conditions, $alias ?: $this->_alias());
+        $conditions = $this->_statement->dialect()->prefix($conditions, $alias ?: $this->_alias());
         $this->_statement->where($conditions);
         return $this;
+    }
+
+    /**
+     * Alias for `where()`.
+     *
+     * @param  string|array $conditions The conditions for this query.
+     * @return object                   Returns `$this`.
+     */
+    public function conditions($conditions, $alias = null)
+    {
+        return $this->where($conditions, $alias);
     }
 
     /**
@@ -270,7 +281,7 @@ class Query implements IteratorAggregate
      */
     public function group($fields, $alias = null)
     {
-        $fields = $this->_statement->sql()->prefix($fields, $alias ?: $this->_alias());
+        $fields = $this->_statement->dialect()->prefix($fields, $alias ?: $this->_alias());
         $this->_statement->group($fields);
         return $this;
     }
@@ -283,7 +294,7 @@ class Query implements IteratorAggregate
      */
     public function having($conditions, $alias = null)
     {
-        $conditions = $this->_statement->sql()->prefix($conditions, $alias ?: $this->_alias());
+        $conditions = $this->_statement->dialect()->prefix($conditions, $alias ?: $this->_alias());
         $this->_statement->having($conditions);
         return $this;
     }
@@ -296,7 +307,7 @@ class Query implements IteratorAggregate
      */
     public function order($fields, $alias = null)
     {
-        $fields = $this->_statement->sql()->prefix($fields, $alias ?: $this->_alias());
+        $fields = $this->_statement->dialect()->prefix($fields, $alias ?: $this->_alias());
         $this->_statement->order($fields);
         return $this;
     }

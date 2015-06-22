@@ -1,15 +1,11 @@
 <?php
 namespace chaos\spec\suite\source\database\sql\statement;
 
-use chaos\SourceException;
-use chaos\source\database\sql\Sql;
-use kahlan\plugin\Stub;
-
 describe("Delete", function() {
 
     beforeEach(function() {
         $this->adapter = box('chaos.spec')->get('source.database.mysql');
-        $this->delete = $this->adapter->sql()->statement('delete');
+        $this->delete = $this->adapter->dialect()->statement('delete');
     });
 
     describe("->lowPriority()", function() {

@@ -2,14 +2,14 @@
 namespace chaos\spec\suite\source\database\sql\statement;
 
 use chaos\SourceException;
-use chaos\source\database\sql\Sql;
+use chaos\source\database\sql\Dialect;
 use kahlan\plugin\Stub;
 
 describe("Insert", function() {
 
     beforeEach(function() {
-        $this->sql = new Sql();
-        $this->insert = $this->sql->statement('insert');
+        $this->dialect = new Dialect();
+        $this->insert = $this->dialect->statement('insert');
     });
 
     describe("->into()", function() {

@@ -95,7 +95,7 @@ class PostgreSql extends \chaos\source\database\Database {
             'schema' => 'public',
             'timezone' => null,
             'classes' => [
-                'sql' => 'chaos\source\database\sql\dialect\PostgreSqlDialect'
+                'dialect' => 'chaos\source\database\sql\dialect\PostgreSqlDialect'
             ],
             'handlers' => [
                 'importBoolean' => function($value, $params = []) { return $value === 't'; },
@@ -180,7 +180,7 @@ class PostgreSql extends \chaos\source\database\Database {
      * @return array Returns an array of sources.
      */
     public function sources() {
-        $select = $this->sql()->statement('select');
+        $select = $this->dialect()->statement('select');
         $select->fields('table_name')
             ->from(['information_schema' => ['tables']])
             ->where(['table_type' => 'BASE TABLE']);

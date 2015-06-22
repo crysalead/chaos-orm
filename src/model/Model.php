@@ -212,31 +212,24 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *                        -`'page'`   : For pagination of data.
      *                        -`'with'`   : An array of relationship names to be included in the query.
      *
-     * @return mixed          The finded entity or `null` if not found.
+     * @return mixed          An instance of `Query`.
      */
-    public static function find($id, $options = [])
-    {
-        unset($options['where']);
-        $query = static::where([static::schema()->primaryKey() => $id], $options);
-        return $query->first();
-    }
-
-    /**
-     * Returns a query to retrieve data from the connected data source.
-     *
-     * @param  array  $conditions The conditional query elements.
-     * @return object             An instance of `Query`.
-     */
-    public static function where($conditions = [], $options = [])
+    public static function find($options = [])
     {
         $query = $this->schema->query(['model' => static::class]);
+
+        if (!is_array($options)) {
+            return $query->conditions([static::schema()->primaryKey() => $options])->first();
+        }
+
         $options = Set::merge(static::$_query, $options);
-        $options['where'] = $conditions + (isset($options['where']) ? $options['where'] : []);
 
         foreach ($options as $name => $value) {
-            $query->{$name}($value);
+            if (method_exists($query, $name)) {
+                $query->{$name}($value);
+            }
         }
-        return $query->where($conditions);
+        return $query;
     }
 
     /**
@@ -337,6 +330,17 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public static function relation($name)
     {
          return static::schema()->relation($name);
+    }
+
+    /**
+     * Returns a relationship instance (shortcut).
+     *
+     * @param  string  $name The name of a relation.
+     * @return boolean       Returns `true` if the relation exists, `false` otherwise.
+     */
+    public static function hasRelation($name)
+    {
+         return static::schema()->hasRelation($name);
     }
 
     /**
@@ -579,7 +583,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         }
-        if ($relation = static::relation($name)) {
+        if (static::hasRelation($name)) {
+            $relation = static::relation($name);
             return $relation->get($this);
         }
         $null = null;

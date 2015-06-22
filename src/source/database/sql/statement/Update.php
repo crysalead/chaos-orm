@@ -55,7 +55,7 @@ class Update extends \chaos\source\database\sql\Statement
      */
     public function where($conditions)
     {
-        if ($conditions = $this->sql()->conditions($conditions)) {
+        if ($conditions = $this->dialect()->conditions($conditions)) {
             $this->_parts['where'][] = $conditions;
         }
         return $this;
@@ -115,19 +115,19 @@ class Update extends \chaos\source\database\sql\Statement
 
         return 'UPDATE' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildChunk($this->sql()->names($this->_parts['table'])) .
+            $this->_buildChunk($this->dialect()->names($this->_parts['table'])) .
             $this->_buildValues() .
             $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
             $this->_buildOrder($this->_parts['order']) .
             $this->_buildClause('LIMIT', $this->_parts['limit']) .
-            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning']));
+            $this->_buildClause('RETURNING', $this->dialect()->names($this->_parts['returning']));
     }
 
     protected function _buildValues()
     {
         $values = [];
         foreach ($this->_parts['values'] as $key => $value) {
-            $values[] = $this->sql()->name($key) . ' = ' . $this->sql()->value($value);
+            $values[] = $this->dialect()->name($key) . ' = ' . $this->dialect()->value($value);
         }
         return $values ? ' SET ' . join(', ', $values) : '';
     }

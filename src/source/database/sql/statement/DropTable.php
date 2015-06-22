@@ -82,7 +82,7 @@ class DropTable extends \chaos\source\database\sql\Statement
 
         return 'DROP TABLE' .
             $this->_buildFlag('IF EXISTS', $this->_parts['ifExists']) .
-            $this->_buildChunk($this->sql()->names($this->_parts['table'])) .
+            $this->_buildChunk($this->dialect()->names($this->_parts['table'])) .
             $this->_buildFlag('CASCADE', $this->_parts['cascade']) .
             $this->_buildFlag('RESTRICT', $this->_parts['restrict']);
     }

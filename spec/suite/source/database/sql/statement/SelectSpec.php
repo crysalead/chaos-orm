@@ -2,14 +2,14 @@
 namespace chaos\spec\suite\source\database\sql\statement;
 
 use chaos\SourceException;
-use chaos\source\database\sql\Sql;
+use chaos\source\database\sql\Dialect;
 use kahlan\plugin\Stub;
 
 describe("Select", function() {
 
     beforeEach(function() {
-        $this->sql = new Sql();
-        $this->select = $this->sql->statement('select');
+        $this->dialect = new Dialect();
+        $this->select = $this->dialect->statement('select');
     });
 
     describe("->distinct()", function() {
@@ -126,7 +126,7 @@ describe("Select", function() {
 
         it("sets a `LEFT JOIN` clause using a subquery instance", function() {
 
-            $subquery = $this->sql->statement('select')->from('table2')->alias('t2');
+            $subquery = $this->dialect->statement('select')->from('table2')->alias('t2');
 
             $this->select->from('table')->join($subquery);
             expect($this->select->toString())->toBe('SELECT * FROM "table" LEFT JOIN (SELECT * FROM "table2") AS "t2"');
@@ -136,7 +136,7 @@ describe("Select", function() {
 
         it("sets a `LEFT JOIN` clause using a subquery instance (the long way)", function() {
 
-            $subquery = $this->sql->statement('select')->from('table2');
+            $subquery = $this->dialect->statement('select')->from('table2');
 
             $this->select->from('table')->join([':as' => [$subquery, [':name' => 't2']]]);
             expect($this->select->toString())->toBe('SELECT * FROM "table" LEFT JOIN (SELECT * FROM "table2") AS "t2"');

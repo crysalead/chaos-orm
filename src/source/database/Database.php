@@ -52,7 +52,7 @@ abstract class Database
      *
      * @var object
      */
-    protected $_sql = null;
+    protected $_dialect = null;
 
     /**
      * Type conversion definitions.
@@ -80,7 +80,7 @@ abstract class Database
      *  - `'encoding'`  : _string_ The database character encoding.
      *  - `'persistent'`: _boolean_ If true a persistent connection will be attempted, provided the
      *                    adapter supports it. Defaults to `true`.
-     *  - `'sql'`       : _object_ A SQL dialect adapter
+     *  - `'dialect'`       : _object_ A SQL dialect adapter
      *
      * @param  $config array Array of configuration options.
      * @return Database object.
@@ -103,7 +103,7 @@ abstract class Database
             'encoding'   => null,
             'dsn'        => null,
             'options'    => [],
-            'sql'        => null,
+            'dialect'    => null,
             'handlers'   => []
         ];
         $config = Set::merge($defaults, $config);
@@ -113,13 +113,13 @@ abstract class Database
         $this->_pdo = $this->_config['pdo'];
         unset($this->_config['pdo']);
 
-        $this->_sql = $config['sql'];
-        unset($this->_config['sql']);
+        $this->_dialect = $config['dialect'];
+        unset($this->_config['dialect']);
         $this->_handlers = $config['handlers'];
 
-        if ($this->_sql === null) {
-            $sql = $this->_classes['sql'];
-            $this->_sql = new $sql(['connection' => $this]);
+        if ($this->_dialect === null) {
+            $dialect = $this->_classes['dialect'];
+            $this->_dialect = new $dialect(['connection' => $this]);
         }
 
         if ($this->_config['connect']) {
@@ -191,8 +191,8 @@ abstract class Database
      *
      * @return object.
      */
-    public function sql() {
-        return $this->_sql;
+    public function dialect() {
+        return $this->_dialect;
     }
 
     /**

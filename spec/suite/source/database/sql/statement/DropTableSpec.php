@@ -2,14 +2,14 @@
 namespace chaos\spec\suite\source\database\sql\statement\mysql;
 
 use chaos\SourceException;
-use chaos\source\database\sql\Sql;
+use chaos\source\database\sql\Dialect;
 use kahlan\plugin\Stub;
 
 describe("DropTable", function() {
 
     beforeEach(function() {
-        $this->sql = new Sql();
-        $this->drop = $this->sql->statement('drop table');
+        $this->dialect = new Dialect();
+        $this->drop = $this->dialect->statement('drop table');
     });
 
     describe("->table()", function() {

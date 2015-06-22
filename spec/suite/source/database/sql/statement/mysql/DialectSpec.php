@@ -3,14 +3,12 @@ namespace chaos\spec\suite\source\database\sql\statement\mysql;
 
 use chaos\SourceException;
 use chaos\model\Schema;
-use chaos\source\database\sql\Sql;
-use kahlan\plugin\Stub;
 
-describe("Sql", function() {
+describe("Dialect", function() {
 
     beforeEach(function() {
         $this->adapter = box('chaos.spec')->get('source.database.mysql');
-        $this->sql = $this->adapter->sql();
+        $this->dialect = $this->adapter->dialect();
     });
 
     describe("->meta()", function() {
@@ -19,28 +17,28 @@ describe("Sql", function() {
 
             it("generates charset meta", function() {
 
-                $result = $this->sql->meta('table', ['charset' => 'utf8']);
+                $result = $this->dialect->meta('table', ['charset' => 'utf8']);
                 expect($result)->toBe('DEFAULT CHARSET utf8');
 
             });
 
             it("generates collate meta", function() {
 
-                $result = $this->sql->meta('table', ['collate' => 'utf8_unicode_ci']);
+                $result = $this->dialect->meta('table', ['collate' => 'utf8_unicode_ci']);
                 expect($result)->toBe('COLLATE utf8_unicode_ci');
 
             });
 
             it("generates ENGINE meta", function() {
 
-                $result = $this->sql->meta('table', ['engine' => 'InnoDB']);
+                $result = $this->dialect->meta('table', ['engine' => 'InnoDB']);
                 expect($result)->toBe('ENGINE InnoDB');
 
             });
 
             it("generates TABLESPACE meta", function() {
 
-                $result = $this->sql->meta('table', ['tablespace' => 'myspace']);
+                $result = $this->dialect->meta('table', ['tablespace' => 'myspace']);
                 expect($result)->toBe('TABLESPACE myspace');
 
             });
@@ -51,21 +49,21 @@ describe("Sql", function() {
 
             it("generates charset meta", function() {
 
-                $result = $this->sql->meta('column', ['charset' => 'utf8']);
+                $result = $this->dialect->meta('column', ['charset' => 'utf8']);
                 expect($result)->toBe('CHARACTER SET utf8');
 
             });
 
             it("generates collate meta", function() {
 
-                $result = $this->sql->meta('column', ['collate' => 'utf8_unicode_ci']);
+                $result = $this->dialect->meta('column', ['collate' => 'utf8_unicode_ci']);
                 expect($result)->toBe('COLLATE utf8_unicode_ci');
 
             });
 
             it("generates ENGINE meta", function() {
 
-                $result = $this->sql->meta('column', ['comment' => 'comment value']);
+                $result = $this->dialect->meta('column', ['comment' => 'comment value']);
                 expect($result)->toBe('COMMENT \'comment value\'');
 
             });
@@ -83,7 +81,7 @@ describe("Sql", function() {
                 $data = [
                     'column' => ['id']
                 ];
-                $result = $this->sql->constraint('primary', $data);
+                $result = $this->dialect->constraint('primary', $data);
                 expect($result)->toBe('PRIMARY KEY (`id`)');
 
             });
@@ -91,7 +89,7 @@ describe("Sql", function() {
             it("generates a multiple PRIMARY KEY constraint", function() {
 
                 $data = ['column' => ['id', 'name']];
-                $result = $this->sql->constraint('primary', $data);
+                $result = $this->dialect->constraint('primary', $data);
                 expect($result)->toBe('PRIMARY KEY (`id`, `name`)');
 
             });
@@ -105,7 +103,7 @@ describe("Sql", function() {
                 $data = [
                     'column' => 'id'
                 ];
-                $result = $this->sql->constraint('unique', $data);
+                $result = $this->dialect->constraint('unique', $data);
                 expect($result)->toBe('UNIQUE (`id`)');
 
             });
@@ -115,7 +113,7 @@ describe("Sql", function() {
                 $data = [
                     'column' => ['id', 'name']
                 ];
-                $result = $this->sql->constraint('unique', $data);
+                $result = $this->dialect->constraint('unique', $data);
                 expect($result)->toBe('UNIQUE (`id`, `name`)');
 
             });
@@ -125,7 +123,7 @@ describe("Sql", function() {
                 $data = [
                     'column' => ['id', 'name'], 'index' => true
                 ];
-                $result = $this->sql->constraint('unique', $data);
+                $result = $this->dialect->constraint('unique', $data);
                 expect($result)->toBe('UNIQUE INDEX (`id`, `name`)');
 
             });
@@ -135,7 +133,7 @@ describe("Sql", function() {
                 $data = [
                     'column' => ['id', 'name'], 'index' => true, 'key' => true
                 ];
-                $result = $this->sql->constraint('unique', $data);
+                $result = $this->dialect->constraint('unique', $data);
                 expect($result)->toBe('UNIQUE KEY (`id`, `name`)');
 
             });
@@ -160,7 +158,7 @@ describe("Sql", function() {
                         'name' => 'Los Angeles'
                     ]
                 ];
-                $result = $this->sql->constraint('check', $data, ['' => $schema]);
+                $result = $this->dialect->constraint('check', $data, ['' => $schema]);
                 expect($result)->toBe("CHECK (`population` > 20 AND `name` = 'Los Angeles')");
 
             });
@@ -177,7 +175,7 @@ describe("Sql", function() {
                     'primaryKey' => 'id',
                     'on' => 'DELETE CASCADE'
                 ];
-                $result = $this->sql->constraint('foreign key', $data);
+                $result = $this->dialect->constraint('foreign key', $data);
                 expect($result)->toBe('FOREIGN KEY (`table_id`) REFERENCES `table` (`id`) ON DELETE CASCADE');
 
             });
@@ -196,7 +194,7 @@ describe("Sql", function() {
                     'name' => 'fieldname',
                     'type' => 'integer'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` int');
 
             });
@@ -208,7 +206,7 @@ describe("Sql", function() {
                     'type' => 'integer',
                     'length' => 11
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` int(11)');
 
             });
@@ -226,7 +224,7 @@ describe("Sql", function() {
                     'null' => true,
                     'comment' => 'test'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` varchar(32) NULL COMMENT \'test\'');
 
             });
@@ -239,11 +237,11 @@ describe("Sql", function() {
                     'length' => 32,
                     'default' => 'default value'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` varchar(32) DEFAULT \'default value\'');
 
                 $data['null'] = false;
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` varchar(32) NOT NULL DEFAULT \'default value\'');
 
             });
@@ -258,7 +256,7 @@ describe("Sql", function() {
                     'charset' => 'utf8',
                     'collate' => 'utf8_unicode_ci'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` varchar(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL');
 
             });
@@ -274,7 +272,7 @@ describe("Sql", function() {
                     'type' => 'float',
                     'length' => 10
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` float(10)');
 
             });
@@ -287,7 +285,7 @@ describe("Sql", function() {
                     'length' => 10,
                     'precision' => 2
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` decimal(10,2)');
 
             });
@@ -303,7 +301,7 @@ describe("Sql", function() {
                     'type' => 'text',
                     'default' => 'value'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` text DEFAULT \'value\'');
 
             });
@@ -318,7 +316,7 @@ describe("Sql", function() {
                     'name' => 'modified',
                     'type' => 'datetime'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`modified` datetime');
 
             });
@@ -330,7 +328,7 @@ describe("Sql", function() {
                     'type' => 'datetime',
                     'default' => [':plain' => 'CURRENT_TIMESTAMP']
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`created` datetime DEFAULT CURRENT_TIMESTAMP');
 
             });
@@ -345,7 +343,7 @@ describe("Sql", function() {
                     'name' => 'created',
                     'type' => 'date'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`created` date');
 
             });
@@ -360,7 +358,7 @@ describe("Sql", function() {
                     'name' => 'created',
                     'type' => 'time'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`created` time');
 
             });
@@ -375,7 +373,7 @@ describe("Sql", function() {
                     'name' => 'active',
                     'type' => 'boolean'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`active` boolean');
 
             });
@@ -390,7 +388,7 @@ describe("Sql", function() {
                     'name' => 'raw',
                     'type' => 'binary'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`raw` blob');
 
             });
@@ -406,7 +404,7 @@ describe("Sql", function() {
                         'name' => 'fieldname',
                         'type' => 'invalid'
                     ];
-                    $this->sql->column($data);
+                    $this->dialect->column($data);
                 };
                 expect($closure)->toThrow(new SourceException("Column type `'invalid'` does not exist."));
 
@@ -425,7 +423,7 @@ describe("Sql", function() {
                     'length' => 11,
                     'precision' => 2
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` decimal(11,2)');
 
             });
@@ -442,7 +440,7 @@ describe("Sql", function() {
                     'length' => 11,
                     'default' => 1
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` int(11) DEFAULT 1');
 
             });
@@ -455,7 +453,7 @@ describe("Sql", function() {
                     'length' => 11,
                     'default' => '1'
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe('`fieldname` int(11) DEFAULT 1');
 
             });
@@ -468,7 +466,7 @@ describe("Sql", function() {
                     'length' => 64,
                     'default' => 1
                 ];
-                $result = $this->sql->column($data);
+                $result = $this->dialect->column($data);
                 expect($result)->toBe("`fieldname` varchar(64) DEFAULT '1'");
 
             });

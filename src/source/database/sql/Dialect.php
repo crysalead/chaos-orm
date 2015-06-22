@@ -9,7 +9,7 @@ use chaos\SourceException;
 /**
  * ANSI SQL dialect
  */
-class Sql
+class Dialect
 {
     /**
      * Class dependencies.
@@ -219,7 +219,7 @@ class Sql
      */
     public function statement($name, $config = [])
     {
-        $defaults = ['sql' => $this];
+        $defaults = ['dialect' => $this];
         $config += $defaults;
 
         if (!isset($this->_classes[$name])) {

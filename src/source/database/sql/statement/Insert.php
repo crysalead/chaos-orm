@@ -61,10 +61,10 @@ class Insert extends \chaos\source\database\sql\Statement
 
         return 'INSERT' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildClause('INTO', $this->sql()->name($this->_parts['into'], true)) .
-            $this->_buildChunk('(' . $this->sql()->names($fields, true) . ')', false) .
-            $this->_buildChunk('VALUES (' . join(', ', array_map([$this->sql(), 'value'], $values)) . ')') .
-            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning'], false, ''));
+            $this->_buildClause('INTO', $this->dialect()->name($this->_parts['into'], true)) .
+            $this->_buildChunk('(' . $this->dialect()->names($fields, true) . ')', false) .
+            $this->_buildChunk('VALUES (' . join(', ', array_map([$this->dialect(), 'value'], $values)) . ')') .
+            $this->_buildClause('RETURNING', $this->dialect()->names($this->_parts['returning'], false, ''));
     }
 
 }

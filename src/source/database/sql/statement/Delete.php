@@ -42,7 +42,7 @@ class Delete extends \chaos\source\database\sql\Statement
      */
     public function where($conditions)
     {
-        if ($conditions = $this->sql()->conditions($conditions)) {
+        if ($conditions = $this->dialect()->conditions($conditions)) {
             $this->_parts['where'][] = $conditions;
         }
         return $this;
@@ -98,11 +98,11 @@ class Delete extends \chaos\source\database\sql\Statement
 
         return 'DELETE' .
             $this->_buildFlags($this->_parts['flags']) .
-            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'])) .
+            $this->_buildClause('FROM', $this->dialect()->names($this->_parts['from'])) .
             $this->_buildClause('WHERE', join(' AND ', $this->_parts['where'])) .
             $this->_buildOrder($this->_parts['order']) .
             $this->_buildClause('LIMIT', $this->_parts['limit']) .
-            $this->_buildClause('RETURNING', $this->sql()->names($this->_parts['returning']));
+            $this->_buildClause('RETURNING', $this->dialect()->names($this->_parts['returning']));
     }
 
 }

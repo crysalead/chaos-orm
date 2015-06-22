@@ -124,9 +124,9 @@ class CreateTable extends \chaos\source\database\sql\Statement
 
         return 'CREATE TABLE' .
             $this->_buildFlag('IF NOT EXISTS', $this->_parts['ifNotExists']) .
-            $this->_buildChunk($this->sql()->name($this->_parts['table'])) .
+            $this->_buildChunk($this->dialect()->name($this->_parts['table'])) .
             $this->_buildDefinition($this->_parts['columns'], $this->_parts['constraints']) .
-            $this->_buildChunk($this->sql()->meta('table', $this->_parts['meta']));
+            $this->_buildChunk($this->dialect()->meta('table', $this->_parts['meta']));
     }
 
     /**
@@ -146,7 +146,7 @@ class CreateTable extends \chaos\source\database\sql\Statement
                 $primary = $name;
             }
             $field['name'] = $name;
-            $result[] = $this->sql()->column($field);
+            $result[] = $this->dialect()->column($field);
         }
 
         foreach ($constraints as $constraint) {
@@ -154,7 +154,7 @@ class CreateTable extends \chaos\source\database\sql\Statement
                 throw new SourceException("Missing contraint type.");
             }
             $name = $constraint['type'];
-            if ($meta = $this->sql()->constraint($name, $constraint, ['' => $this])) {
+            if ($meta = $this->dialect()->constraint($name, $constraint, ['' => $this])) {
                 $result[] = $meta;
             }
             if ($name === 'primary') {
@@ -162,7 +162,7 @@ class CreateTable extends \chaos\source\database\sql\Statement
             }
         }
         if ($primary) {
-            $result[] = $this->sql()->constraint('primary', ['column' => $primary]);
+            $result[] = $this->dialect()->constraint('primary', ['column' => $primary]);
         }
 
         return ' (' . join(', ', array_filter($result)) . ')';

@@ -1,34 +1,34 @@
 <?php
 namespace chaos\spec\suite\source\database\sql;
 
-use chaos\source\database\sql\Sql;
+use chaos\source\database\sql\Dialect;
 use kahlan\plugin\Stub;
 
 describe("Sql", function() {
 
     beforeEach(function() {
-        $this->sql = new Sql();
+        $this->dialect = new Dialect();
     });
 
     describe("->names()", function() {
 
         it("escapes table name with a schema prefix", function() {
 
-            $part = $this->sql->names('schema.tablename');
+            $part = $this->dialect->names('schema.tablename');
             expect($part)->toBe('"schema"."tablename"');
 
         });
 
         it("escapes field name with a table prefix", function() {
 
-            $part = $this->sql->names('tablename.fieldname');
+            $part = $this->dialect->names('tablename.fieldname');
             expect($part)->toBe('"tablename"."fieldname"');
 
         });
 
         it("escapes aliased fields with a table prefix name using an array syntax", function() {
 
-            $part = $this->sql->names(['tablename.fieldname' => 'F1']);
+            $part = $this->dialect->names(['tablename.fieldname' => 'F1']);
             expect($part)->toBe('"tablename"."fieldname" AS "F1"');
 
         });
@@ -39,7 +39,7 @@ describe("Sql", function() {
                 'name1' => ['field1' => 'F1', 'field2' => 'F2'],
                 'name2' => ['field3' => 'F3', 'field4' => 'F4']
             ];
-            $part = $this->sql->names($fields);
+            $part = $this->dialect->names($fields);
             expect($part)->toBe(join(', ', [
                 '"name1"."field1" AS "F1"',
                 '"name1"."field2" AS "F2"',
@@ -56,7 +56,7 @@ describe("Sql", function() {
                 'prefix.field1' => 'F1',
                 'prefix' => ['field2', 'field3' => 'F3', ['field3' => 'F33']]
             ];
-            $part = $this->sql->names($fields);
+            $part = $this->dialect->names($fields);
             expect($part)->toBe(join(', ', [
                 '"prefix"."field1"',
                 '"prefix"."field1" AS "F1"',
@@ -69,10 +69,10 @@ describe("Sql", function() {
 
         it("casts objects as string", function() {
 
-            $this->select = $this->sql->statement('select');
+            $this->select = $this->dialect->statement('select');
             $this->select->from('table2')->alias('t2');
 
-            $part = $this->sql->names([$this->select, 'name2' => ['field2' => 'F2']]);
+            $part = $this->dialect->names([$this->select, 'name2' => ['field2' => 'F2']]);
             expect($part)->toBe(join(', ', [
                 '(SELECT * FROM "table2") AS "t2"',
                 '"name2"."field2" AS "F2"'
@@ -82,14 +82,14 @@ describe("Sql", function() {
 
         it("supports operators", function() {
 
-            $part = $this->sql->names([':count()' => [':distinct' => [ [':name' => 'table.firstname']]]]);
+            $part = $this->dialect->names([':count()' => [':distinct' => [ [':name' => 'table.firstname']]]]);
             expect($part)->toBe('COUNT(DISTINCT "table"."firstname")');
 
         });
 
         it("supports formatter operators", function() {
 
-            $part = $this->sql->names([':plain' => 'COUNT(*)']);
+            $part = $this->dialect->names([':plain' => 'COUNT(*)']);
             expect($part)->toBe("COUNT(*)");
 
         });
@@ -109,7 +109,7 @@ describe("Sql", function() {
                     ['field4' => 'F6']
                 ]
             ];
-            $part = $this->sql->names($fields);
+            $part = $this->dialect->names($fields);
             expect($part)->toBe(join(', ', [
                 '"prefix"."field1"',
                 '"prefix"."field2"',
@@ -123,7 +123,7 @@ describe("Sql", function() {
 
         it("supports nested arrays", function() {
 
-            $part = $this->sql->names([[[[[['tablename.fieldname' => 'F1']]]]]]);
+            $part = $this->dialect->names([[[[[['tablename.fieldname' => 'F1']]]]]]);
             expect($part)->toBe('"tablename"."fieldname" AS "F1"');
 
         });
@@ -133,7 +133,7 @@ describe("Sql", function() {
             $fields = ['prefix' => [
                 'field1', ['field1' => 'F1'], ['field1' => 'F11']
             ]];
-            $part = $this->sql->names($fields);
+            $part = $this->dialect->names($fields);
             expect($part)->toBe(join(', ', [
                 '"prefix"."field1"',
                 '"prefix"."field1" AS "F1"',
@@ -147,7 +147,7 @@ describe("Sql", function() {
             it("doesn't escapes star", function() {
 
                 $fields = ['prefix.*'];
-                $part = $this->sql->names($fields);
+                $part = $this->dialect->names($fields);
                 expect($part)->toBe('"prefix".*');
 
             });
@@ -155,7 +155,7 @@ describe("Sql", function() {
             it("doesn't escapes star using an array syntax", function() {
 
                 $fields = ['prefix' => ['*']];
-                $part = $this->sql->names($fields);
+                $part = $this->dialect->names($fields);
                 expect($part)->toBe('"prefix".*');
 
             });
@@ -168,7 +168,7 @@ describe("Sql", function() {
 
         it("generates a equal expression", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 'field1' => 'value',
                 'field2' => 10
             ]);
@@ -178,7 +178,7 @@ describe("Sql", function() {
 
         it("generates a simple field equality", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 'field1' => [':name' => 'field2']
             ]);
             expect($part)->toBe('"field1" = "field2"');
@@ -187,7 +187,7 @@ describe("Sql", function() {
 
         it("generates a equal expression between fields", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ['=' => [
                     [':name' => 'field1'],
                     [':name' => 'field2']
@@ -203,7 +203,7 @@ describe("Sql", function() {
 
         it("generates a comparison expression", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ['>' => [[':name' => 'field'], 10]],
                 ['<=' => [[':name' => 'field'], 15]]
             ]);
@@ -213,12 +213,12 @@ describe("Sql", function() {
 
         it("generates a BETWEEN/NOT BETWEEN expression", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ':between' => [[':name' => 'score'], [90, 100]]
             ]);
             expect($part)->toBe('"score" BETWEEN 90 AND 100');
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ':not between' => [[':name' => 'score'], [90, 100]]
             ]);
             expect($part)->toBe('"score" NOT BETWEEN 90 AND 100');
@@ -227,7 +227,7 @@ describe("Sql", function() {
 
         it("generates a IN expression using the short syntax", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 'score' => [1, 2, 3, 4, 5]
             ]);
             expect($part)->toBe('"score" IN (1, 2, 3, 4, 5)');
@@ -236,7 +236,7 @@ describe("Sql", function() {
 
         it("generates a IN expression", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ':in' => [[':name' => 'score'], [1, 2, 3, 4, 5]]
             ]);
             expect($part)->toBe('"score" IN (1, 2, 3, 4, 5)');
@@ -245,7 +245,7 @@ describe("Sql", function() {
 
         it("generates a NOT IN expression", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ':not in' => [[':name' => 'score'], [1, 2, 3, 4, 5]]
             ]);
             expect($part)->toBe('"score" NOT IN (1, 2, 3, 4, 5)');
@@ -254,7 +254,7 @@ describe("Sql", function() {
 
         it("generates a subquery ANY expression", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ':any' => [
                     [':name'   => 'score'],
                     [':plain' => 'SELECT "s1" FROM "t1"']
@@ -266,10 +266,10 @@ describe("Sql", function() {
 
         it("generates a subquery ANY expression with a subquery instance", function() {
 
-            $subquery = $this->sql->statement('select');
+            $subquery = $this->dialect->statement('select');
             $subquery->fields('s1')->from('t1');
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ':any' => [
                     [':name'   => 'score'],
                     [':plain' => $subquery]
@@ -281,7 +281,7 @@ describe("Sql", function() {
 
         it("generates a comparison with an array", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 'score' => [':value' => [1, 2, 3, 4, 5]]
             ]);
             expect($part)->toBe('"score" = {1, 2, 3, 4, 5}');
@@ -290,7 +290,7 @@ describe("Sql", function() {
 
         it("generates an comparison expression with arrays", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 '<>' => [
                     [':value' => [1 ,2, 3]],
                     [':value' => [1, 2, 3]]
@@ -302,7 +302,7 @@ describe("Sql", function() {
 
         it("manages functions", function() {
 
-            $part = $this->sql->conditions([
+            $part = $this->dialect->conditions([
                 ':concat()' => [
                     [':name' => 'table.firstname'],
                     [':value' => ' '],
@@ -316,7 +316,7 @@ describe("Sql", function() {
         context("with the alternative syntax", function() {
 
             it("generates a BETWEEN/NOT BETWEEN expression", function() {
-                $part = $this->sql->conditions([
+                $part = $this->dialect->conditions([
                     'score' => [':between' => [90, 100]]
                 ]);
                 expect($part)->toBe('"score" BETWEEN 90 AND 100');
@@ -331,7 +331,7 @@ describe("Sql", function() {
 
         it("prefixes names", function() {
 
-            $part = $this->sql->conditions($this->sql->prefix([
+            $part = $this->dialect->conditions($this->dialect->prefix([
                 'field1' => 'value',
                 'field2' => 10
             ], 'prefix'));
@@ -341,7 +341,7 @@ describe("Sql", function() {
 
         it("prefixes nested names", function() {
 
-            $part = $this->sql->conditions($this->sql->prefix([
+            $part = $this->dialect->conditions($this->dialect->prefix([
                 ['=' => [
                     [':name' => 'field1'],
                     [':name' => 'field2']

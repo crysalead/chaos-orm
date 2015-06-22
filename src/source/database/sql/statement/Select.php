@@ -204,28 +204,28 @@ class Select extends \chaos\source\database\sql\Statement
      */
     public function toString()
     {
-        $fields = $this->sql()->names($this->_parts['fields']);
+        $fields = $this->dialect()->names($this->_parts['fields']);
 
         $sql = 'SELECT' .
             $this->_buildFlags($this->_parts['flags']) .
             $this->_buildChunk($fields ?: '*') .
-            $this->_buildClause('FROM', $this->sql()->names($this->_parts['from'])) .
+            $this->_buildClause('FROM', $this->dialect()->names($this->_parts['from'])) .
             $this->_buildJoins() .
-            $this->_buildClause('WHERE', $this->sql()->conditions($this->_parts['where'])) .
+            $this->_buildClause('WHERE', $this->dialect()->conditions($this->_parts['where'])) .
             $this->_buildClause('GROUP BY', $this->_group($this->_parts['group'])) .
-            $this->_buildClause('HAVING', $this->sql()->conditions($this->_parts['having'])) .
+            $this->_buildClause('HAVING', $this->dialect()->conditions($this->_parts['having'])) .
             $this->_buildOrder($this->_parts['order']) .
             $this->_buildClause('LIMIT', $this->_parts['limit']) .
             $this->_buildFlag('FOR UPDATE', $this->_parts['forUpdate']);
 
-        return $this->_alias ? "({$sql}) AS " . $this->sql()->name($this->_alias) : $sql;
+        return $this->_alias ? "({$sql}) AS " . $this->dialect()->name($this->_alias) : $sql;
     }
 
     protected function _group($fields)
     {
         $result = [];
         foreach ($fields as $name => $value) {
-            $result[] = $this->sql()->name($name);
+            $result[] = $this->dialect()->name($name);
         }
         return $fields = join(', ', $result);
     }
@@ -238,11 +238,11 @@ class Select extends \chaos\source\database\sql\Statement
             $on = $value['on'];
             $type = $value['type'];
             $join = [strtoupper($type), 'JOIN'];
-            $join[] = $this->sql()->name($table, true);
+            $join[] = $this->dialect()->name($table, true);
 
             if ($on) {
                 $join[] = 'ON';
-                $join[] = $this->sql()->conditions($on);
+                $join[] = $this->dialect()->conditions($on);
             }
 
             $joins[] = join(' ', $join);

@@ -13,7 +13,7 @@ class Statement
      *
      * @var object
      */
-    protected $_sql = null;
+    protected $_dialect = null;
 
     /**
      * The SQL parts.
@@ -33,20 +33,20 @@ class Statement
      */
     public function __construct($config = [])
     {
-        $defaults = ['sql' => null];
+        $defaults = ['dialect' => null];
         $config += $defaults;
-        if (!$config['sql']) {
+        if (!$config['dialect']) {
             throw new SourceException('Missing SQL dialect adapter');
         }
-        $this->_sql = $config['sql'];
+        $this->_dialect = $config['dialect'];
     }
 
-    public function sql($sql = null)
+    public function dialect($dialect = null)
     {
-        if ($sql !== null) {
-            $this->_sql = $sql;
+        if ($dialect !== null) {
+            $this->_dialect = $dialect;
         }
-        return $this->_sql;
+        return $this->_dialect;
     }
 
     public function data($name, $value = null)
@@ -110,7 +110,7 @@ class Statement
      */
     public function execute($options = [])
     {
-        $connection = $this->sql()->connection();
+        $connection = $this->dialect()->connection();
         if (!$connection) {
             throw new SourceException("No valid connection available.");
         }
@@ -163,7 +163,7 @@ class Statement
             }
             $dir = preg_match('/^(asc|desc)$/i', $dir) ? " {$dir}" : ' ASC';
 
-            $column = $this->sql()->name($column, $paths);
+            $column = $this->dialect()->name($column, $paths);
             $result[] = "{$column}{$dir}";
         }
         return $this->_buildClause('ORDER BY', join(', ', $result));

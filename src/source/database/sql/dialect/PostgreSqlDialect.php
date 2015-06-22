@@ -9,7 +9,7 @@ use set\Set;
  * - array_to_json(pg_array_result)
  * - array_to_json(hstore_to_array(value))
  */
-class PostgreSqlDialect extends \chaos\source\database\sql\Sql
+class PostgreSqlDialect extends \chaos\source\database\sql\Dialect
 {
     /**
      * Escape identifier character.

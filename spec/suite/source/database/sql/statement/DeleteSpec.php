@@ -2,14 +2,14 @@
 namespace chaos\spec\suite\source\database\sql\statement;
 
 use chaos\SourceException;
-use chaos\source\database\sql\Sql;
+use chaos\source\database\sql\Dialect;
 use kahlan\plugin\Stub;
 
 describe("Delete", function() {
 
     beforeEach(function() {
-        $this->sql = new Sql();
-        $this->delete = $this->sql->statement('delete');
+        $this->dialect = new Dialect();
+        $this->delete = $this->dialect->statement('delete');
     });
 
     describe("->from()", function() {

@@ -13,9 +13,13 @@ class Schema
      * @var array
      */
     protected $_classes = [
-        'entity'       => 'chaos\model\Model',
-        'set'          => 'collection\Collection',
-        'relationship' => 'chaos\model\Relationship'
+        'entity'         => 'chaos\model\Model',
+        'set'            => 'collection\Collection',
+        'relationship'   => 'chaos\model\Relationship',
+        'belongsTo'      => 'chaos\model\relationship\BelongsTo',
+        'hasOne'         => 'chaos\model\relationship\HasOne',
+        'hasMany'        => 'chaos\model\relationship\HasMany',
+        'hasManyThrough' => 'chaos\model\relationship\HasManyThrough'
     ];
 
     /**
@@ -173,6 +177,107 @@ class Schema
     }
 
     /**
+     * Gets/Sets the meta data associated to a field is some exists.
+     *
+     * @param  string $name The field name. If `null` returns all meta. If it's an array,
+     *                      set it as the meta datas.
+     * @return array        If `$name` is a string, it returns the correcponding value
+     *                      otherwise it returns meta datas array or `null` if not found.
+     */
+    public function meta($name = null, $value = null)
+    {
+        $num = func_num_args();
+        if (!$num) {
+            return $this->_meta;
+        }
+        if (is_array($name)) {
+            return $this->_meta = $name;
+        }
+        if ($num === 2) {
+            return $this->_meta[$name] = $value;
+        }
+        return isset($this->_meta[$name]) ? $this->_meta[$name] : [];
+    }
+
+    /**
+     * Gets/sets the source name.
+     *
+     * @param  string $source The source name (i.e table/collection name) or `null` to get the defined one.
+     * @return string
+     */
+    public function source($source = null)
+    {
+        if (!func_num_args()) {
+            return $this->_source;
+        }
+        $this->_source = $source;
+        return $this;
+    }
+
+    /**
+     * Gets/sets the primary key of this schema
+     *
+     * @param  string $primaryKey The name or the primary key or `null` to get the defined one.
+     * @return string
+     */
+    public function primaryKey($primaryKey = null)
+    {
+        if (func_num_args()) {
+            $this->_primaryKey = $primaryKey;
+        }
+        return $this->_primaryKey;
+    }
+
+
+    /**
+     * Returns all schema field names.
+     *
+     * @return array An array of field names.
+     */
+    public function names()
+    {
+        return array_keys($this->_fields);
+    }
+
+    /**
+     * Gets all fields.
+     *
+     * @return array
+     */
+    public function fields()
+    {
+        return $this->_fields;
+    }
+
+    /**
+     * Returns the type value of a field name.
+     *
+     * @param  string $name The field name.
+     * @return array  The type value or `null` if not found.
+     */
+    public function type($name)
+    {
+        return $this->field($name, 'type');
+    }
+
+    /**
+     * Returns a schema field attribute.
+     *
+     * @param  array $name       A field name.
+     * @param  array $attribute  An attribute name. If `null` returns all attributes.
+     * @return mixed
+     */
+    public function field($name, $attribute = null)
+    {
+        $field = isset($this->_fields[$name]) ? $this->_fields[$name] : null;
+
+        if ($field && $attribute) {
+            return isset($field[$attribute]) ? $field[$attribute] : null;
+        }
+        return $field;
+    }
+
+    /**
      * Set a field.
      *
      * @param  string $name The field name.
@@ -250,93 +355,6 @@ class Schema
     }
 
     /**
-     * Gets/sets the source name.
-     *
-     * @param  string $source The source name (i.e table/collection name) or `null` to get the defined one.
-     * @return string
-     */
-    public function source($source = null)
-    {
-        if (!func_num_args()) {
-            return $this->_source;
-        }
-        $this->_source = $source;
-        return $this;
-    }
-
-    /**
-     * Gets/sets the primary key of this schema
-     *
-     * @param  string $primaryKey The name or the primary key or `null` to get the defined one.
-     * @return string
-     */
-    public function primaryKey($primaryKey = null)
-    {
-        if (func_num_args()) {
-            $this->_primaryKey = $primaryKey;
-        }
-        return $this->_primaryKey;
-    }
-
-    /**
-     * Gets all fields.
-     *
-     * @param  array $attribute  An attribute name to filter on. If `null` returns all attributes.
-     * @return array
-     */
-    public function fields($attribute = null)
-    {
-        if (!func_num_args()) {
-            return $this->_fields;
-        }
-        $result = [];
-        foreach ($this->_fields as $key => $value) {
-            if ($attribute !== 'default' || $value['type'] !== 'object') {
-                $result[$key] = $this->field($key, $attribute);
-            }
-        }
-        return $result;
-    }
-
-    /**
-     * Returns a schema field attribute.
-     *
-     * @param  array $name       A field name.
-     * @param  array $attribute  An attribute name. If `null` returns all attributes.
-     * @return mixed
-     */
-    public function field($name, $attribute = null)
-    {
-        $field = isset($this->_fields[$name]) ? $this->_fields[$name] : null;
-
-        if ($field && $attribute) {
-            return isset($field[$attribute]) ? $field[$attribute] : null;
-        }
-        return $field;
-    }
-
-    /**
-     * Returns the type value of a field name.
-     *
-     * @param  string $name The field name.
-     * @return array  The type value or `null` if not found.
-     */
-    public function type($name)
-    {
-        return $this->field($name, 'type');
-    }
-
-    /**
-     * Returns all schema field names.
-     *
-     * @return array An array of field names.
-     */
-    public function names()
-    {
-        return array_keys($this->_fields);
-    }
-
-    /**
      * Appends additional fields to the schema. Will overwrite existing fields if a
      * conflicts arise.
      *
@@ -360,29 +378,6 @@ class Schema
     }
 
     /**
-     * Gets/Sets the meta data associated to a field is some exists.
-     *
-     * @param  string $name The field name. If `null` returns all meta. If it's an array,
-     *                      set it as the meta datas.
-     * @return array        If `$name` is a string, it returns the correcponding value
-     *                      otherwise it returns meta datas array or `null` if not found.
-     */
-    public function meta($name = null, $value = null)
-    {
-        $num = func_num_args();
-        if (!$num) {
-            return $this->_meta;
-        }
-        if (is_array($name)) {
-            return $this->_meta = $name;
-        }
-        if ($num === 2) {
-            return $this->_meta[$name] = $value;
-        }
-        return isset($this->_meta[$name]) ? $this->_meta[$name] : [];
-    }
-
-    /**
      * Lazy bind a relation
      *
      * @param  string    $name   The name of the relation (i.e. field name where it will be binded).
@@ -395,7 +390,7 @@ class Schema
     {
         $config = ['type' => 'object'] + $config;
 
-        if (!isset($config['relation']) || !in_array($config['relation'], $this->_relationTypes)) {
+        if (!isset($config['relation']) || !isset($this->_classes[$config['relation']])) {
             throw new SourceException("Unexisting binding relation `{$config['relation']}` for `'{$name}'`.");
         }
         if (!isset($config['to'])) {
@@ -439,14 +434,17 @@ class Schema
         if (isset($this->_relationships[$name])) {
             return $this->_relationships[$name];
         }
-
         if (!isset($this->_relations[$name])) {
             throw new SourceException("Relationship `{$name}` not found.");
         }
         $config = $this->_relations[$name];
-        $config['type'] = $config['relation'];
+        $relationship = $config['relation'];
         unset($config['relation']);
-        return $this->_relationships[$name] = $this->_relationship($name, $config);
+
+        $conventions = $this->_conventions;
+        $config += compact('name', 'conventions');
+        $relation = $this->_classes[$relationship];
+        return $this->_relationships[$name] = new $relation($config);
     }
 
     /**
@@ -473,18 +471,14 @@ class Schema
     }
 
     /**
-     * Relationship instance factory.
+     * Checks if a relation exists.
      *
-     * @param  string $name   The name of the relation.
-     * @param  array  $config The relationship options.
-     * @return object         Returns the created relationship.
+     * @param  string  $name The name of a relation.
+     * @return boolean       Returns `true` if the relation exists, `false` otherwise.
      */
-    protected function _relationship($name, $config = [])
+    public function hasRelation($name)
     {
-        $conventions = $this->_conventions;
-        $config += compact('name', 'conventions');
-        $relationship = $this->_classes['relationship'];
-        return new $relationship($config);
+        return isset($this->_relations[$name]);
     }
 
     /**
@@ -498,17 +492,14 @@ class Schema
         $relations = Set::normalize($relations);
         $tree = Set::expand(array_fill_keys(array_keys($relations), []));
 
-        $indexes = $this->_keyIndex($collection);
+        //$indexes = $this->_keyIndex($collection);
 
         foreach ($tree as $name => $subtree) {
             $rel = $this->relation($name);
             $keys = $rel->keys();
             $to = $rel->to();
-            $query = $this->query([
-                'model'      => $rel->to(),
-                'conditions' => [current($keys) => array_keys($indexes)]
-            ]);
-            $result = $query->all();
+
+            $result = $rel->expand($collection, $this->query(['model' => $rel->to()]));
 
             $subrelations = [];
             foreach ($relations as $path => $value) {
@@ -517,23 +508,9 @@ class Schema
                 }
             }
             if ($subrelations) {
-                $result->embed($subrelations);
+                $to::schema()->embed($result, $subrelations);
             }
         }
-    }
-
-    public function _keyIndex($collection)
-    {
-        $indexes = [];
-        $primaryKey = $this->primaryKey();
-        foreach ($collection as $key => $entity) {
-            if (is_object($entity)) {
-                $indexes[$entity->{$primaryKey}] = $key;
-            } else {
-                $indexes[$entity[$primaryKey]] = $key;
-            }
-        }
-        return $indexes;
     }
 
     /**
@@ -565,7 +542,14 @@ class Schema
             return $model::create($data, $options);
         }
 
-        $properties = $this->properties($name);
+        if (isset($this->_fields[$name])) {
+            $properties = $this->_fields[$name];
+        } elseif (isset($this->_relations[$name])) {
+            $properties = $this->_relations[$name];
+        } else {
+            $properties = $this->_initField('string');
+        }
+
         $options['rootPath'] = $name;
 
         return $this->_cast($properties, $data, $options);
@@ -600,19 +584,20 @@ class Schema
     }
 
     /**
-     * Gets properties of a schema field/relation
+     * The `'with'` option formatter function
      *
-     * @param  string $name The field or relation name.
-     * @return array  The properties array or `false` if no properties exists.
+     * @return array The formatter with array
      */
-    public function properties($name)
+    public function with($with)
     {
-        if (isset($this->_fields[$name])) {
-            return $this->_fields[$name];
-        } elseif (isset($this->_relations[$name])) {
-            return $this->_relations[$name];
+        if (!$with) {
+            return  false;
         }
-        return $this->_initField('string');
+        if ($with === true) {
+            $with = array_fill_keys(array_keys($this->relations()), true);
+        } else {
+            $with = Set::expand(Set::normalize((array) $with));
+        }
+        return $with;
     }
-
 }

@@ -1,15 +1,11 @@
 <?php
 namespace chaos\spec\suite\source\database\sql\statement;
 
-use chaos\SourceException;
-use chaos\source\database\sql\Sql;
-use kahlan\plugin\Stub;
-
 describe("Select", function() {
 
     beforeEach(function() {
         $this->adapter = box('chaos.spec')->get('source.database.mysql');
-        $this->select = $this->adapter->sql()->statement('select');
+        $this->select = $this->adapter->dialect()->statement('select');
     });
 
     describe("->calcFoundRows()", function() {

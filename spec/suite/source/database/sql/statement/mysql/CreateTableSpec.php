@@ -2,14 +2,12 @@
 namespace chaos\spec\suite\source\database\sql\statement\mysql;
 
 use chaos\SourceException;
-use chaos\source\database\sql\Sql;
-use kahlan\plugin\Stub;
 
 describe("CreateTable", function() {
 
     beforeEach(function() {
         $this->adapter = box('chaos.spec')->get('source.database.mysql');
-        $this->create = $this->adapter->sql()->statement('create table');
+        $this->create = $this->adapter->dialect()->statement('create table');
     });
 
     describe("->ifNotExists()", function() {

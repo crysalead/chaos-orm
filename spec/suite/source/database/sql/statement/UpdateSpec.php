@@ -2,14 +2,14 @@
 namespace chaos\spec\suite\source\database\sql\statement;
 
 use chaos\SourceException;
-use chaos\source\database\sql\Sql;
+use chaos\source\database\sql\Dialect;
 use kahlan\plugin\Stub;
 
 describe("Update", function() {
 
     beforeEach(function() {
-        $this->sql = new Sql();
-        $this->update = $this->sql->statement('update');
+        $this->dialect = new Dialect();
+        $this->update = $this->dialect->statement('update');
     });
 
     describe("->table()", function() {
