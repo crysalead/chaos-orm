@@ -97,7 +97,12 @@ class Relationship
      */
     protected $_conventions = null;
 
-
+    /**
+     * The attached schema instance.
+     *
+     * @var object
+     */
+    protected $_schema = null;
 
     /**
      * Constructs an object that represents a relationship between two model classes.
@@ -126,6 +131,7 @@ class Relationship
      *                                                   other database-native value. If an array, maps fields from the related object
      *                                                   either to fields elsewhere, or to arbitrary expressions. In either case, _the
      *                                                   values specified here will be literally interpreted by the database_.
+     *                      - `'schema'`      _object_ : A schema instance.
      *                      - `'conventions'` _object_ : The naming conventions instance to use.
      */
     public function __construct($config = [])
@@ -139,8 +145,10 @@ class Relationship
             'link'        => static::LINK_KEY,
             'fields'      => true,
             'constraints' => [],
+            'schema'      => null,
             'conventions' => null
         ];
+
         $config += $defaults;
 
         foreach (['from', 'to'] as $value) {
@@ -149,6 +157,7 @@ class Relationship
             }
         }
 
+        $this->_schema = $config['schema'];
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
         if (!$config['keys']) {
@@ -172,7 +181,6 @@ class Relationship
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
         $this->_constraints = $config['constraints'];
-
     }
 
     /**
@@ -189,6 +197,26 @@ class Relationship
     }
 
     /**
+     * Returns the "primary key/foreign key" matching definition. The key corresponds
+     * to field name in the source model and the value is the one in the target model.
+     *
+     * @param  mixed $type An optionnal type to get.
+     * @return mixed       Returns "primary key/foreign key" matching definition array or
+     *                     a specific one if `$type` is not `null`.
+     */
+    public function keys($type = null) {
+        if (!$type) {
+            return $this->_keys;
+        }
+        if ($type === 'from') {
+            return key($this->_keys);
+        } elseif ($type === 'to') {
+            return reset($this->_keys);
+        }
+        throw new SourceException("Invalid type `'{$type}'` only `'from'` and `'to'` are available");
+    }
+
+    /**
      * Get a related object (or objects) for the given object connected to it by this relationship.
      *
      * @return boolean Returns `true` if the relationship is a `'hasMany'` or `'hasManyThrough`' relation,
@@ -196,7 +224,7 @@ class Relationship
      */
     public function isMany()
     {
-        return preg_match('~Many~', $this->type());
+        return preg_match('~Many~', static::class);
     }
 
     /**
@@ -236,15 +264,51 @@ class Relationship
         return (array) $entity->{$name}->validates($options + $defaults);
     }
 
-    public function _keyIndex($collection)
+    /**
+     * Unsets the relationship attached to a collection en entities.
+     *
+     * @param  mixed  $collection An collection to "clean up".
+     */
+    public function _cleanup($collection)
+    {
+        $name = $this->name();
+        foreach ($collection as $index => $entity) {
+            if (is_object($entity)) {
+                unset($entity->{$name});
+            } else {
+                unset($entity[$name]);
+            }
+        }
+    }
+
+    public function related($collection, $options = [])
+    {
+        if ($this->link() !== static::LINK_KEY) {
+            throw new SourceException("This relation is not based on a foreign key.");
+        }
+        $indexes = $this->_index($collection, $this->keys('from'));
+        $query = $this->schema()->query(['model' => $this->to(), 'conditions' => [
+            $this->keys('to') => array_keys($indexes)
+        ]]);
+        return $query->all($options);
+    }
+
+    /**
+     * Indexes a collection.
+     *
+     * @param  mixed  $collection An collection to extract index from.
+     * @param  string $name       The field name to build index for.
+     * @return array              An array of indexes where keys are `$name` values and
+     *                            values the correcponding index in the collection.
+     */
+    public function _index($collection, $name)
     {
         $indexes = [];
-        $primaryKey = $this->primaryKey();
         foreach ($collection as $key => $entity) {
             if (is_object($entity)) {
-                $indexes[$entity->{$primaryKey}] = $key;
+                $indexes[$entity->{$name}] = $key;
             } else {
-                $indexes[$entity[$primaryKey]] = $key;
+                $indexes[$entity[$name]] = $key;
             }
         }
         return $indexes;

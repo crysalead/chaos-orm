@@ -602,10 +602,10 @@ describe("Collection", function() {
             ]);
 
             $this->fixtures->populate('gallery');
-            $gallery = $this->fixtures->get('gallery')->model();
+            $this->gallery = $this->fixtures->get('gallery')->model();
 
             $this->query = new Query([
-                'model'      => $gallery,
+                'model'      => $this->gallery,
                 'connection' => $this->connection
             ]);
 
@@ -620,10 +620,12 @@ describe("Collection", function() {
             $this->fixtures->drop();
         });
 
-        it("finds all records with their relation", function() {
+        fit("finds all records with their relation", function() {
 
+            $model = $this->gallery;
+            $schema = $model::schema();
             $galleries = $this->query->all();
-            $galleries->embed(['image.tags']);
+            $schema->embed($galleries, ['image.images_tags.tag']);
             expect($galleries->data())->toBe([]);
 
         });

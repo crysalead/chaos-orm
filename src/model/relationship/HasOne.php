@@ -6,10 +6,33 @@ namespace chaos\model\relationship;
  */
 class HasOne extends \chaos\model\Relationship
 {
-
-    public function expand($collection)
+    /**
+     * Expands a collection of entities by adding their related data.
+     *
+     * @param  mixed $collection The collection to expand.
+     * @return array             The collection of related entities.
+     */
+    public function expand(&$collection, $related)
     {
+        if (!$schema = $this->schema()) {
+            throw new SourceException("The `{$class}` relation is missing a `'schema'` dependency.");
+        }
 
+        $name = $this->name();
+        $indexes = $this->_index($collection, $this->keys('from'));
+        $this->_cleanup($collection);
+
+        foreach ($related as $index => $entity) {
+            if (is_object($source)) {
+                $value = $entity->{$this->keys('to')};
+                $source = $collection[$indexes[$value]];
+                $source->{$name} = $entity;
+            } else {
+                $value = $entity[$this->keys('to')];
+                $collection[$indexes[$value]][$name] = $entity;
+            }
+        }
+        return $collection;
     }
 
     /**

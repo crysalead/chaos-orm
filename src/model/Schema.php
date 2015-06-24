@@ -72,13 +72,6 @@ class Schema
     protected $_handlers = [];
 
     /**
-     * List of valid relation types.
-     *
-     * @var array
-     */
-    protected $_relationTypes = ['belongsTo', 'hasOne', 'hasMany', 'hasManyThrough'];
-
-    /**
      * Relations configuration.
      *
      * @var array
@@ -441,10 +434,12 @@ class Schema
         $relationship = $config['relation'];
         unset($config['relation']);
 
-        $conventions = $this->_conventions;
-        $config += compact('name', 'conventions');
         $relation = $this->_classes[$relationship];
-        return $this->_relationships[$name] = new $relation($config);
+        return $this->_relationships[$name] = new $relation($config + [
+            'schema'      => $this,
+            'name'        => $name,
+            'conventions' => $this->_conventions
+        ]);
     }
 
     /**
@@ -460,11 +455,9 @@ class Schema
         if ($type === null) {
             return array_keys($this->_relationships);
         }
-        if (in_array($type, $this->_relationTypes, true)) {
-            foreach ($relations as $field => $relation) {
-                if ($relation['type'] === $name) {
-                    $result[] = $field;
-                }
+        foreach ($relations as $field => $relation) {
+            if ($relation['type'] === $name) {
+                $result[] = $field;
             }
         }
         return $result;
@@ -486,20 +479,19 @@ class Schema
      *
      * @param array $collection The collection to extend.
      * @param array $relations  The relations to eager load.
+     * @param array $options    The fetching options.
      */
-    public function embed($collection, $relations)
+    public function embed(&$collection, $relations, $options = [])
     {
         $relations = Set::normalize($relations);
         $tree = Set::expand(array_fill_keys(array_keys($relations), []));
-
-        //$indexes = $this->_keyIndex($collection);
 
         foreach ($tree as $name => $subtree) {
             $rel = $this->relation($name);
             $keys = $rel->keys();
             $to = $rel->to();
 
-            $result = $rel->expand($collection, $this->query(['model' => $rel->to()]));
+            $related = $rel->related($collection, $options);
 
             $subrelations = [];
             foreach ($relations as $path => $value) {
@@ -508,8 +500,10 @@ class Schema
                 }
             }
             if ($subrelations) {
-                $to::schema()->embed($result, $subrelations);
+                $to::schema()->embed($related, $subrelations, $options);
             }
+
+            $rel->expand($collection, $related);
         }
     }
 
@@ -546,6 +540,9 @@ class Schema
             $properties = $this->_fields[$name];
         } elseif (isset($this->_relations[$name])) {
             $properties = $this->_relations[$name];
+            if (!isset($properties['array'])) {
+                $properties['array'] = preg_match('~Many~', $properties['relation']);
+            }
         } else {
             $properties = $this->_initField('string');
         }
@@ -566,7 +563,6 @@ class Schema
     public function _cast($properties, $data, $options)
     {
         $model = $options['model'];
-
         if ($properties['array']) {
             $options['type'] = 'set';
             return $model::create($data, $options);

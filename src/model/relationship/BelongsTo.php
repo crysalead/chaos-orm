@@ -23,9 +23,33 @@ class BelongsTo extends \chaos\model\Relationship
         }
     }
 
-    public function expand($collection)
+    /**
+     * Expands a collection of entities by adding their related data.
+     *
+     * @param  mixed $collection The collection to expand.
+     * @return array             The collection of related entities.
+     */
+    public function expand(&$collection, $related)
     {
+        if (!$schema = $this->schema()) {
+            throw new SourceException("The `{$class}` relation is missing a `'schema'` dependency.");
+        }
 
+        $name = $this->name();
+        $indexes = $this->_index($related, $this->keys('to'));
+        $this->_cleanup($collection);
+
+        foreach ($collection as $index => $source) {
+            if (is_object($source)) {
+                $value = $source->{$this->keys('from')};
+                $entity = $related[$indexes[$value]];
+                $source->{$name} = $entity;
+            } else {
+                $value = $source[$this->keys('from')];
+                $collection[$index][$name] = $related[$indexes[$value]];
+            }
+        }
+        return $collection;
     }
 
     /**

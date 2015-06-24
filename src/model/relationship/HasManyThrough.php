@@ -61,7 +61,7 @@ class HasManyThrough extends \chaos\model\Relationship
         }
     }
 
-    public function expand($collection)
+    public function expand($collection, $options = [])
     {
         // $relThrough = $entity::relation($rel->through());
         // $collections = $relThrough->association($entity)->get();

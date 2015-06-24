@@ -162,7 +162,8 @@ class Query implements IteratorAggregate
     /**
      * Executes the query and returns the result.
      *
-     * @return object An iterator instance.
+     * @param  array  $options The fetching options.
+     * @return object          An iterator instance.
      */
     public function get($options = [])
     {
