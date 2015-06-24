@@ -256,9 +256,9 @@ class Query implements IteratorAggregate
      * @param  string|array $conditions The conditions for this query.
      * @return object                   Returns `$this`.
      */
-    public function where($conditions, $alias = null)
+    public function where($conditions)
     {
-        $conditions = $this->_statement->dialect()->prefix($conditions, $alias ?: $this->_alias());
+        $conditions = $this->_statement->dialect()->prefix($conditions, $this->_alias());
         $this->_statement->where($conditions);
         return $this;
     }
@@ -269,9 +269,9 @@ class Query implements IteratorAggregate
      * @param  string|array $conditions The conditions for this query.
      * @return object                   Returns `$this`.
      */
-    public function conditions($conditions, $alias = null)
+    public function conditions($conditions)
     {
-        return $this->where($conditions, $alias);
+        return $this->where($conditions);
     }
 
     /**
@@ -280,9 +280,10 @@ class Query implements IteratorAggregate
      * @param  string|array $fields The fields.
      * @return object               Returns `$this`.
      */
-    public function group($fields, $alias = null)
+    public function group($fields)
     {
-        $fields = $this->_statement->dialect()->prefix($fields, $alias ?: $this->_alias());
+        $fields = is_array($fields) ? $fields : func_get_args();
+        $fields = $this->_statement->dialect()->prefix($fields, $this->_alias());
         $this->_statement->group($fields);
         return $this;
     }
@@ -293,9 +294,9 @@ class Query implements IteratorAggregate
      * @param  string|array $conditions The conditions for this query.
      * @return object                   Returns `$this`.
      */
-    public function having($conditions, $alias = null)
+    public function having($conditions)
     {
-        $conditions = $this->_statement->dialect()->prefix($conditions, $alias ?: $this->_alias());
+        $conditions = $this->_statement->dialect()->prefix($conditions, $this->_alias());
         $this->_statement->having($conditions);
         return $this;
     }
@@ -306,9 +307,10 @@ class Query implements IteratorAggregate
      * @param  string|array $fields The fields.
      * @return object               Returns `$this`.
      */
-    public function order($fields, $alias = null)
+    public function order($fields)
     {
-        $fields = $this->_statement->dialect()->prefix($fields, $alias ?: $this->_alias());
+        $fields = is_array($fields) ? $fields : func_get_args();
+        $fields = $this->_statement->dialect()->prefix($fields, $this->_alias());
         $this->_statement->order($fields);
         return $this;
     }

@@ -11,8 +11,13 @@ use chaos\model\Schema;
 
 describe("Model", function() {
 
+    before(function() {
+        $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
+    });
+
     afterEach(function() {
-        Model::reset();
+        $model = $this->model;
+        $model::config(); // (acts like a reset)
     });
 
 	describe("->__construct()", function() {
@@ -21,7 +26,8 @@ describe("Model", function() {
 
             $date = new DateTime('2014-10-26 00:25:15');
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'title'   => 'Hello',
                 'body'    => 'World',
                 'created' => $date
@@ -39,7 +45,8 @@ describe("Model", function() {
 
         it("returns the exists value", function() {
 
-            $entity = new Model(['exists' => true]);
+            $model = $this->model;
+            $entity = new $model(['exists' => true]);
             expect($entity->exists())->toBe(true);
 
         });
@@ -51,7 +58,8 @@ describe("Model", function() {
         it("sets a parent", function() {
 
             $parent = Stub::create();
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $entity->parent($parent);
             expect($entity->parent())->toBe($parent);
 
@@ -60,7 +68,8 @@ describe("Model", function() {
         it("returns the parent", function() {
 
             $parent = Stub::create();
-            $entity = new Model(['parent' => $parent]);
+            $model = $this->model;
+            $entity = new $model(['parent' => $parent]);
             expect($entity->parent())->toBe($parent);
 
         });
@@ -71,7 +80,8 @@ describe("Model", function() {
 
         it("returns the root path", function() {
 
-            $entity = new Model(['rootPath' => 'items']);
+            $model = $this->model;
+            $entity = new $model(['rootPath' => 'items']);
             expect($entity->rootPath())->toBe('items');
 
         });
@@ -82,7 +92,8 @@ describe("Model", function() {
 
         it("returns the entity's primary key value", function() {
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'id'      => 123,
                 'title'   => 'Hello',
                 'body'    => 'World'
@@ -94,17 +105,19 @@ describe("Model", function() {
         it("throws an exception if the schema has no primary key defined", function() {
             $schema = new Schema(['primaryKey' => null]);
 
-            Model::config(compact('schema'));
+            $model = $this->model;
+            $model::config(compact('schema'));
 
             $closure = function() {
-                $entity = new Model(['data' => [
+                $model = $this->model;
+                $entity = new $model(['data' => [
                     'id'      => 123,
                     'title'   => 'Hello',
                     'body'    => 'World'
                 ]]);
                 $entity->primaryKey();
             };
-            expect($closure)->toThrow(new SourceException("No primary key has been defined for `chaos\model\Model`'s schema."));
+            expect($closure)->toThrow(new SourceException("No primary key has been defined for `{$model}`'s schema."));
 
         });
 
@@ -114,7 +127,8 @@ describe("Model", function() {
 
         it("syncs an entity to its persisted value", function() {
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'loaded'   => 'loaded'
             ]]);
             $entity->modified = 'modified';
@@ -139,7 +153,8 @@ describe("Model", function() {
 
             it("syncs an entity to its persisted value", function() {
 
-                $entity = new Model(['data' => [
+                $model = $this->model;
+                $entity = new $model(['data' => [
                     'loaded'   => 'loaded'
                 ]]);
                 $entity->modified = 'modified';
@@ -170,7 +185,8 @@ describe("Model", function() {
 
             $date = new DateTime('2014-10-26 00:25:15');
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $entity->set([
                 'title'   => 'Hello',
                 'body'    => 'World',
@@ -189,7 +205,8 @@ describe("Model", function() {
 
         it("sets value", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $entity->hello = 'world';
             expect($entity->hello)->toBe('world');
 
@@ -216,7 +233,8 @@ describe("Model", function() {
 
         it("returns `null` for undefined fields", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             expect($entity->foo)->toBe(null);
 
         });
@@ -224,7 +242,8 @@ describe("Model", function() {
         it("returns all raw datas with no parameter", function() {
 
             $date = time();
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'title'   => 'Hello',
                 'body'    => 'World',
                 'created' => $date
@@ -257,7 +276,8 @@ describe("Model", function() {
 
         it("gets value", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $entity->hello = 'world';
             expect($entity->hello)->toBe('world');
         });
@@ -265,7 +285,8 @@ describe("Model", function() {
         it("throws an exception if the field name is not valid", function() {
 
            $closure = function() {
-                $entity = new Model();
+                $model = $this->model;
+                $entity = new $model();
                 $empty = '';
                 $entity->{$empty};
             };
@@ -279,7 +300,8 @@ describe("Model", function() {
 
         it("returns `loaded` data", function() {
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'title'   => 'Hello',
                 'body'    => 'World'
             ]]);
@@ -296,7 +318,8 @@ describe("Model", function() {
 
         it("returns all `loaded` data with no parameter", function() {
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'title'   => 'Hello',
                 'body'    => 'World'
             ]]);
@@ -319,7 +342,8 @@ describe("Model", function() {
 
         it("returns a boolean indicating if a field has been modified", function() {
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'loaded'   => 'loaded'
             ]]);
 
@@ -339,7 +363,8 @@ describe("Model", function() {
 
         it("returns `false` if a field has been updated with a same scalar value", function() {
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'loaded'   => 'loaded'
             ]]);
 
@@ -351,7 +376,8 @@ describe("Model", function() {
 
         it("returns `false` if a field has been updated with a similar object value", function() {
 
-            $entity = new Model(['data' => [
+            $model = $this->model;
+            $entity = new $model(['data' => [
                 'loaded'   => (object) 'loaded'
             ]]);
 
@@ -363,11 +389,12 @@ describe("Model", function() {
 
         it("delegates the job for values which has a `modified()` method", function() {
 
-            $child = new Model(['data' => [
+            $model = $this->model;
+            $child = new $model(['data' => [
                 'loaded'   => 'loaded'
             ]]);
 
-            $entity = new Model(['data' => ['child' => $child]]);
+            $entity = new $model(['data' => ['child' => $child]]);
             expect($entity->modified('child'))->toBe(false);
 
             $child->loaded = 'modified';
@@ -377,7 +404,8 @@ describe("Model", function() {
 
         it("returns all modified field names with no parameter", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
 
             $entity->modified1 = 'modified';
             $entity->modified2 = 'modified';
@@ -392,7 +420,8 @@ describe("Model", function() {
 
         it("returns true if a element exist", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $entity['field1'] = 'foo';
             $entity['field2'] = null;
 
@@ -403,7 +432,8 @@ describe("Model", function() {
 
         it("returns false if a element doesn't exist", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             expect(isset($entity['undefined']))->toBe(false);
 
         });
@@ -414,7 +444,8 @@ describe("Model", function() {
 
         it("allows array access", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $entity['field1'] = 'foo';
             expect($entity['field1'])->toBe('foo');
             expect($entity)->toHaveLength(1);
@@ -423,7 +454,8 @@ describe("Model", function() {
 
         it("sets at a specific key", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $entity['mykey'] = 'foo';
             expect($entity['mykey'])->toBe('foo');
             expect($entity)->toHaveLength(1);
@@ -432,7 +464,8 @@ describe("Model", function() {
 
         it("throws an exception for invalid key", function() {
             $closure = function() {
-                $entity = new Model();
+                $model = $this->model;
+                $entity = new $model();
                 $entity[] = 'foo';
             };
             expect($closure)->toThrow(new SourceException("Field name can't be empty."));
@@ -442,12 +475,7 @@ describe("Model", function() {
         context("when a model is defined", function() {
 
             beforeEach(function() {
-                $model = $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
-            });
-
-            afterEach(function() {
-                $model = $this->model;
-                Model::reset();
+                $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
             });
 
             it("autoboxes setted data", function() {
@@ -492,7 +520,8 @@ describe("Model", function() {
                 'enabled' => true
             ];
 
-            $entity = new Model(compact('data'));
+            $model = $this->model;
+            $entity = new $model(compact('data'));
             unset($entity['body']);
             unset($entity['enabled']);
 
@@ -510,7 +539,9 @@ describe("Model", function() {
                 'field1' => 'Delete me',
                 'field2' => 'Delete me'
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
 
             foreach ($entity as $i => $word) {
                 unset($entity[$i]);
@@ -527,7 +558,9 @@ describe("Model", function() {
                 'field2' => 'Hello again!',
                 'field3' => 'Delete me'
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
 
             foreach ($entity as $i => $word) {
                 if ($word === 'Delete me') {
@@ -549,7 +582,9 @@ describe("Model", function() {
                 'field2' => 'Hello',
                 'field3' => 'Hello again!'
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
 
             foreach ($entity as $i => $word) {
                 if ($word === 'Delete me') {
@@ -572,7 +607,9 @@ describe("Model", function() {
                 'field3' => 'Delete me',
                 'field4' => 'Hello again!'
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
 
             $loop = 0;
             foreach ($entity as $i => $word) {
@@ -598,7 +635,8 @@ describe("Model", function() {
         it("returns current key", function() {
 
             $data = ['field' => 'value'];
-            $entity = new Model(compact('data'));
+            $model = $this->model;
+            $entity = new $model(compact('data'));
             $value = $entity->key();
             expect($value)->toBe('field');
 
@@ -606,7 +644,8 @@ describe("Model", function() {
 
         it("returns null if non valid", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $value = $entity->key();
             expect($value)->toBe(null);
 
@@ -619,7 +658,8 @@ describe("Model", function() {
         it("returns the current value", function() {
 
             $data = ['field' => 'value'];
-            $entity = new Model(compact('data'));
+            $model = $this->model;
+            $entity = new $model(compact('data'));
             $value = $entity->current();
             expect($value)->toBe('value');
 
@@ -635,7 +675,9 @@ describe("Model", function() {
                 'field1' => 'value1',
                 'field2' => 'value2'
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
             $value = $entity->next();
             expect($value)->toBe('value2');
 
@@ -652,7 +694,9 @@ describe("Model", function() {
                 'title'   => 'test record',
                 'body'    => 'test body'
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
 
             $entity->rewind();
             expect($entity->next())->toBe('test record');
@@ -668,7 +712,7 @@ describe("Model", function() {
 
     });
 
-    describe("->first/rewind/end()", function() {
+    describe("->rewind/end()", function() {
 
         it("returns respectively the first and the last item of the collection", function() {
 
@@ -677,12 +721,14 @@ describe("Model", function() {
                 'title'   => 'test record',
                 'body'    => 'test body'
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
 
             expect($entity->end())->toBe('test body');
             expect($entity->rewind())->toBe(1);
             expect($entity->end())->toBe('test body');
-            expect($entity->first())->toBe(1);
+            expect($entity->rewind())->toBe(1);
 
         });
 
@@ -692,7 +738,8 @@ describe("Model", function() {
 
         it("returns true only when the collection is valid", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             expect($entity->valid())->toBe(false);
 
             $data = [
@@ -700,7 +747,7 @@ describe("Model", function() {
                 'title'   => 'test record',
                 'body'    => 'test body'
             ];
-            $entity = new Model(compact('data'));
+            $entity = new $model(compact('data'));
             expect($entity->valid())->toBe(true);
 
         });
@@ -711,7 +758,8 @@ describe("Model", function() {
 
         it("returns 0 on empty", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             expect($entity)->toHaveLength(0);
 
         });
@@ -726,7 +774,9 @@ describe("Model", function() {
                 'null'    => null,
                 'onject'  => new stdClass()
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
             expect($entity)->toHaveLength(6);
 
         });
@@ -745,7 +795,9 @@ describe("Model", function() {
                 'null'    => null,
                 'onject'  => new stdClass()
             ];
-            $entity = new Model(compact('data'));
+
+            $model = $this->model;
+            $entity = new $model(compact('data'));
             expect((string) $entity)->toBe('test record');
 
         });
@@ -756,7 +808,8 @@ describe("Model", function() {
 
         it("returns the model", function() {
 
-            $entity = new Model();
+            $model = $this->model;
+            $entity = new $model();
             $schema = $entity->schema();
             expect($schema)->toBeAnInstanceOf('chaos\model\Schema');
 
@@ -769,8 +822,9 @@ describe("Model", function() {
         it("sets/gets a conventions", function() {
 
             $conventions = Stub::create();
-            Model::conventions($conventions);
-            expect(Model::conventions())->toBe($conventions);
+            $model = $this->model;
+            $model::conventions($conventions);
+            expect($model::conventions())->toBe($conventions);
 
         });
 
@@ -781,32 +835,9 @@ describe("Model", function() {
         it("sets/gets a connection", function() {
 
             $connection = Stub::create();
-            Model::connection($connection);
-            expect(Model::connection())->toBe($connection);
-
-        });
-
-    });
-
-    describe("::reset()", function() {
-
-        it("resets the class", function() {
-
-            $schema = Stub::create();
-            $connection = Stub::create();
-            $conventions = Stub::create();
-
-            Model::config(compact('schema', 'connection', 'conventions'));
-
-            expect(Model::schema())->toBe($schema);
-            expect(Model::connection())->toBe($connection);
-            expect(Model::conventions())->toBe($conventions);
-
-            Model::reset();
-
-            expect(Model::connection())->toBe(null);
-            expect(Model::schema())->not->toBe($schema);
-            expect(Model::conventions())->not->toBe($conventions);
+            $model = $this->model;
+            $model::connection($connection);
+            expect($model::connection())->toBe($connection);
 
         });
 

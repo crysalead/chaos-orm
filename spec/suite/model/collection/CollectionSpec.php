@@ -277,12 +277,7 @@ describe("Collection", function() {
         context("when a model is defined", function() {
 
             beforeEach(function() {
-                $model = $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
-            });
-
-            afterEach(function() {
-                $model = $this->model;
-                Model::reset();
+                $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
             });
 
             it("autoboxes setted data", function() {
@@ -589,44 +584,17 @@ describe("Collection", function() {
 
     describe("->embed()", function() {
 
-        beforeEach(function() {
-            $this->connection = box('chaos.spec')->get('source.database.mysql');
-            $this->fixtures = new Fixtures([
-                'connection' => $this->connection,
-                'fixtures'   => [
-                    'gallery'   => 'chaos\spec\fixture\schema\Gallery',
-                    'image'     => 'chaos\spec\fixture\schema\Image',
-                    'image_tag' => 'chaos\spec\fixture\schema\ImageTag',
-                    'tag'       => 'chaos\spec\fixture\schema\Tag'
-                ]
-            ]);
+        it("deletages the call up to the schema instance", function() {
 
-            $this->fixtures->populate('gallery');
-            $this->gallery = $this->fixtures->get('gallery')->model();
+            $model = Stub::classname(['extends' => 'chaos\model\Model']);
+            $schema = Stub::create();
 
-            $this->query = new Query([
-                'model'      => $this->gallery,
-                'connection' => $this->connection
-            ]);
+            $model::config(['schema' => $schema]);
 
-            $this->query->order(['id']);
+            $galleries = $model::create([], ['type' => 'set']);
 
-            $this->fixtures->populate('image');
-            $this->fixtures->populate('image_tag');
-            $this->fixtures->populate('tag');
-        });
-
-        afterEach(function() {
-            $this->fixtures->drop();
-        });
-
-        fit("finds all records with their relation", function() {
-
-            $model = $this->gallery;
-            $schema = $model::schema();
-            $galleries = $this->query->all();
-            $schema->embed($galleries, ['image.images_tags.tag']);
-            expect($galleries->data())->toBe([]);
+            expect($schema)->toReceive('embed')->with($galleries, ['relation1.relation2']);
+            $galleries->embed(['relation1.relation2']);
 
         });
 

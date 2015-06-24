@@ -18,7 +18,7 @@ class Schema extends \chaos\model\Schema
         'hasOne'         => 'chaos\model\relationship\HasOne',
         'hasMany'        => 'chaos\model\relationship\HasMany',
         'hasManyThrough' => 'chaos\model\relationship\HasManyThrough',
-        'query'          => 'chaos\source\database\query'
+        'query'          => 'chaos\source\database\Query'
     ];
 
     /**

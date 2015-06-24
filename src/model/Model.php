@@ -134,6 +134,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
 
         if ($config['schema']) {
             static::$_schemas[static::class] = $config['schema'];
+        } else {
+            unset(static::$_schemas[static::class]);
         }
         static::$_classes = $config['classes'];
         static::$_connection = $config['connection'];
@@ -203,24 +205,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     /**
      * Finds a record by its primary key.
      *
-     * @param array  $options Options for the query. By default, accepts:
-     *                        -`'fields'` : The fields that should be retrieved.
-     *                        -`'order'`  : The order in which the data will be returned (e.g. `'order' => 'ASC'`).
-     *                        -`'group'`  : The group by array.
-     *                        -`'having'` : The having conditions array.
-     *                        -`'limit'`  : The maximum number of records to return.
-     *                        -`'page'`   : For pagination of data.
-     *                        -`'with'`   : An array of relationship names to be included in the query.
+     * @param array  $options Options for the query.
+     *                        -`'conditions'` : The conditions array.
+     *                        - other options depend on the ones supported by the query instance.
      *
      * @return mixed          An instance of `Query`.
      */
     public static function find($options = [])
     {
-        $query = $this->schema->query(['model' => static::class]);
-
-        if (!is_array($options)) {
-            return $query->conditions([static::schema()->primaryKey() => $options])->first();
-        }
+        $schema = static::schema();
+        $query = $schema->query(['model' => static::class]);
 
         $options = Set::merge(static::$_query, $options);
 
@@ -230,6 +224,43 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             }
         }
         return $query;
+    }
+
+    /**
+     * Finds the first record matching some conditions.
+     *
+     * @param  array $options      Options for the query.
+     * @param  array $fetchOptions The fecthing options.
+     * @return mixed               The result.
+     */
+    public static function first($options = [], $fetchOptions = [])
+    {
+        return static::find($options)->first($fetchOptions);
+    }
+
+    /**
+     * Finds all records matching some conditions.
+     *
+     * @param  array $options      Options for the query.
+     * @param  array $fetchOptions The fecthing options.
+     * @return mixed               The result.
+     */
+    public static function all($options = [], $fetchOptions = [])
+    {
+        return static::find($options)->all($fetchOptions);
+    }
+
+    /**
+     * Finds by id.
+     *
+     * @param  mixed $id           The id to retreive.
+     * @param  array $fetchOptions The fecthing options.
+     * @return mixed               The result.
+     */
+    public static function id($id, $fetchOptions = [])
+    {
+        $query = $this->schema->query(['model' => static::class]);
+        return $query->conditions([static::schema()->primaryKey() => $id])->first($fetchOptions);
     }
 
     /**
@@ -370,16 +401,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             static::$_conventions = new $conventions();
         }
         return static::$_conventions;
-    }
-
-    /**
-     * Reseting the model.
-     */
-    public static function reset()
-    {
-        unset(static::$_schemas[static::class]);
-        static::$_connection = null;
-        static::$_conventions = null;
     }
 
     /***************************
@@ -755,7 +776,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @return mixed The current item after rewinding.
      */
-    public function first()
+    public function reset()
     {
         return $this->rewind();
     }

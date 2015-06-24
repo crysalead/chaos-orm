@@ -377,7 +377,6 @@ abstract class Database
      */
     public function query($sql, $data = [], $options = [])
     {
-        echo $sql."\n";
         $statement = $this->_pdo->prepare($sql);
         $statement->execute($data);
         $cursor = $this->_classes['cursor'];

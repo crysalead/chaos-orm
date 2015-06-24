@@ -15,7 +15,7 @@ class Gallery extends \chaos\model\Model
         $schema->set('id', ['type' => 'serial']);
         $schema->set('name', ['type' => 'string']);
 
-        $schema->bind('image', [
+        $schema->bind('images', [
             'relation' => 'hasMany',
             'to'       => 'chaos\spec\fixture\model\Image',
             'keys'     => ['id' => 'gallery_id']
