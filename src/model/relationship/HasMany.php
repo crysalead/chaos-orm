@@ -24,20 +24,26 @@ class HasMany extends \chaos\model\Relationship
         $indexes = $this->_index($collection, $this->keys('from'));
         $this->_cleanup($collection);
 
+        foreach ($collection as $index => $entity) {
+            if (is_object($entity)) {
+                $entity->{$name} = [];
+            } else {
+                $collection[$index] = [];
+            }
+        }
+
         foreach ($related as $index => $entity) {
             if (is_object($entity)) {
                 $value = $entity->{$this->keys('to')};
-                $source = $collection[$indexes[$value]];
-                if (!isset($source->{$name})) {
-                    $source->{$name} = [];
+                if (isset($indexes[$value])) {
+                    $source = $collection[$indexes[$value]];
+                    $source->{$name}[] = $entity;
                 }
-                $source->{$name}[] = $entity;
             } else {
                 $value = $entity[$this->keys('to')];
-                if (!isset($collection[$indexes[$value]][$name])) {
-                    $collection[$indexes[$value]][$name] = [];
+                if (isset($indexes[$value])) {
+                    $collection[$indexes[$value]][$name][] = $entity;
                 }
-                $collection[$indexes[$value]][$name][] = $entity;
             }
         }
         return $collection;

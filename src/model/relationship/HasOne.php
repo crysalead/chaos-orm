@@ -23,13 +23,17 @@ class HasOne extends \chaos\model\Relationship
         $this->_cleanup($collection);
 
         foreach ($related as $index => $entity) {
-            if (is_object($source)) {
+            if (is_object($entity)) {
                 $value = $entity->{$this->keys('to')};
-                $source = $collection[$indexes[$value]];
-                $source->{$name} = $entity;
+                if (isset($indexes[$value])) {
+                    $source = $collection[$indexes[$value]];
+                    $source->{$name} = $entity;
+                }
             } else {
                 $value = $entity[$this->keys('to')];
-                $collection[$indexes[$value]][$name] = $entity;
+                if (isset($indexes[$value])) {
+                    $collection[$indexes[$value]][$name] = $entity;
+                }
             }
         }
         return $collection;

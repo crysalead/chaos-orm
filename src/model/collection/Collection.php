@@ -30,7 +30,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *
      * @var boolean
      */
-    protected $_partial = false;
+    protected $_partial = true;
 
     /**
      * If this `Collection` instance has a parent document (see `$_parent`), this value indicates
@@ -85,14 +85,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     protected $_started = false;
 
     /**
-     * Indicates whether this array was part of a document loaded from a data source, or is part of
-     * a new document, or is in newly-added field of an existing document.
-     *
-     * @var boolean
-     */
-    protected $_exists = false;
-
-    /**
      * Workaround to allow consistent `unset()` in `foreach`.
      *
      * Note: the edge effet of this behavior is the following:
@@ -110,40 +102,32 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * @param array $config Possible options are:
      *                      - `'data'`   _array_  : The entiy class.
      *                      - `'parent'` _object_ : The parent instance.
-     *                      - `'exists'` _boolean_: The class dependencies.
      *
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'exists'   => false,
             'parent'   => null,
+            'from'     => null,
             'rootPath' => null,
             'model'    => null,
             'meta'     => [],
-            'data'     => []
+            'data'     => [],
+            'partial'  => true
         ];
         $config += $defaults;
-        $this->_exists = $config['exists'];
         $this->_parent = $config['parent'];
+        $this->_from = $config['from'];
         $this->_rootPath = $config['rootPath'];
         $this->_model = $config['model'];
         $this->_meta = $config['meta'];
+        $this->_partial = $config['partial'];
+
         $this->_loaded = $config['data'];
         foreach ($this->_loaded as $key => $value) {
             $this[$key] = $value;
         }
         $this->_loaded = $this->_data;
-    }
-
-    /**
-     * A flag indicating whether or not the items of this collection exists.
-     *
-     * @return boolean `True` if exists, `false` otherwise.
-     */
-    public function exists()
-    {
-        return $this->_exists;
     }
 
     /**
@@ -236,7 +220,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         if (array_key_exists($offset, $this->_data)) {
             return $this->_data[$offset];
         }
-        return null;
+        return;
     }
 
     /**
@@ -300,11 +284,11 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets the raw array value of the `Collection`.
+     * Gets the plain array value of the `Collection`.
      *
      * @return array Returns an "unboxed" array of the `Collection`'s value.
      */
-    public function raw()
+    public function plain()
     {
         return $this->_data;
     }

@@ -4,6 +4,7 @@ namespace chaos\model;
 use Iterator;
 use set\Set;
 use chaos\SourceException;
+use chaos\model\Model;
 
 class Schema
 {
@@ -13,8 +14,6 @@ class Schema
      * @var array
      */
     protected $_classes = [
-        'entity'         => 'chaos\model\Model',
-        'set'            => 'collection\Collection',
         'relationship'   => 'chaos\model\Relationship',
         'belongsTo'      => 'chaos\model\relationship\BelongsTo',
         'hasOne'         => 'chaos\model\relationship\HasOne',
@@ -285,7 +284,7 @@ class Schema
 
             $this->bind($name, [
                 'relation' => $field['array'] ? 'hasMany' : 'hasOne',
-                'to'       => isset($field['class']) ? $field['class'] : 'chaos\model\Model',
+                'to'       => isset($field['class']) ? $field['class'] : Model::class,
                 'link'     => $relationship::LINK_EMBEDDED
             ]);
         }
@@ -390,7 +389,7 @@ class Schema
             throw new SourceException("Binding requires `'to'` option to be set.");
         }
         if (!isset($config['from'])) {
-            $config['from'] = $this->_classes['entity'];
+            $config['from'] = Model::class;
         }
         $from = $config['from'];
         if (($pos = strrpos('\\', $config['to'])) !== false) {
@@ -510,21 +509,18 @@ class Schema
     /**
      * Cast data according to the schema definition.
      *
-     * @param  array  $name    The field name.
+     * @param  string $name    The field name.
      * @param  array  $data    Some data to cast.
      * @param  array  $options Options for the casting.
      * @return object          The casted data.
      */
     public function cast($name, $data, $options = [])
     {
-        if (is_object($data)) {
-            return $data;
-        }
-
         $defaults = [
             'parent'    => null,
             'type'      => 'entity',
-            'model'     => $this->_classes['entity'],
+            'model'     => Model::class,
+            'rootPath'  => '',
             'exists'    => false
         ];
         $options += $defaults;
@@ -533,23 +529,62 @@ class Schema
 
         if ($name === null) {
             $model = $options['model'];
-            return $model::create($data, $options);
+            if (!is_object($data)) {
+                return $model::create($data, $options);
+            }
+            if ($data instanceof $model) {
+                return $data;
+            }
+            throw new SourceException("Invalid data, the passed object must be an instance of `{$model}`");
         }
 
-        if (isset($this->_fields[$name])) {
-            $properties = $this->_fields[$name];
-        } elseif (isset($this->_relations[$name])) {
-            $properties = $this->_relations[$name];
-            if (!isset($properties['array'])) {
-                $properties['array'] = preg_match('~Many~', $properties['relation']);
+        $properties = $this->_properties($name);
+
+        if (is_object($data)) {
+            if ($properties['type'] !== 'object') {
+                return $data;
             }
-        } else {
-            $properties = $this->_initField('string');
+            if (!$properties['array']) {
+                $to = $properties['to'];
+                if ($data instanceof $to) {
+                    return $data;
+                } else {
+                    throw new SourceException("Invalid data, the passed object must be an instance of `{$to}`");
+                }
+            }
+            $type = $properties['relation'] === 'hasManyThrough' ? 'through' : 'set';
+            $collection = $this->_classes[$type];
+            if ($data instanceof $collection) {
+                return $data;
+            } else {
+                throw new SourceException("Invalid data, the passed object must be an instance of `{$collection}`");
+            }
         }
 
         $options['rootPath'] = $name;
 
         return $this->_cast($properties, $data, $options);
+    }
+
+    /**
+     * Returns all field name attached properties.
+     *
+     * @param  string $name The field name.
+     * @return array        The field name properties.
+     */
+    public function _properties($name)
+    {
+        if (isset($this->_fields[$name])) {
+            return $this->_fields[$name];
+        }
+        if (isset($this->_relations[$name])) {
+            $properties = $this->_relations[$name];
+            if (!isset($properties['array'])) {
+                $properties['array'] = !!preg_match('~Many~', $properties['relation']);
+            }
+            return $properties;
+        }
+        return $properties = $this->_initField('string');
     }
 
     /**
@@ -563,14 +598,20 @@ class Schema
     public function _cast($properties, $data, $options)
     {
         $model = $options['model'];
+        if (isset($properties['to'])) {
+            $options['model'] = $properties['to'];
+        }
         if ($properties['array']) {
-            $options['type'] = 'set';
+            if ($properties['relation'] === 'hasManyThrough') {
+                $options['through'] = $properties['through'];
+                $options['using'] = $properties['using'];
+                $options['type'] = 'through';
+            } else {
+                $options['type'] = 'set';
+            }
             return $model::create($data, $options);
         }
         if ($properties['type'] === 'object') {
-            if (isset($properties['model'])) {
-                $options['model'] = $properties['model'];
-            }
             return $model::create($data, $options);
         }
         if ($properties['null'] && ($data === null || $data === '')) {

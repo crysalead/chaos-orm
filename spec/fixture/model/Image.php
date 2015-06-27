@@ -33,7 +33,8 @@ class Image extends \chaos\model\Model
             'relation' => 'hasManyThrough',
             'to'       => 'chaos\spec\fixture\model\Tag',
             'keys'     => ['tag_id' => 'id'],
-            'through'  => 'images_tags'
+            'through'  => 'images_tags',
+            'using'    => 'tag'
         ]);
     }
 }

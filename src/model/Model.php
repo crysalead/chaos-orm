@@ -14,6 +14,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected static $_classes = [
         'set'          => 'chaos\model\collection\Collection',
+        'through'      => 'chaos\model\collection\Through',
         'conventions'  => 'chaos\model\Conventions'
     ];
 
@@ -599,7 +600,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
         $method = 'get' . ucwords(str_replace('_', ' ', $name));
         if (method_exists($this, $method)) {
-            return  $this->$method($name);
+            return $this->$method($name);
         }
         if (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];

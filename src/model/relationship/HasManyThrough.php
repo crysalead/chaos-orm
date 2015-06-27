@@ -73,6 +73,16 @@ class HasManyThrough extends \chaos\model\Relationship
         // }
     }
 
+    public function get($entity)
+    {
+        $name = $this->name();
+        $options = [
+            'parent'   => $entity,
+            'model'    => $this->to()
+        ];
+        return $entity[$name] = $entity::schema()->cast($name, [], $options);
+    }
+
     /**
      * Saving an entity relation.
      *

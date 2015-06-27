@@ -23,17 +23,6 @@ describe("Collection", function() {
 
     });
 
-    describe("->exists()", function() {
-
-        it("returns the exists value", function() {
-
-            $collection = new Collection(['exists' => true]);
-            expect($collection->exists())->toBe(true);
-
-        });
-
-    });
-
     describe("->parent()", function() {
 
         it("sets a parent", function() {
@@ -419,9 +408,9 @@ describe("Collection", function() {
 
     });
 
-    describe("->raw()", function() {
+    describe("->plain()", function() {
 
-        it("returns the raw data", function() {
+        it("returns the plain data", function() {
 
             $data = [
                 'key1' => 'one',
@@ -429,7 +418,7 @@ describe("Collection", function() {
                 'key3' => 'three'
             ];
             $collection = new Collection(compact('data'));
-            expect($collection->raw())->toBe($data);
+            expect($collection->plain())->toBe($data);
 
         });
 

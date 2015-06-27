@@ -42,11 +42,14 @@ class BelongsTo extends \chaos\model\Relationship
         foreach ($collection as $index => $source) {
             if (is_object($source)) {
                 $value = $source->{$this->keys('from')};
-                $entity = $related[$indexes[$value]];
-                $source->{$name} = $entity;
+                if (isset($indexes[$value])) {
+                    $source->{$name} = $related[$indexes[$value]];
+                }
             } else {
                 $value = $source[$this->keys('from')];
-                $collection[$index][$name] = $related[$indexes[$value]];
+                if (isset($indexes[$value])) {
+                    $collection[$index][$name] = $related[$indexes[$value]];
+                }
             }
         }
         return $collection;
