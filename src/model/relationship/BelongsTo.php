@@ -29,11 +29,13 @@ class BelongsTo extends \chaos\model\Relationship
      * @param  mixed $collection The collection to expand.
      * @return array             The collection of related entities.
      */
-    public function expand(&$collection, $related)
+    public function embed(&$collection, $options = [])
     {
         if (!$schema = $this->schema()) {
             throw new SourceException("The `{$class}` relation is missing a `'schema'` dependency.");
         }
+
+        $related = $this->related($collection, $options);
 
         $name = $this->name();
         $indexes = $this->_index($related, $this->keys('to'));
@@ -52,7 +54,7 @@ class BelongsTo extends \chaos\model\Relationship
                 }
             }
         }
-        return $collection;
+        return $related;
     }
 
     /**

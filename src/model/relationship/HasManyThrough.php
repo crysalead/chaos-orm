@@ -1,6 +1,9 @@
 <?php
 namespace chaos\model\relationship;
 
+use chaos\model\Model;
+use chaos\model\collection\Through;
+
 /**
  * The `HasManyThrough` relationship.
  */
@@ -50,7 +53,7 @@ class HasManyThrough extends \chaos\model\Relationship
             throw new SourceException("Error, `'through'` option can't be empty for a has many through relation.");
         }
 
-        parent::__construct($config);
+        parent::__construct(['to' => Model::class] + $config);
 
         $this->_through = $config['through'];
         $this->_using = $config['using'];
@@ -59,18 +62,79 @@ class HasManyThrough extends \chaos\model\Relationship
         if (!$config['using']) {
             $this->_using = $this->_conventions->apply('usingName', $this->name());
         }
+
+        $relThrough = $this->_schema->relation($this->through());
+        $pivot = $relThrough->to();
+        $relUsing = $pivot::relation($this->using());
+
+        $this->_to = $relUsing->to();
+        $this->_keys = $relUsing->keys();
     }
 
-    public function expand($collection, $options = [])
+    /**
+     * Expands a collection of entities by adding their related data.
+     *
+     * @param  mixed $collection The collection to expand.
+     * @return array             The collection of related entities.
+     */
+    public function embed(&$collection, $options = [])
     {
-        // $relThrough = $entity::relation($rel->through());
-        // $collections = $relThrough->association($entity)->get();
-        // $middle = $relThrough->from();
-        // $relTo = $middle::relation($rel->using());
-        // $to = $relTo->to();
-        // if (!$query['conditions'] = $relTo->association($collections)) {
-        //    return $normalize(null, $relTo);
-        // }
+        $name = $this->name();
+        $through = $this->through();
+        $using = $this->using();
+
+        $from = $this->from();
+        $relThrough = $from::relation($through);
+
+        $result = $relThrough->embed($collection, $options);
+
+        $pivot = $relThrough->to();
+        $relUsing = $pivot::relation($using);
+
+        $related = $relUsing->embed($result, $options);
+
+        $indexes = $this->_index($related, $relUsing->keys('to'));
+        $this->_cleanup($collection);
+
+        foreach ($collection as $index => $entity) {
+            if (is_object($entity)) {
+                $entity->{$name} = [];
+            } if (is_array($entity)) {
+                $collection[$index][$name] = [];
+            }
+        }
+
+        foreach ($collection as $index => $source) {
+            if (is_object($source)) {
+                foreach ($source->{$through} as $item) {
+                    $value = $related[$indexes[$item->{$relUsing->keys('from')}]];
+                    if (!$source->{$name} instanceof Through) {
+                        $source->{$name}[] = $value;
+                    }
+                }
+            } else {
+                foreach ($source[$through] as $item) {
+                    $collection[$index][$name][] = $related[$indexes[$item[$relUsing->keys('from')]]];
+                }
+            }
+        }
+        return $collection;
+    }
+
+    /**
+     * Gets all entities attached to a collection en entities.
+     *
+     * @param  mixed  $collection A collection of entities.
+     */
+    public function related($collection, $options = [])
+    {
+        $from = $collection->model();
+        $relThrough = $from::relation($this->through());
+        $related = $relThrough->related($collection, $options);
+
+        $pivot = $relThrough->to();
+        $relUsing = $pivot::relation($this->using());
+        return $relUsing->related($related, $options);
     }
 
     public function get($entity)

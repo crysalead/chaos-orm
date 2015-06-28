@@ -81,14 +81,18 @@ describe("Schema", function() {
 
     });
 
-    fit("embeds a hasManyTrough relationship", function() {
+    it("embeds a hasManyTrough relationship", function() {
 
         $model = $this->image;
         $schema = $model::schema();
         $images = $model::all(['order' => 'id']);
-        $schema->embed($images, ['images_tags.tag']);
+        $schema->embed($images, ['tags']);
 
-        print_r($images->data());
-
+        foreach ($images as $image) {
+            foreach ($image->images_tags as $index => $image_tag) {
+                expect($image_tag->tag)->toBe($image->tags[$index]);
+            }
+        }
     });
+
 });

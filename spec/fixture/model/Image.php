@@ -31,8 +31,6 @@ class Image extends \chaos\model\Model
 
         $schema->bind('tags', [
             'relation' => 'hasManyThrough',
-            'to'       => 'chaos\spec\fixture\model\Tag',
-            'keys'     => ['tag_id' => 'id'],
             'through'  => 'images_tags',
             'using'    => 'tag'
         ]);

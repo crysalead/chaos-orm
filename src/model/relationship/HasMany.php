@@ -14,11 +14,13 @@ class HasMany extends \chaos\model\Relationship
      * @param  mixed $collection The collection to expand.
      * @return array             The collection of related entities.
      */
-    public function expand(&$collection, $related)
+    public function embed(&$collection, $options = [])
     {
         if (!$schema = $this->schema()) {
             throw new SourceException("The `{$class}` relation is missing a `'schema'` dependency.");
         }
+
+        $related = $this->related($collection, $options);
 
         $name = $this->name();
         $indexes = $this->_index($collection, $this->keys('from'));
@@ -28,7 +30,7 @@ class HasMany extends \chaos\model\Relationship
             if (is_object($entity)) {
                 $entity->{$name} = [];
             } else {
-                $collection[$index] = [];
+                $collection[$index][$name] = [];
             }
         }
 
@@ -46,7 +48,7 @@ class HasMany extends \chaos\model\Relationship
                 }
             }
         }
-        return $collection;
+        return $related;
     }
 
     /**

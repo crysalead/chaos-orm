@@ -29,7 +29,10 @@ class Schema extends \chaos\model\Schema
      */
     public function query($options = [])
     {
-        $options['connection'] = $this->connection();
+        $options += [
+            'connection' => $this->connection(),
+            'model' => $this->model()
+        ];
         $query = $this->_classes['query'];
         return new $query($options);
     }

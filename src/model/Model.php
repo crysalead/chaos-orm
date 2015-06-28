@@ -215,7 +215,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public static function find($options = [])
     {
         $schema = static::schema();
-        $query = $schema->query(['model' => static::class]);
+        $query = $schema->query();
 
         $options = Set::merge(static::$_query, $options);
 
@@ -260,7 +260,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function id($id, $fetchOptions = [])
     {
-        $query = $this->schema->query(['model' => static::class]);
+        $query = $this->schema->query();
         return $query->conditions([static::schema()->primaryKey() => $id])->first($fetchOptions);
     }
 
@@ -344,7 +344,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $config = static::_meta() + [
             'classes'     => ['entity' => $class] + static::$_classes,
             'connection'  => static::$_connection,
-            'conventions' => $conventions
+            'conventions' => $conventions,
+            'model'       => static::class
         ];
         $class = static::$_schema;
         $schema = static::$_schemas[$class] = new $class($config);
@@ -606,11 +607,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             return $this->_data[$name];
         }
         if (static::hasRelation($name)) {
-            $relation = static::relation($name);
-            return $relation->get($this);
+            return static::relation($name)->get($this);
         }
-        $null = null;
-        return $null;
     }
 
     /**

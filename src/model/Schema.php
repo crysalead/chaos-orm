@@ -36,6 +36,13 @@ class Schema
     protected $_source = null;
 
     /**
+     * The fully-namespaced class name of the model object to which this schema is bound.
+     *
+     * @var string
+     */
+    protected $_model = null;
+
+    /**
      * Is the schema is locked.
      *
      * @var boolean
@@ -120,6 +127,7 @@ class Schema
         $defaults = [
             'classes'      => $this->_classes,
             'source'       => null,
+            'model'        => null,
             'connection'   => null,
             'conventions'  => null,
             'locked'       => true,
@@ -143,6 +151,7 @@ class Schema
 
         $this->_fields = $config['fields'];
         $this->_source = $config['source'];
+        $this->_model = $config['model'];
         $this->_primaryKey = $config['primaryKey'];
 
         foreach ($config['fields'] as $key => $value) {
@@ -204,6 +213,16 @@ class Schema
         }
         $this->_source = $source;
         return $this;
+    }
+
+    /**
+     * Returns the model which this particular schema is based off of.
+     *
+     * @return string The fully qualified model class name.
+     */
+    public function model()
+    {
+        return $this->_model;
     }
 
     /**
@@ -380,19 +399,24 @@ class Schema
      */
     public function bind($name, $config = [])
     {
-        $config = ['type' => 'object'] + $config;
+        $config += [
+            'from' => $this->model() ?: Model::class,
+            'to'   => null
+        ];
+        $config['type'] = 'object';
 
         if (!isset($config['relation']) || !isset($this->_classes[$config['relation']])) {
             throw new SourceException("Unexisting binding relation `{$config['relation']}` for `'{$name}'`.");
         }
-        if (!isset($config['to'])) {
-            throw new SourceException("Binding requires `'to'` option to be set.");
+        if (!$config['from']) {
+            throw new SourceException("Binding requires `'from'` option to be set.");
         }
-        if (!isset($config['from'])) {
-            $config['from'] = Model::class;
-        }
-        $from = $config['from'];
-        if (($pos = strrpos('\\', $config['to'])) !== false) {
+        if (!$config['to']) {
+            if ($config['relation'] !== 'hasManyThrough') {
+                throw new SourceException("Binding requires `'to'` option to be set.");
+            }
+        } elseif (($pos = strrpos('\\', $config['to'])) !== false) {
+            $from = $config['from'];
             $config['to'] = substr($from, 0, $pos + 1) . $config['to'];
         }
 
@@ -482,15 +506,19 @@ class Schema
      */
     public function embed(&$collection, $relations, $options = [])
     {
-        $relations = Set::normalize($relations);
+        $filtered = [];
+        $relations = $this->_expandHasManyThrough(Set::normalize($relations), $filtered);
+
         $tree = Set::expand(array_fill_keys(array_keys($relations), []));
 
         foreach ($tree as $name => $subtree) {
             $rel = $this->relation($name);
-            $keys = $rel->keys();
-            $to = $rel->to();
+            if ($rel->type() === 'hasManyThrough') {
+                continue;
+            }
 
-            $related = $rel->related($collection, $options);
+            $to = $rel->to();
+            $related = $rel->embed($collection, $options);
 
             $subrelations = [];
             foreach ($relations as $path => $value) {
@@ -501,9 +529,38 @@ class Schema
             if ($subrelations) {
                 $to::schema()->embed($related, $subrelations, $options);
             }
-
-            $rel->expand($collection, $related);
         }
+
+        foreach ($filtered as $name) {
+            $rel = $this->relation($name);
+            $related = $rel->embed($collection, $options);
+        }
+    }
+
+    /**
+     * Helpers which expand all HasManyThrough relations to their full path.
+     *
+     * @param  array $relations       The relations to eager load.
+     * @param  array $filtered The name of relations actually expanded.
+     * @return array                  The relations to eager load with no more HasManyThrough relations.
+     */
+    protected function _expandHasManyThrough($relations, &$filtered)
+    {
+        foreach ($relations as $path => $value) {
+            $num = strpos($path, '.');
+            $name = $num !== false ? substr($path, 0, $num + 1) : $path;
+            $rel = $this->relation($name);
+            if ($rel->type() !== 'hasManyThrough') {
+                continue;
+            }
+            $relPath = $rel->through() . '.' . $rel->using() . ($num !== false ? substr($path, $num + 1) : '');
+            if (!isset($relations[$relPath])) {
+                $relations[$relPath] = $relations[$path];
+            }
+            $filtered[] = $name;
+            unset($relations[$path]);
+        }
+        return $relations;
     }
 
     /**

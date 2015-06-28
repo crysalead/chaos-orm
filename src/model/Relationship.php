@@ -181,6 +181,7 @@ class Relationship
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
         $this->_constraints = $config['constraints'];
+        $this->_type = lcfirst(static::class);
     }
 
     /**
@@ -281,6 +282,11 @@ class Relationship
         }
     }
 
+    /**
+     * Gets all entities attached to a collection en entities.
+     *
+     * @param  mixed  $collection A collection of entities.
+     */
     public function related($collection, $options = [])
     {
         if ($this->link() !== static::LINK_KEY) {
