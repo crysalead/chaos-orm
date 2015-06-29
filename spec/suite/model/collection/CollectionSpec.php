@@ -4,14 +4,12 @@ namespace chaos\spec\suite\model\collection;
 use InvalidArgumentException;
 use chaos\model\Model;
 use chaos\model\collection\Collection;
-use chaos\source\database\Query;
 
 use kahlan\plugin\Stub;
-use chaos\spec\fixture\Fixtures;
 
 describe("Collection", function() {
 
-	describe("->__construct()", function() {
+    describe("->__construct()", function() {
 
         it("loads the data", function() {
 
@@ -25,19 +23,19 @@ describe("Collection", function() {
 
     describe("->parent()", function() {
 
+        it("gets the parent", function() {
+
+            $parent = Stub::create();
+            $collection = new Collection(['parent' => $parent]);
+            expect($collection->parent())->toBe($parent);
+
+        });
+
         it("sets a parent", function() {
 
             $parent = Stub::create();
             $collection = new Collection();
             $collection->parent($parent);
-            expect($collection->parent())->toBe($parent);
-
-        });
-
-        it("returns the parent", function() {
-
-            $parent = Stub::create();
-            $collection = new Collection(['parent' => $parent]);
             expect($collection->parent())->toBe($parent);
 
         });
@@ -59,8 +57,8 @@ describe("Collection", function() {
 
         it("returns the model", function() {
 
-            $collection = new Collection(['model' => 'chaos\model\Model']);
-            expect($collection->model())->toBe('chaos\model\Model');
+            $collection = new Collection(['model' => Model::class]);
+            expect($collection->model())->toBe(Model::class);
 
         });
 
@@ -266,7 +264,7 @@ describe("Collection", function() {
         context("when a model is defined", function() {
 
             beforeEach(function() {
-                $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
+                $this->model = Stub::classname(['extends' => Model::class]);
             });
 
             it("autoboxes setted data", function() {
@@ -486,15 +484,13 @@ describe("Collection", function() {
 
     });
 
-    describe("->first/rewind/end()", function() {
+    describe("->rewind/end()", function() {
 
         it("returns respectively the first and the last item of the collection", function() {
 
             $collection = new Collection(['data' => [1, 2, 3, 4, 5]]);
             expect($collection->end())->toBe(5);
             expect($collection->rewind())->toBe(1);
-            expect($collection->end())->toBe(5);
-            expect($collection->first())->toBe(1);
 
         });
 
@@ -575,7 +571,7 @@ describe("Collection", function() {
 
         it("deletages the call up to the schema instance", function() {
 
-            $model = Stub::classname(['extends' => 'chaos\model\Model']);
+            $model = Stub::classname(['extends' => Model::class]);
             $schema = Stub::create();
 
             $model::config(['schema' => $schema]);

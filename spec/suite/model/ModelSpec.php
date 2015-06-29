@@ -4,10 +4,11 @@ namespace chaos\spec\suite\model;
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use kahlan\plugin\Stub;
 use chaos\SourceException;
 use chaos\model\Model;
 use chaos\model\Schema;
+
+use kahlan\plugin\Stub;
 
 describe("Model", function() {
 

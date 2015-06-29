@@ -39,13 +39,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     protected $_using = null;
 
     /**
-     * The items contained in the collection.
-     *
-     * @var array
-     */
-    protected $_data = null;
-
-    /**
      * Setted to `true` when the collection has begun iterating.
      *
      * @var integer
@@ -78,7 +71,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
         $this->_through = $config['through'];
         $this->_using = $config['using'];
 
-        foreach (['parent', 'through', 'using'] as $name) {
+        foreach (['parent', 'model', 'through', 'using'] as $name) {
             if (!$config[$name]) {
                 throw new SourceException("Invalid through collection, `'{$name}'` is empty.");
             }
@@ -87,7 +80,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
         }
 
         $through = $this->_through;
-        $this->_data = $this->_parent->{$through};
     }
 
     /**
@@ -98,7 +90,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function parent($parent = null)
     {
-        return $this->_data->parent($parent);
+        $through = $this->_through;
+        return $this->_parent->{$through}->parent($parent);
     }
 
     /**
@@ -128,7 +121,30 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function meta()
     {
-        return $this->_data->meta();
+        $through = $this->_through;
+        return $this->_parent->{$through}->meta();
+    }
+
+    /**
+     * Handles dispatching of methods against all items in the collection.
+     *
+     * @param  string $method The name of the method to call on each instance in the collection.
+     * @param  mixed  $params The parameters to pass on each method call.
+     *
+     * @return mixed          Returns either an array of the return values of the methods, or the
+     *                        return values wrapped in a `Collection` instance.
+     */
+    public function invoke($method, $params = [])
+    {
+        $data = [];
+        $isCallable = is_callable($params);
+
+        foreach ($this as $key => $object) {
+            $callParams = $isCallable ? $params($object, $key, $this) : $params;
+            $data[$key] = call_user_func_array([$object, $method], $callParams);
+        }
+
+        return new Collection(compact('data'));
     }
 
     /**
@@ -141,7 +157,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetExists($offset)
     {
-        return $this->_data->offsetExists($offset);
+        $through = $this->_through;
+        return $this->_parent->{$through}->offsetExists($offset);
     }
 
     /**
@@ -152,7 +169,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetGet($offset)
     {
-        if ($entity = $this->_data[$offset]) {
+        $through = $this->_through;
+        if ($entity = $this->_parent->{$through}[$offset]) {
             return $entity->{$this->_using};
         }
         return;
@@ -168,13 +186,15 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetSet($offset, $data)
     {
-        $through = $this->_data->model();
+        $name = $this->_through;
+        $parent = $this->_parent->model();
+        $relThrough = $parent::relation($name);
+        $through = $relThrough->to();
 
-        $data = $through->match($this->_parent) + [
-            $this->_using => $data
-        ];
+        $item = $through::create($relThrough->match($this->_parent));
+        $item->{$this->_using} = $data;
 
-        return $offset !== null ? $this->_data[$offset] = $data : $this->_data[] = $data;
+        return $offset !== null ? $this->_parent->{$name}[$offset] = $item : $this->_parent->{$name}[] = $item;
     }
 
     /**
@@ -184,7 +204,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetUnset($offset)
     {
-        unset($this->_data[$offset]);
+        $through = $this->_through;
+        unset($this->_parent->{$through}[$offset]);
     }
 
     /**
@@ -195,7 +216,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function key($full = false)
     {
-        return $this->_data->key();
+        $through = $this->_through;
+        return $this->_parent->{$through}->key();
     }
 
     /**
@@ -205,7 +227,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function current()
     {
-        $entity = $this->_data->current();
+        $through = $this->_through;
+        $entity = $this->_parent->{$through}->current();
         if ($entity) {
             return $entity->{$this->_using};
         }
@@ -219,7 +242,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function prev()
     {
-        $entity = $this->_data->prev();
+        $through = $this->_through;
+        $entity = $this->_parent->{$through}->prev();
         if ($entity) {
             return $entity->{$this->_using};
         }
@@ -235,20 +259,11 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function next()
     {
-        $entity = $this->_data->next();
+        $through = $this->_through;
+        $entity = $this->_parent->{$through}->next();
         if ($entity) {
             return $entity->{$this->_using};
         }
-    }
-
-    /**
-     * Alias to `::rewind()`.
-     *
-     * @return mixed The current item after rewinding.
-     */
-    public function first()
-    {
-        return $this->_data->rewind();
     }
 
     /**
@@ -256,7 +271,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function rewind()
     {
-        return $this->_data->rewind();
+        $through = $this->_through;
+        return $this->_parent->{$through}->rewind();
     }
 
     /**
@@ -266,7 +282,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function end()
     {
-        $this->_data->end();
+        $through = $this->_through;
+        $this->_parent->{$through}->end();
         return $this->current();
     }
 
@@ -277,7 +294,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function valid()
     {
-        return $this->_data->valid();
+        $through = $this->_through;
+        return $this->_parent->{$through}->valid();
     }
 
     /**
@@ -287,7 +305,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function count()
     {
-        return $this->_data->count();
+        $through = $this->_through;
+        return $this->_parent->{$through}->count();
     }
 
     /**

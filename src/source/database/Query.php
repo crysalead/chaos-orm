@@ -218,7 +218,9 @@ class Query implements IteratorAggregate
      */
     protected function _collect($collection, $options)
     {
-        $collector = $options['collector'];
+        if (!$collector = $options['collector']) {
+            return $collection;
+        }
         $model = $this->_model;
         $schema = $model::schema();
         $primaryKey = $schema->primaryKey();
@@ -234,7 +236,6 @@ class Query implements IteratorAggregate
         }
         return $collection;
     }
-
 
     /**
      * Alias for `get()`

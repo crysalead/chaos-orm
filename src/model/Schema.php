@@ -256,9 +256,19 @@ class Schema
      *
      * @return array
      */
-    public function fields()
+    public function fields($attribute = null)
     {
-        return $this->_fields;
+        if (!$attribute) {
+            return $this->_fields;
+        }
+        $result = [];
+        foreach ($this->_fields as $name => $field) {
+            $value = isset($field[$attribute]) ? $field[$attribute] : null;
+            if ($value !== null) {
+                $result[$name] = $value;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -320,6 +330,7 @@ class Schema
     protected function _initField($field)
     {
         $defaults = [
+            'type'  => 'string',
             'array' => false,
             'null'  => true
         ];
@@ -329,12 +340,14 @@ class Schema
             $field['type'] = $field[0];
             unset($field[0]);
         }
+        $field += $defaults;
         $type = $field['type'];
+
         if (isset($this->_handlers[$type])) {
             $field['format'] = $this->_handlers[$type];
         }
 
-        return $field + $defaults;
+        return $field;
     }
 
     /**

@@ -239,7 +239,8 @@ class Relationship
      */
     public function match($entity)
     {
-        list($from, $to) = each($this->keys());
+        $keys = $this->keys();
+        list($from, $to) = each($keys);
 
         $conditions = [];
 
@@ -285,6 +286,64 @@ class Relationship
     }
 
     /**
+     * Gets the related data.
+     *
+     * @param  $entity An entity.
+     * @return         The related data.
+     */
+    public function get($entity, $options = [])
+    {
+        $name = $this->name();
+
+        if (!$entity->exists()) {
+            return $entity[$name] = $entity::schema()->cast($name, [], [
+                'parent'   => $entity,
+                'model'    => $this->to()
+            ]);
+        }
+
+        $link = $this->link();
+        $strategies = static::strategies();
+
+        if (!isset($strategies[$link]) || !is_callable($strategies[$link])) {
+            throw new SourceException("Attempted to get object for invalid relationship link type `{$link}`.");
+        }
+        return $strategies[$link]($entity, $this, $options);
+    }
+
+    /**
+     * Strategies used to query related objects, indexed by key.
+     */
+    public static function strategies() {
+        return [
+            static::LINK_EMBEDDED => function($entity, $relationship) {
+                return $entity->{$relationship->name()};
+            },
+            static::LINK_CONTAINED => function($entity, $relationship) {
+                return $relationship->hasMany() ? $entity->parent()->parent() : $entity->parent();
+            },
+            static::LINK_KEY => function($entity, $relationship, $options) {
+                $query = $relationship->schema()->query([
+                    'model' => $relationship->to(),
+                    'conditions' => [
+                        $relationship->keys('to') => $entity->{$relationship->keys('from')}
+                    ]
+                ]);
+                return $relationship->hasMany() ? $query->all($options) : $query->first($options);
+            },
+            static::LINK_KEY_LIST  => function($object, $relationship, $options) {
+                $query = $relationship->schema()->query([
+                    'model' => $relationship->to(),
+                    'conditions' => [
+                        $relationship->keys('to') => $entity->{$relationship->keys('from')}
+                    ]
+                ]);
+                return $query->all($options);
+            }
+        ];
+    }
+
+    /**
      * Gets all entities attached to a collection en entities.
      *
      * @param  mixed  $collection A collection of entities.
@@ -298,7 +357,6 @@ class Relationship
         $query = $this->schema()->query(['model' => $this->to(), 'conditions' => [
             $this->keys('to') => array_keys($indexes)
         ]]);
-
         return $query->all($options);
     }
 
@@ -310,7 +368,7 @@ class Relationship
      * @return array              An array of indexes where keys are `$name` values and
      *                            values the correcponding index in the collection.
      */
-    public function _index($collection, $name)
+    protected function _index($collection, $name)
     {
         $indexes = [];
         foreach ($collection as $key => $entity) {

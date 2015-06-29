@@ -359,16 +359,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Alias to `::rewind()`.
-     *
-     * @return mixed The current item after rewinding.
-     */
-    public function first()
-    {
-        return $this->rewind();
-    }
-
-    /**
      * Rewinds the collection to the beginning.
      */
     public function rewind()
