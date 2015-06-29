@@ -1,15 +1,18 @@
 <?php
-namespace chaos\source;
+namespace chaos\model;
 
-use chaos\SourceException;
-
-class DataCollector
+class Collector
 {
     protected $_data = [];
 
     public function set($source, $id, $data)
     {
         $this->_data[$source][$id] = $data;
+    }
+
+    public function has($source, $id)
+    {
+        return isset($this->_data[$source][$id]);
     }
 
     public function get($source, $id)

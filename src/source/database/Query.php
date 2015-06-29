@@ -17,7 +17,7 @@ class Query implements IteratorAggregate
      * @var array
      */
     protected $_classes = [
-        'data-collector' => 'chaos\source\DataCollector'
+        'collector' => 'chaos\model\Collector'
     ];
 
     /**
@@ -168,53 +168,73 @@ class Query implements IteratorAggregate
     public function get($options = [])
     {
         $defaults = [
-            'return'    => 'record',
-            'fetchMode' => PDO::FETCH_ASSOC
+            'return' => 'record',
+            'fetch'  => PDO::FETCH_ASSOC
         ];
         $options += $defaults;
 
-        $dataCollector = $this->_classes['data-collector'];
-        $collector = isset($options['collector']) ? $options['collector'] : new $dataCollector();
+        $class = $this->_classes['collector'];
+        $options['collector'] = isset($options['collector']) ? $options['collector'] : new $class();
 
         $this->_applyHas();
 
         $model = $this->_model;
-        $schema = $model::schema();
-        $primaryKey = $schema->primaryKey();
-        $source = $schema->source();
 
         $collection = [];
         $return = $options['return'];
         $cursor = $this->_statement->execute([
-            'fetchMode' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetchMode']
+            'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 
         switch ($return) {
             case 'record':
                 foreach ($cursor as $key => $record) {
-                    $collector->set($source, $record[$primaryKey], $collection[] = $model::create($record, [
+                    $collection[] = $model::create($record, [
                         'defaults' => false
-                    ]));
+                    ]);
                 }
                 $collection = $model::create($collection, ['type' => 'set']);
             break;
             case 'array':
-                foreach ($cursor as $key => $record) {
-                    $collector->set($source, $record[$primaryKey], $collection[] = $record);
-                }
-            break;
             case 'object':
                 foreach ($cursor as $key => $record) {
-                    $collector->set($source, $record->{$primaryKey}, $collection[] = $record);
+                    $collection[] = $record;
                 }
             break;
             default:
                 throw new SourceException("Invalid value `'{$options['return']}'` as `'return'` option.");
             break;
         }
-        //$this->embed($this->_with);
+        $collection = $this->_collect($collection, $options);
+        $model::schema()->embed($collection, $this->_with, $options);
         return $collection;
     }
+
+    /**
+     * Collects data to avoid entities duplication.
+     *
+     * @param  mixed  $collection A collection of entities.
+     * @return mixed              A collection of entities where duplicates has been replaced by collected one.
+     */
+    protected function _collect($collection, $options)
+    {
+        $collector = $options['collector'];
+        $model = $this->_model;
+        $schema = $model::schema();
+        $primaryKey = $schema->primaryKey();
+        $source = $schema->source();
+
+        foreach ($collection as $index => $item) {
+            $id = is_object($item) ? $item->{$primaryKey} : $item[$primaryKey];
+            if ($collector->has($source, $id)) {
+                $collection[$index] = $collector->get($source, $id);
+            } else {
+                $collector->set($source, $id, $item);
+            }
+        }
+        return $collection;
+    }
+
 
     /**
      * Alias for `get()`

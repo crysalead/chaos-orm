@@ -321,8 +321,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      *
      * @return array Returns the array value of the data in this `Collection`.
      */
-    public function data()
+    public function data($options = [])
     {
-        return Collection::toArray($this);
+        return Collection::toArray($this, $options);
     }
 }

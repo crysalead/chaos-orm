@@ -22,10 +22,9 @@ class Tag extends \chaos\model\Model
         ]);
 
         $schema->bind('images', [
-            'relation'    => 'hasManyThrough',
-            'to'          => 'chaos\spec\fixture\model\Image',
-            'key'         => ['image_id' => 'id'],
-            'through'     => 'image_tag'
+            'relation' => 'hasManyThrough',
+            'through'  => 'images_tags',
+            'using'    => 'image'
         ]);
     }
 

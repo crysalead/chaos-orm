@@ -83,19 +83,7 @@ class HasManyThrough extends \chaos\model\Relationship
         $through = $this->through();
         $using = $this->using();
 
-        $from = $this->from();
-        $relThrough = $from::relation($through);
-
-        $result = $relThrough->embed($collection, $options);
-
-        $pivot = $relThrough->to();
-        $relUsing = $pivot::relation($using);
-
-        $related = $relUsing->embed($result, $options);
-
-        $indexes = $this->_index($related, $relUsing->keys('to'));
         $this->_cleanup($collection);
-
         foreach ($collection as $index => $entity) {
             if (is_object($entity)) {
                 $entity->{$name} = [];
@@ -107,14 +95,14 @@ class HasManyThrough extends \chaos\model\Relationship
         foreach ($collection as $index => $source) {
             if (is_object($source)) {
                 foreach ($source->{$through} as $item) {
-                    $value = $related[$indexes[$item->{$relUsing->keys('from')}]];
+                    $value = $item->{$using};
                     if (!$source->{$name} instanceof Through) {
                         $source->{$name}[] = $value;
                     }
                 }
             } else {
                 foreach ($source[$through] as $item) {
-                    $collection[$index][$name][] = $related[$indexes[$item[$relUsing->keys('from')]]];
+                    $collection[$index][$name][] = $item[$using];
                 }
             }
         }

@@ -550,9 +550,9 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *
      * @return array Returns the array value of the data in this `Collection`.
      */
-    public function data()
+    public function data($options = [])
     {
-        return static::toArray($this);
+        return static::toArray($this, $options);
     }
 
     /**
@@ -570,7 +570,10 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public static function toArray($data, $options = [])
     {
-        $defaults = ['handlers' => []];
+        $defaults = [
+            'handlers' => [],
+            'parents'  => []
+        ];
         $options += $defaults;
         $result = [];
 
@@ -586,7 +589,11 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
                     $result[$key] = $options['handlers'][$class]($item);
                 break;
                 case ($item instanceof ArrayAccess):
-                    $result[$key] = static::toArray($item, $options);
+                    $id = spl_object_hash($item);
+                    if (!isset($options['parents'][$id])) {
+                        $options['parents'][$id] = true;
+                        $result[$key] = static::toArray($item, $options);
+                    }
                 break;
                 case (method_exists($item, '__toString')):
                     $result[$key] = (string) $item;

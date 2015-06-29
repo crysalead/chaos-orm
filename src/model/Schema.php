@@ -14,6 +14,7 @@ class Schema
      * @var array
      */
     protected $_classes = [
+        'collector'      => 'chaos\model\Collector',
         'relationship'   => 'chaos\model\Relationship',
         'belongsTo'      => 'chaos\model\relationship\BelongsTo',
         'hasOne'         => 'chaos\model\relationship\HasOne',
@@ -506,8 +507,13 @@ class Schema
      */
     public function embed(&$collection, $relations, $options = [])
     {
-        $filtered = [];
-        $relations = $this->_expandHasManyThrough(Set::normalize($relations), $filtered);
+        if (!isset($options['collector'])) {
+            $collector = $this->_classes['collector'];
+            $options['collector'] = new $collector();
+        }
+
+        $expanded = [];
+        $relations = $this->_expandHasManyThrough(Set::normalize($relations), $expanded);
 
         $tree = Set::expand(array_fill_keys(array_keys($relations), []));
 
@@ -531,33 +537,34 @@ class Schema
             }
         }
 
-        foreach ($filtered as $name) {
+        foreach ($expanded as $name) {
             $rel = $this->relation($name);
             $related = $rel->embed($collection, $options);
         }
+        return $options['collector'];
     }
 
     /**
-     * Helpers which expand all HasManyThrough relations to their full path.
+     * Helper which expands all `'hasManyThrough'` relations into their full path.
      *
      * @param  array $relations       The relations to eager load.
-     * @param  array $filtered The name of relations actually expanded.
+     * @param  array $expanded        The name of relations which was expanded.
      * @return array                  The relations to eager load with no more HasManyThrough relations.
      */
-    protected function _expandHasManyThrough($relations, &$filtered)
+    protected function _expandHasManyThrough($relations, &$expanded)
     {
         foreach ($relations as $path => $value) {
             $num = strpos($path, '.');
-            $name = $num !== false ? substr($path, 0, $num + 1) : $path;
+            $name = $num !== false ? substr($path, 0, $num) : $path;
             $rel = $this->relation($name);
             if ($rel->type() !== 'hasManyThrough') {
                 continue;
             }
-            $relPath = $rel->through() . '.' . $rel->using() . ($num !== false ? substr($path, $num + 1) : '');
+            $relPath = $rel->through() . '.' . $rel->using() . ($num !== false ? '.' . substr($path, $num + 1) : '');
             if (!isset($relations[$relPath])) {
                 $relations[$relPath] = $relations[$path];
             }
-            $filtered[] = $name;
+            $expanded[] = $name;
             unset($relations[$path]);
         }
         return $relations;

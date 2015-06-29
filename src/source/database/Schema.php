@@ -13,6 +13,7 @@ class Schema extends \chaos\model\Schema
     protected $_classes = [
         'entity'         => 'chaos\model\Model',
         'set'            => 'collection\Collection',
+        'collector'      => 'chaos\model\Collector',
         'relationship'   => 'chaos\model\Relationship',
         'belongsTo'      => 'chaos\model\relationship\BelongsTo',
         'hasOne'         => 'chaos\model\relationship\HasOne',

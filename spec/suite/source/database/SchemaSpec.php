@@ -95,4 +95,22 @@ describe("Schema", function() {
         }
     });
 
+    it("embeds nested hasManyTrough relationship", function() {
+
+        $model = $this->image;
+        $schema = $model::schema();
+        $images = $model::all(['order' => 'id']);
+        $schema->embed($images, ['tags.images']);
+
+        foreach ($images as $image) {
+            foreach ($image->images_tags as $index => $image_tag) {
+                expect($image_tag->tag)->toBe($image->tags[$index]);
+
+                foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
+                    expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                }
+            }
+        }
+    });
+
 });

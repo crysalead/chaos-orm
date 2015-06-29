@@ -627,9 +627,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @param  string $options Options.
      * @return mixed Entire data array.
      */
-    public function data()
+    public function data($options = [])
     {
-        return $this->to('array');
+        return $this->to('array', $options);
     }
 
     /**

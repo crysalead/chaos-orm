@@ -181,7 +181,9 @@ class Relationship
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
         $this->_constraints = $config['constraints'];
-        $this->_type = lcfirst(static::class);
+
+        $pos = strrpos(static::class, '\\');
+        $this->_type = lcfirst(substr(static::class, $pos !== false ? $pos + 1 : 0));
     }
 
     /**
@@ -296,6 +298,7 @@ class Relationship
         $query = $this->schema()->query(['model' => $this->to(), 'conditions' => [
             $this->keys('to') => array_keys($indexes)
         ]]);
+
         return $query->all($options);
     }
 
