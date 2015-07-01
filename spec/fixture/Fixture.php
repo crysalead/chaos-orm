@@ -28,6 +28,13 @@ class Fixture
     protected $_schema = [];
 
     /**
+     * The cached schema instance.
+     *
+     * @var object
+     */
+    protected $_cache = null;
+
+    /**
      * The alter definitions.
      *
      * @var array
@@ -109,22 +116,22 @@ class Fixture
      */
     public function schema()
     {
-        static $cache = null;
+        $this->_cache = null;
 
-        if ($cache) {
-            return $cache;
+        if ($this->_cache) {
+            return $this->_cache;
         }
 
         $model = $this->model();
-        $cache = $model::schema();
+        $this->_cache = $model::schema();
 
-        $alteredFields = $this->_alterFields($cache->fields());
+        $alteredFields = $this->_alterFields($this->_cache->fields());
 
         foreach ($alteredFields as $name => $value) {
-            $cache->set($name, $value);
+            $this->_cache->set($name, $value);
         }
 
-        return $cache;
+        return $this->_cache;
     }
 
     /**

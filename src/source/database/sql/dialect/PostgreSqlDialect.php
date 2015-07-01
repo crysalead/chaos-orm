@@ -110,7 +110,7 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Dialect
             $use = 'numeric';
         }
 
-        $column = $this->escape($name);
+        $column = $this->name($name);
 
         if (isset($increment) && $increment) {
             $result = [$column];

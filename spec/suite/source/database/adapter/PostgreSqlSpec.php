@@ -6,46 +6,62 @@ use chaos\source\database\adapter\PostgreSql;
 use chaos\source\Schema;
 
 use kahlan\plugin\Stub;
+use chaos\spec\fixture\Fixtures;
 
 describe("PostgreSql", function() {
 
     before(function() {
         $this->adapter = box('chaos.spec')->get('source.database.postgresql');
+        $this->fixtures = new Fixtures([
+            'connection' => $this->adapter,
+            'fixtures'   => [
+                'gallery' => 'chaos\spec\fixture\schema\Gallery'
+            ]
+        ]);
+    });
+
+    afterEach(function() {
+        $this->fixtures->drop();
     });
 
     describe("->sources()", function() {
 
-        it("show sources", function() {
-            // $schema = new Schema([
-            //     'name' => 'table1',
-            //     'adapter' =>  $this->adapter,
-            //     'fields' => [
-            //         'id' => ['id']
-            //     ]
-            // ]);
-            // $schema->create();
-            // $sources = $this->adapter->sources();
-            // print_r($sources);
+        it("shows sources", function() {
 
-            //print_r($this->adapter->describe());
+            $this->fixtures->populate('gallery');
+            $sources = $this->adapter->sources();
 
-            //$statement = $this->adapter->execute("SELECT row_to_json(aa) FROM aa");
-            //print_r($statement->fetchAll(PDO::FETCH_ASSOC));
+            expect($sources)->toBe([
+                'gallery' => 'gallery'
+            ]);
 
-            // $statement = $this->adapter->execute("SELECT * FROM authors LEFT JOIN tags ON authors.id = tags.author_id");
-            // print_r($statement->fetchAll(PDO::FETCH_NUM));
+        });
 
+    });
 
-// "column_name" AS "field", "data_type" AS "type", ';
-// $sql .= '"is_nullable" AS "null", "column_default" AS "default", ';
-// $sql .= '"character_maximum_length" AS "char_length"
+    describe("->describe()", function() {
 
-            //$statement = $this->adapter->execute("select * from INFORMATION_SCHEMA.COLUMNS where table_name = 'bb'");
+        it("describe a source", function() {
 
-            // $statement = $this->adapter->execute("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'chaos_test'");
-            //print_r($statement->fetchAll(PDO::FETCH_ASSOC));
+            $this->fixtures->populate('gallery');
 
-            // print_r($this->adapter->sources());
+            $schema = $this->adapter->describe('gallery');
+
+            expect($schema->field('id'))->toEqual([
+                'type' => 'integer',
+                'null' => false,
+                'default' => null,
+                'array' => false
+            ]);
+
+            expect($schema->field('name'))->toEqual([
+                'type' => 'string',
+                'length' => 255,
+                'null' => true,
+                'default' => null,
+                'array' => false
+            ]);
+
         });
 
     });

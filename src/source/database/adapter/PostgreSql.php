@@ -184,48 +184,45 @@ class PostgreSql extends \chaos\source\database\Database {
         $select = $this->dialect()->statement('select');
         $select->fields('table_name')
             ->from(['information_schema' => ['tables']])
-            ->where(['table_type' => 'BASE TABLE']);
-
+            ->where([
+                'table_type'   => 'BASE TABLE',
+                'table_schema' => $this->_config['schema']
+            ]);
         return $this->_sources($select);
     }
 
     /**
      * Gets the column schema for a given PostgreSQL table.
      *
-     * @param  mixed $entity Specifies the table name for which the schema should be returned, or
-     *                       the class name of the model object requesting the schema, in which case
-     *                       the model class will be queried for the correct table name.
-     * @param  array $fields Any schema data pre-defined by the model.
-     * @param  array $meta
-     * @return array         Returns an associative array describing the given table's schema,
-     *                       where the array keys are the available fields, and the values are arrays
-     *                       describing each field, containing the following keys:
-     *                       - `'type'`: _string_ The field type name.
+     * @param  mixed  $name   Specifies the table name for which the schema should be returned.
+     * @param  array  $fields Any schema data pre-defined by the model.
+     * @param  array  $meta
+     * @return object         Returns a shema definition.
      */
-    public function describe($entity, $fields = array(), array $meta = array()) {
-        $schema = $this->_config['schema'];
-        $params = compact('entity', 'meta', 'fields', 'schema');
-        return $this->_filter(__METHOD__, $params, function($self, $params) {
-            extract($params);
+    public function describe($name,  $fields = [], $meta = []) {
+        $schema = $this->_classes['schema'];
 
-            if ($fields) {
-                return $self->invokeMethod('_instance', array('schema', compact('fields')));
-            }
-            $name = $self->_pdo->quote($self->invokeMethod('_entityName', array($entity)));
-            $schema = $self->_pdo->quote($schema);
+        if (func_num_args() === 1) {
 
-            $sql = 'SELECT "column_name" AS "field", "data_type" AS "type", ';
-            $sql .= '"is_nullable" AS "null", "column_default" AS "default", ';
-            $sql .= '"character_maximum_length" AS "char_length" ';
-            $sql .= 'FROM "information_schema"."columns" WHERE "table_name" = ' . $name;
-            $sql .= ' AND table_schema = ' . $schema . ' ORDER BY "ordinal_position"';
+            $select = $this->dialect()->statement('select');
+            $select->fields([
+                'column_name' => 'Field',
+                'data_type'   => 'Type',
+                'is_nullable' => 'Null',
+                'column_default' => 'Default',
+                'character_maximum_length' => 'CharLength'
+            ])
+            ->from(['information_schema' => ['columns']])
+            ->where([
+               'table_name'   => $name,
+               'table_schema' => $this->_config['schema']
+            ]);
 
-            $columns = $self->_pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-            $fields = array();
+            $columns = $this->query($select->toString());
 
             foreach ($columns as $column) {
-                $schema = $self->invokeMethod('_column', array($column['type']));
-                $default = $column['default'];
+                $field = $this->_column($column['Type']);
+                $default = $column['Default'];
 
                 if (preg_match("/^'(.*)'::/", $default, $match)) {
                     $default = $match[1];
@@ -236,16 +233,22 @@ class PostgreSql extends \chaos\source\database\Database {
                 } else {
                     $default = null;
                 }
-                $fields[$column['field']] = $schema + array(
-                    'null'     => ($column['null'] === 'YES' ? true : false),
+                $fields[$column['Field']] = $field + [
+                    'null'     => ($column['Null'] === 'YES' ? true : false),
                     'default'  => $default
-                );
-                if ($fields[$column['field']]['type'] === 'string') {
-                    $fields[$column['field']]['length'] = $column['char_length'];
+                ];
+                if ($fields[$column['Field']]['type'] === 'string') {
+                    $fields[$column['Field']]['length'] = $column['CharLength'];
                 }
             }
-            return $self->invokeMethod('_instance', array('schema', compact('fields')));
-        });
+        }
+
+        return new $schema([
+            'connection' => $this,
+            'source'     => $name,
+            'fields'     => $fields,
+            'meta'        => $meta
+        ]);
     }
 
     /**

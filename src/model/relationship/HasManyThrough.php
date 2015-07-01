@@ -84,6 +84,7 @@ class HasManyThrough extends \chaos\model\Relationship
         $using = $this->using();
 
         $this->_cleanup($collection);
+
         foreach ($collection as $index => $entity) {
             if (is_object($entity)) {
                 $entity->{$name} = [];
