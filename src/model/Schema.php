@@ -96,11 +96,11 @@ class Schema
      * Configures the meta for use.
      *
      * @param array $config Possible options are:
-     *                      - `'connection'`  _object_ : The connection instance.
-     *                      - `'source'`      _string_ : The source name.
+     *                      - `'connection'`  _object_ : The connection instance (defaults to `null`).
+     *                      - `'source'`      _string_ : The source name (defaults to `null`).
+     *                      - `'model'`       _string_ : The fully namespaced model class name (defaults to `null`).
      *                      - `'locked'`      _boolean_: set the ability to dynamically add/remove fields (defaults to `false`).
-     *                      - `'classes'`     _array_  : The class dependencies.
-     *                      - `'primaryKey'`  _array_  : The primary key.
+     *                      - `'primaryKey'`  _array_  : The primary key value (defaults to `id`).
      *                      - `'fields'`      _array_  : array of field definition where keys are field names and values are arrays
      *                                                   with the following keys. All properties are optionnal except the `'type'`:
      *                                                   - `'type'`       _string_ : the type of the field.
@@ -122,19 +122,20 @@ class Schema
      *                                                   - `'tablespace'` _string_: the tablespace value to use for the table.
      *                      - `'handlers'`    _array_  : casting handlers.
      *                      - `'conventions'` _object_ : The naming conventions instance.
+     *                      - `'classes'`     _array_  : The class dependencies.
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'classes'      => $this->_classes,
+            'connection'   => null,
             'source'       => null,
             'model'        => null,
-            'connection'   => null,
-            'conventions'  => null,
             'locked'       => true,
             'fields'       => [],
             'meta'         => [],
-            'handlers'     => []
+            'handlers'     => [],
+            'conventions'  => null,
+            'classes'      => $this->_classes
         ];
 
         $config = Set::merge($defaults, $config);
@@ -179,29 +180,6 @@ class Schema
     }
 
     /**
-     * Gets/Sets the meta data associated to a field is some exists.
-     *
-     * @param  string $name The field name. If `null` returns all meta. If it's an array,
-     *                      set it as the meta datas.
-     * @return array        If `$name` is a string, it returns the correcponding value
-     *                      otherwise it returns meta datas array or `null` if not found.
-     */
-    public function meta($name = null, $value = null)
-    {
-        $num = func_num_args();
-        if (!$num) {
-            return $this->_meta;
-        }
-        if (is_array($name)) {
-            return $this->_meta = $name;
-        }
-        if ($num === 2) {
-            return $this->_meta[$name] = $value;
-        }
-        return isset($this->_meta[$name]) ? $this->_meta[$name] : [];
-    }
-
-    /**
      * Gets/sets the source name.
      *
      * @param  string $source The source name (i.e table/collection name) or `null` to get the defined one.
@@ -217,13 +195,59 @@ class Schema
     }
 
     /**
-     * Returns the model which this particular schema is based off of.
+     * Gets/sets the attached model class name.
      *
-     * @return string The fully qualified model class name.
+     * @param  mixed $model The model class name to set to none to get the current model class name.
+     * @return mixed        The attached model class name or `$this`.
      */
-    public function model()
+    public function model($model = null)
     {
-        return $this->_model;
+        if (!func_num_args()) {
+            return $this->_model;
+        }
+        $this->_model = $model;
+        return $this;
+    }
+
+    /**
+     * Gets/sets the schema lock type. When Locked all extra fields which
+     * are not part of the schema should be filtered out before saving.
+     *
+     * @param  mixed $locked The locked value to set to none to get the current lock value.
+     * @return mixed         A boolean value or `$this`.
+     */
+    public function locked($locked = null)
+    {
+        if (!func_num_args()) {
+            return $this->_locked;
+        }
+        $this->_locked = $locked;
+        return $this;
+    }
+
+    /**
+     * Gets/Sets the meta data associated to a field is some exists.
+     *
+     * @param  string $name The field name. If `null` returns all meta. If it's an array,
+     *                      set it as the meta datas.
+     * @return array        If `$name` is a string, it returns the correcponding value
+     *                      otherwise it returns meta datas array or `null` if not found.
+     */
+    public function meta($name = null, $value = null)
+    {
+        $num = func_num_args();
+        if (!$num) {
+            return $this->_meta;
+        }
+        if (is_array($name)) {
+            $this->_meta = $name;
+            return $this;
+        }
+        if ($num === 2) {
+            $this->_meta[$name] = $value;
+            return $this;
+        }
+        return isset($this->_meta[$name]) ? $this->_meta[$name] : [];
     }
 
     /**
@@ -234,10 +258,11 @@ class Schema
      */
     public function primaryKey($primaryKey = null)
     {
-        if (func_num_args()) {
-            $this->_primaryKey = $primaryKey;
+        if (!func_num_args()) {
+            return $this->_primaryKey;
         }
-        return $this->_primaryKey;
+        $this->_primaryKey = $primaryKey;
+        return $this;
     }
 
 
@@ -259,7 +284,11 @@ class Schema
     public function fields($attribute = null)
     {
         if (!$attribute) {
-            return $this->_fields;
+            $fields = [];
+            foreach ($this->_fields as $name => $value) {
+                $fields[$name] = $this->field($name);
+            }
+            return $fields;
         }
         $result = [];
         foreach ($this->_fields as $name => $field) {
@@ -272,17 +301,6 @@ class Schema
     }
 
     /**
-     * Returns the type value of a field name.
-     *
-     * @param  string $name The field name.
-     * @return array  The type value or `null` if not found.
-     */
-    public function type($name)
-    {
-        return $this->field($name, 'type');
-    }
-
-    /**
      * Returns a schema field attribute.
      *
      * @param  array $name       A field name.
@@ -291,12 +309,31 @@ class Schema
      */
     public function field($name, $attribute = null)
     {
-        $field = isset($this->_fields[$name]) ? $this->_fields[$name] : null;
+        if (!isset($this->_fields[$name])) {
+            return;
+        }
+        $field = $this->_fields[$name];
 
-        if ($field && $attribute) {
+        if ($attribute) {
             return isset($field[$attribute]) ? $field[$attribute] : null;
+        } else {
+            $type = $field['type'];
+            if (isset($this->_handlers[$type])) {
+                $field['format'] = $this->_handlers[$type];
+            }
         }
         return $field;
+    }
+
+    /**
+     * Returns the type value of a field name.
+     *
+     * @param  string $name The field name.
+     * @return array  The type value or `null` if not found.
+     */
+    public function type($name)
+    {
+        return $this->field($name, 'type');
     }
 
     /**
@@ -340,14 +377,7 @@ class Schema
             $field['type'] = $field[0];
             unset($field[0]);
         }
-        $field += $defaults;
-        $type = $field['type'];
-
-        if (isset($this->_handlers[$type])) {
-            $field['format'] = $this->_handlers[$type];
-        }
-
-        return $field;
+        return $field + $defaults;
     }
 
     /**
@@ -389,15 +419,12 @@ class Schema
      */
     public function append($fields)
     {
-        if ($this->_locked) {
-            throw new SourceException("Schema cannot be modified.");
-        }
         if (is_array($fields)) {
             foreach ($fields as $key => $value) {
                 $this->_fields[$key] = $this->_initField($value);
             }
         } else {
-            $this->_fields = $schema->fields() + $this->_fields;
+            $this->_fields = $fields->fields() + $this->_fields;
         }
         return $this;
     }
@@ -414,7 +441,7 @@ class Schema
     public function bind($name, $config = [])
     {
         $config += [
-            'from' => $this->model() ?: Model::class,
+            'from' => $this->model(),
             'to'   => null
         ];
         $config['type'] = 'object';
@@ -714,4 +741,20 @@ class Schema
         }
         return $with;
     }
+
+    /**
+     * Gets/sets the connection object to which this schema is bound.
+     *
+     * @return object    Returns a connection instance.
+     * @throws Exception Throws a `chaos\SourceException` if a connection isn't set.
+     */
+    public function conventions($conventions = null)
+    {
+        if (func_num_args()) {
+            $this->_conventions = $conventions;
+            return $this;
+        }
+        return $this->_conventions;
+    }
+
 }

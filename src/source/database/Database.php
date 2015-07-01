@@ -262,7 +262,7 @@ abstract class Database
     protected function _handlers()
     {
         return [
-            'toDecimal' => function($value, $params = []) {
+            'importDecimal' => function($value, $params = []) {
                 $params += ['precision' => 2];
                 return number_format($number, $params['precision']);
             },
@@ -284,8 +284,8 @@ abstract class Database
                 }
                 throw new SourceException("Invalid date value: `" . print_r($value, true) . "`.");
             },
-            'importBoolean' => function($value, $params = []) { return $value ? 1 : 0; },
-            'exportBoolean' => function($value, $params = []) { return !!$value; }
+            'importBoolean' => function($value, $params = []) { return !!$value; },
+            'exportBoolean' => function($value, $params = []) { return $value ? 1 : 0; }
         ];
     }
 

@@ -484,7 +484,7 @@ describe("Model", function() {
                 $model = $this->model;
                 $child = Stub::classname(['extends' => 'chaos\model\Model']);
 
-                $schema = new Schema();
+                $schema = new Schema(['model' => $model]);
                 $schema->set('child', [
                     'type' => 'object',
                     'class' => $child

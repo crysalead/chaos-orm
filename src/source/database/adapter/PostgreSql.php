@@ -99,6 +99,7 @@ class PostgreSql extends \chaos\source\database\Database {
             ],
             'handlers' => [
                 'importBoolean' => function($value, $params = []) { return $value === 't'; },
+                'exportBoolean' => function($value, $params = []) { return $value ? 'true' : 'false'; },
                 'exportArray' => function($data) {
                     $data = (array) $data;
                     $result = [];
@@ -113,7 +114,7 @@ class PostgreSql extends \chaos\source\database\Database {
                             $result[] = $value;
                         }
                     }
-                    return '{' . join(",", $result) . '}'; // format
+                    return '{' . join(",", $result) . '}';
                 }
             ] + $this->_handlers()
         ];
@@ -139,7 +140,7 @@ class PostgreSql extends \chaos\source\database\Database {
         $this->format('serial',   'intval');
         $this->format('integer',  'intval');
         $this->format('float',    'floatval');
-        $this->format('decimal',  'toDecimal');
+        $this->format('decimal',  'importDecimal');
         $this->format('date',     'importDate',    'exportDate');
         $this->format('datetime', 'importDate',    'exportDate');
         $this->format('boolean',  'importBoolean', 'exportBoolean');

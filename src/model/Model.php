@@ -144,18 +144,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * (Method to override)
-     * Return all meta-information for this class, including the name of the data source.
+     * Gets the model class name.
      *
-     * Possible options are:
-     * - `'key'`    _string_: The primary key or identifier key, i.e. `'id'`.
-     * - `'source'` _string_: The name of the source to bind to (i.e the table or collection name).
-     *
-     * @var array
+     * @return string The fully namespaced model class name.
      */
-    protected static function _meta()
+    public function model()
     {
-        return [];
+        return static::class;
     }
 
     /**
@@ -341,15 +336,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             return static::$_schemas[$class];
         }
         $conventions = static::conventions();
-        $config = static::_meta() + [
+        $config = [
             'classes'     => ['entity' => $class] + static::$_classes,
             'connection'  => static::$_connection,
             'conventions' => $conventions,
             'model'       => static::class
         ];
+        $config += ['source' => $conventions->apply('source', $config['classes']['entity'])];
+
         $class = static::$_schema;
         $schema = static::$_schemas[$class] = new $class($config);
-        $schema->source = $conventions->apply('source', $config['classes']['entity']);
         static::_schema($schema);
         return $schema;
     }
@@ -958,7 +954,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     {
         switch ($format) {
             case 'array':
-                $result = Collection::toArray($this->_data, $options);
+                $result = Collection::toArray($this, $options);
             break;
             case 'string':
                 $result = $this->__toString();

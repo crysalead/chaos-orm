@@ -111,7 +111,7 @@ class MySql extends \chaos\source\database\Database
         $this->format('serial',   'intval');
         $this->format('integer',  'intval');
         $this->format('float',    'floatval');
-        $this->format('decimal',  'toDecimal');
+        $this->format('decimal',  'importDecimal');
         $this->format('date',     'importDate',    'exportDate');
         $this->format('datetime', 'importDate',    'exportDate');
         $this->format('boolean',  'importBoolean', 'exportBoolean');

@@ -5,11 +5,6 @@ class GalleryDetail extends \chaos\model\Model
 {
     protected static $_schema = 'chaos\source\database\Schema';
 
-    protected static function _meta()
-    {
-        return ['source' => 'gallery_detail'];
-    }
-
     protected static function _schema($schema)
     {
         $schema->set('id', ['type' => 'serial']);

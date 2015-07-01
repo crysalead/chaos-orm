@@ -3,6 +3,7 @@ namespace chaos\model\collection;
 
 use ArrayAccess;
 use InvalidArgumentException;
+use chaos\model\Model;
 
 /**
  * `Collection` provide context-specific features for working with sets of data persisted by a backend data store.
@@ -64,25 +65,11 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     protected $_data = [];
 
     /**
-     * Indicates whether the current position is valid or not.
-     *
-     * @var boolean
-     */
-    protected $_valid = true;
-
-    /**
      * Contains an array of backend-specific meta datas (like pagination datas)
      *
      * @var array
      */
     protected $_meta = [];
-
-    /**
-     * Setted to `true` when the collection has begun iterating.
-     *
-     * @var integer
-     */
-    protected $_started = false;
 
     /**
      * Workaround to allow consistent `unset()` in `foreach`.
@@ -138,10 +125,11 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function parent($parent = null)
     {
-        if ($parent === null) {
+        if (!func_num_args()) {
             return $this->_parent;
         }
-        return $this->_parent = $parent;
+        $this->_parent = $parent;
+        return $this;
     }
 
     /**
@@ -258,7 +246,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function merge($collection, $preserveKeys = false)
     {
         foreach($collection as $key => $value) {
-            $preserveKeys ? $this->_data[$key] = $value : $this->_data[] = $value;
+            $preserveKeys ? $this[$key] = $value : $this[] = $value;
         }
         return $this;
     }
@@ -271,16 +259,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public function keys()
     {
         return array_keys($this->_data);
-    }
-
-    /**
-     * Returns the item values.
-     *
-     * @return array The keys of the items.
-     */
-    public function values()
-    {
-        return array_values($this->_data);
     }
 
     /**
@@ -301,14 +279,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function key($full = false)
     {
-        if ($this->_started === false) {
-            $this->current();
-        }
-        if (!$this->_valid) {
-            return;
-        }
-        $key = key($this->_data);
-        return (is_array($key) && !$full) ? reset($key) : $key;
+        return key($this->_data);
     }
 
     /**
@@ -318,12 +289,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function current()
     {
-        if (!$this->_started) {
-            $this->rewind();
-        }
-        if (!$this->_valid) {
-            return false;
-        }
         return current($this->_data);
     }
 
@@ -349,13 +314,9 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function next()
     {
-        if (!$this->_started) {
-            $this->rewind();
-        }
         $value = $this->_skipNext ? current($this->_data) : next($this->_data);
         $this->_skipNext = false;
-        $this->_valid = key($this->_data) !== null;
-        return $this->_valid ? $value : null;
+        return key($this->_data) !== null ? $value : null;
     }
 
     /**
@@ -363,10 +324,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function rewind()
     {
-        $this->_started = true;
-        reset($this->_data);
-        $this->_valid = !empty($this->_data);
-        return current($this->_data);
+        return reset($this->_data);
     }
 
     /**
@@ -387,10 +345,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function valid()
     {
-        if (!$this->_started) {
-            $this->rewind();
-        }
-        return $this->_valid;
+        return key($this->_data) !== null;
     }
 
     /**
@@ -542,7 +497,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      */
     public function data($options = [])
     {
-        return static::toArray($this, $options);
+        return array_values(static::toArray($this, $options));
     }
 
     /**
@@ -564,6 +519,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
             'handlers' => [],
             'parents'  => []
         ];
+
         $options += $defaults;
         $result = [];
 

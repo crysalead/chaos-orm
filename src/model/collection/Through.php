@@ -38,25 +38,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     protected $_using = null;
 
-    /**
-     * Setted to `true` when the collection has begun iterating.
-     *
-     * @var integer
-     */
-    protected $_started = false;
-
-    /**
-     * Workaround to allow consistent `unset()` in `foreach`.
-     *
-     * Note: the edge effet of this behavior is the following:
-     * {{{
-     *   $collection = new Collection(['data' => ['1', '2', '3']]);
-     *   unset($collection[0]);
-     *   $collection->next();   // returns 2 instead of 3 when no `skipNext`
-     * }}}
-     */
-    protected $_skipNext = false;
-
     public function __construct($config = [])
     {
         $defaults = [
@@ -78,8 +59,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
             $key = '_' . $name;
             $this->{$key} = $config[$name];
         }
-
-        $through = $this->_through;
     }
 
     /**
@@ -90,8 +69,11 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function parent($parent = null)
     {
-        $through = $this->_through;
-        return $this->_parent->{$through}->parent($parent);
+        if (!func_num_args()) {
+            return $this->_parent->{$this->_through}->parent();
+        }
+        $this->_parent->{$this->_through}->parent($parent);
+        return $this;
     }
 
     /**
@@ -121,8 +103,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function meta()
     {
-        $through = $this->_through;
-        return $this->_parent->{$through}->meta();
+        return $this->_parent->{$this->_through}->meta();
     }
 
     /**
@@ -157,8 +138,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetExists($offset)
     {
-        $through = $this->_through;
-        return $this->_parent->{$through}->offsetExists($offset);
+        return $this->_parent->{$this->_through}->offsetExists($offset);
     }
 
     /**
@@ -169,8 +149,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetGet($offset)
     {
-        $through = $this->_through;
-        if ($entity = $this->_parent->{$through}[$offset]) {
+        if ($entity = $this->_parent->{$this->_through}[$offset]) {
             return $entity->{$this->_using};
         }
         return;
@@ -204,8 +183,33 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetUnset($offset)
     {
-        $through = $this->_through;
-        unset($this->_parent->{$through}[$offset]);
+        unset($this->_parent->{$this->_through}[$offset]);
+    }
+
+    /**
+     * Merge another collection to this collection.
+     *
+     * @param  mixed   $collection   A collection.
+     * @param  boolean $preserveKeys If `true` use the key value as a hash to avoid duplicates.
+     *
+     * @return object                Return the merged collection.
+     */
+    public function merge($collection, $preserveKeys = false)
+    {
+        foreach($collection as $key => $value) {
+            $preserveKeys ? $this[$key] = $value : $this[] = $value;
+        }
+        return $this;
+    }
+
+    /**
+     * Returns the item keys.
+     *
+     * @return array The keys of the items.
+     */
+    public function keys()
+    {
+        return $this->_parent->{$this->_through}->keys();
     }
 
     /**
@@ -216,8 +220,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function key($full = false)
     {
-        $through = $this->_through;
-        return $this->_parent->{$through}->key();
+        return $this->_parent->{$this->_through}->key();
     }
 
     /**
@@ -227,8 +230,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function current()
     {
-        $through = $this->_through;
-        $entity = $this->_parent->{$through}->current();
+        $entity = $this->_parent->{$this->_through}->current();
         if ($entity) {
             return $entity->{$this->_using};
         }
@@ -242,8 +244,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function prev()
     {
-        $through = $this->_through;
-        $entity = $this->_parent->{$through}->prev();
+        $entity = $this->_parent->{$this->_through}->prev();
         if ($entity) {
             return $entity->{$this->_using};
         }
@@ -259,8 +260,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function next()
     {
-        $through = $this->_through;
-        $entity = $this->_parent->{$through}->next();
+        $entity = $this->_parent->{$this->_through}->next();
         if ($entity) {
             return $entity->{$this->_using};
         }
@@ -271,8 +271,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function rewind()
     {
-        $through = $this->_through;
-        return $this->_parent->{$through}->rewind();
+        $this->_parent->{$this->_through}->rewind();
+        return $this->current();
     }
 
     /**
@@ -282,8 +282,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function end()
     {
-        $through = $this->_through;
-        $this->_parent->{$through}->end();
+        $this->_parent->{$this->_through}->end();
         return $this->current();
     }
 
@@ -294,8 +293,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function valid()
     {
-        $through = $this->_through;
-        return $this->_parent->{$through}->valid();
+        return $this->_parent->{$this->_through}->valid();
     }
 
     /**
@@ -305,8 +303,25 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function count()
     {
-        $through = $this->_through;
-        return $this->_parent->{$through}->count();
+        return $this->_parent->{$this->_through}->count();
+    }
+
+    /**
+     * Filters a copy of the items in the collection.
+     *
+     * @param  mixed $closure The closure to use for filtering, or an array of key/value pairs to match.
+     *
+     * @return mixed          Returns a collection of the filtered items.
+     */
+    public function find($closure, $options = [])
+    {
+        $data = [];
+        foreach ($this as $val) {
+            if ($closure($val)) {
+                $data[] = $val;
+            }
+        }
+        return new Collection(compact('data'));
     }
 
     /**
@@ -322,6 +337,63 @@ class Through implements \ArrayAccess, \Iterator, \Countable
             $this->offsetSet($key, $closure($val, $key, $this));
         }
         return $this;
+    }
+
+    /**
+     * Applies a closure to a copy of all data in the collection
+     * and returns the result.
+     *
+     * @param  Closure $closure The closure to apply.
+     *
+     * @return mixed            Returns the set of filtered values inside a `Collection`.
+     */
+    public function map($closure, $options = [])
+    {
+        $data = [];
+        foreach ($this as $val) {
+            $data[] = $closure($val);
+        }
+        return new Collection(compact('data'));
+    }
+
+    /**
+     * Reduce, or fold, a collection down to a single value
+     *
+     * @param  closure $closure The filter to apply.
+     * @param  mixed   $initial Initial value.
+     *
+     * @return mixed            A single reduced value.
+     */
+    public function reduce($closure, $initial = false)
+    {
+        $result = $initial;
+        foreach ($this as $val) {
+            $result = $closure($result, $val);
+        }
+        return $result;
+    }
+
+    /**
+     * Extract a slice of $length items starting at position $offset from the Collection.
+     *
+     * If $length is null it returns all elements from $offset to the end of the Collection.
+     * Keys have to be preserved by this method. Calling this method will only return the
+     * selected slice and NOT change the elements contained in the collection slice is called on.
+     *
+     * @param  integer $offset The offset value.
+     * @param  integer $length The number of element to extract
+     *
+     * @return array
+     */
+    public function slice($offset, $length = null, $preserveKeys = true)
+    {
+        $result = $this->_parent->{$this->_through}->slice($offset, $length, $preserveKeys);
+
+        $data = [];
+        foreach ($result as $key => $value) {
+            $data[$key] = $value->{$this->_using};
+        }
+        return new Collection(compact('data'));
     }
 
     /**
@@ -342,6 +414,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function data($options = [])
     {
-        return Collection::toArray($this, $options);
+        return array_values(Collection::toArray($this, $options));
     }
 }

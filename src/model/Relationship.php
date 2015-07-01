@@ -1,8 +1,8 @@
 <?php
 namespace chaos\model;
 
-use chaos\SourceException;
 use set\Set;
+use chaos\SourceException;
 
 /**
  * The `Relationship` class encapsulates the data and functionality necessary to link two model
@@ -200,6 +200,17 @@ class Relationship
     }
 
     /**
+     * Get a related object (or objects) for the given object connected to it by this relationship.
+     *
+     * @return boolean Returns `true` if the relationship is a `'hasMany'` or `'hasManyThrough`' relation,
+     *                 returns `false` otherwise.
+     */
+    public function isMany()
+    {
+        return preg_match('~Many~', static::class);
+    }
+
+    /**
      * Returns the "primary key/foreign key" matching definition. The key corresponds
      * to field name in the source model and the value is the one in the target model.
      *
@@ -217,17 +228,6 @@ class Relationship
             return reset($this->_keys);
         }
         throw new SourceException("Invalid type `'{$type}'` only `'from'` and `'to'` are available");
-    }
-
-    /**
-     * Get a related object (or objects) for the given object connected to it by this relationship.
-     *
-     * @return boolean Returns `true` if the relationship is a `'hasMany'` or `'hasManyThrough`' relation,
-     *                 returns `false` otherwise.
-     */
-    public function isMany()
-    {
-        return preg_match('~Many~', static::class);
     }
 
     /**
@@ -269,23 +269,6 @@ class Relationship
     }
 
     /**
-     * Unsets the relationship attached to a collection en entities.
-     *
-     * @param  mixed  $collection An collection to "clean up".
-     */
-    public function _cleanup($collection)
-    {
-        $name = $this->name();
-        foreach ($collection as $index => $entity) {
-            if (is_object($entity)) {
-                unset($entity->{$name});
-            } else {
-                unset($entity[$name]);
-            }
-        }
-    }
-
-    /**
      * Gets the related data.
      *
      * @param  $entity An entity.
@@ -314,7 +297,8 @@ class Relationship
     /**
      * Strategies used to query related objects, indexed by key.
      */
-    public static function strategies() {
+    public static function strategies()
+    {
         return [
             static::LINK_EMBEDDED => function($entity, $relationship) {
                 return $entity->{$relationship->name()};
@@ -379,5 +363,22 @@ class Relationship
             }
         }
         return $indexes;
+    }
+
+    /**
+     * Unsets the relationship attached to a collection en entities.
+     *
+     * @param  mixed  $collection An collection to "clean up".
+     */
+    public function _cleanup($collection)
+    {
+        $name = $this->name();
+        foreach ($collection as $index => $entity) {
+            if (is_object($entity)) {
+                unset($entity->{$name});
+            } else {
+                unset($entity[$name]);
+            }
+        }
     }
 }

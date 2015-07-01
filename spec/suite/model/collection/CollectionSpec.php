@@ -97,7 +97,7 @@ describe("Collection", function() {
             }
 
             $result = $this->collection->invoke('hello');
-            expect($result->values())->toBe(array_fill(0, 5, 'world'));
+            expect($result->data())->toBe(array_fill(0, 5, 'world'));
 
         });
 
@@ -112,7 +112,7 @@ describe("Collection", function() {
             $result = $collection->each($filter);
 
             expect($result)->toBe($collection);
-            expect($result->values())->toBe([2, 3, 4, 5, 6]);
+            expect($result->data())->toBe([2, 3, 4, 5, 6]);
 
         });
 
@@ -130,8 +130,8 @@ describe("Collection", function() {
             $filter = function($item) { return $item === 1; };
 
             $result = $collection->find($filter);
-            expect($result)->toBeAnInstanceOf('chaos\model\collection\Collection');
-            expect($result->values())->toBe(array_fill(0, 10, 1));
+            expect($result)->toBeAnInstanceOf(Collection::class);
+            expect($result->data())->toBe(array_fill(0, 10, 1));
 
         });
 
@@ -146,7 +146,7 @@ describe("Collection", function() {
             $result = $collection->map($filter);
 
             expect($result)->not->toBe($collection);
-            expect($result->values())->toBe([2, 3, 4, 5, 6]);
+            expect($result->data())->toBe([2, 3, 4, 5, 6]);
 
         });
 
@@ -174,7 +174,7 @@ describe("Collection", function() {
             $result = $collection->slice(2, 2);
 
             expect($result)->not->toBe($collection);
-            expect($result->values())->toBe([3, 4]);
+            expect($result->data())->toBe([3, 4]);
 
         });
 
@@ -186,7 +186,7 @@ describe("Collection", function() {
 
             $collection = new Collection(['data' => [5, 3, 4, 1, 2]]);
             $result = $collection->sort();
-            expect($result->values())->toBe([1, 2, 3, 4, 5]);
+            expect($result->data())->toBe([1, 2, 3, 4, 5]);
 
         });
 
@@ -194,7 +194,7 @@ describe("Collection", function() {
 
             $collection = new Collection(['data' => ['Alan', 'Dave', 'betsy', 'carl']]);
             $result = $collection->sort('strcasecmp');
-            expect($result->values())->toBe(['Alan', 'betsy', 'carl', 'Dave']);
+            expect($result->data())->toBe(['Alan', 'betsy', 'carl', 'Dave']);
 
         });
 
@@ -299,7 +299,7 @@ describe("Collection", function() {
             unset($collection[2]);
 
             expect($collection)->toHaveLength(3);
-            expect($collection->values())->toBe([5, 1, 2]);
+            expect($collection->data())->toBe([5, 1, 2]);
 
         });
 
@@ -310,7 +310,7 @@ describe("Collection", function() {
             unset($collection[2]);
 
             expect($collection)->toHaveLength(3);
-            expect($collection->values())->toBe([5, 1, 2]);
+            expect($collection->data())->toBe([5, 1, 2]);
             expect($collection->keys())->toBe([0, 3, 4]);
 
         });
@@ -324,7 +324,7 @@ describe("Collection", function() {
             foreach ($collection as $i => $word) {
                 unset($collection[$i]);
             }
-            expect($collection->values())->toBe([]);
+            expect($collection->data())->toBe([]);
 
         });
 
@@ -338,7 +338,7 @@ describe("Collection", function() {
                     unset($collection[$i]);
                 }
             }
-            expect($collection->values())->toBe(['Hello', 'Hello again!']);
+            expect($collection->data())->toBe(['Hello', 'Hello again!']);
 
         });
 
@@ -353,7 +353,7 @@ describe("Collection", function() {
                 }
             }
 
-            expect($collection->values())->toBe(['Hello', 'Hello again!']);
+            expect($collection->data())->toBe(['Hello', 'Hello again!']);
 
         });
 
@@ -386,21 +386,6 @@ describe("Collection", function() {
                 'key3' => 'three'
             ]]);
             expect($collection->keys())->toBe(['key1', 'key2', 'key3']);
-
-        });
-
-    });
-
-    describe("->values()", function() {
-
-        it("returns the item values", function() {
-
-            $collection = new Collection(['data' => [
-                'key1' => 'one',
-                'key2' => 'two',
-                'key3' => 'three'
-            ]]);
-            expect($collection->values())->toBe(['one', 'two', 'three']);
 
         });
 
@@ -536,7 +521,7 @@ describe("Collection", function() {
             $collection2 = new Collection(['data' => [4, 5, 6, 7]]);
             $collection->merge($collection2);
 
-            expect($collection->values())->toBe([1, 2, 3, 4, 5, 6, 7]);
+            expect($collection->data())->toBe([1, 2, 3, 4, 5, 6, 7]);
 
         });
 
@@ -546,22 +531,7 @@ describe("Collection", function() {
             $collection2 = new Collection(['data' => [4, 5, 6, 7]]);
             $collection->merge($collection2, true);
 
-            expect($collection->values())->toBe([4, 5, 6, 7]);
-
-        });
-
-    });
-
-    describe("->data()", function() {
-
-        it("calls `toArray()`", function() {
-
-            $collection = new Collection(['data' => [
-                1 => 1
-            ]]);
-            expect('chaos\model\collection\Collection')->toReceive('::toArray')->with($collection);
-
-            $collection->data();
+            expect($collection->data())->toBe([4, 5, 6, 7]);
 
         });
 
@@ -580,6 +550,21 @@ describe("Collection", function() {
 
             expect($schema)->toReceive('embed')->with($galleries, ['relation1.relation2']);
             $galleries->embed(['relation1.relation2']);
+
+        });
+
+    });
+
+    describe("->data()", function() {
+
+        it("calls `toArray()`", function() {
+
+            $collection = new Collection(['data' => [
+                1 => 1
+            ]]);
+            expect(Collection::class)->toReceive('::toArray')->with($collection);
+
+            $collection->data();
 
         });
 

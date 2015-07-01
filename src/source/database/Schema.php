@@ -11,8 +11,6 @@ class Schema extends \chaos\model\Schema
      * @var array
      */
     protected $_classes = [
-        'entity'         => 'chaos\model\Model',
-        'set'            => 'collection\Collection',
         'collector'      => 'chaos\model\Collector',
         'relationship'   => 'chaos\model\Relationship',
         'belongsTo'      => 'chaos\model\relationship\BelongsTo',
@@ -35,6 +33,9 @@ class Schema extends \chaos\model\Schema
             'model' => $this->model()
         ];
         $query = $this->_classes['query'];
+        if (!$options['model']) {
+            throw new SourceException("Missing model for this schema, can't create a query.");
+        }
         return new $query($options);
     }
 
@@ -55,13 +56,14 @@ class Schema extends \chaos\model\Schema
         if (!isset($this->_source)) {
             throw new SourceException("Missing table name for this schema.");
         }
+
         $query = $this->connection()->dialect()->statement('create table');
         $query
             ->ifNotExists($options['soft'])
             ->table($this->_source)
             ->columns($this->fields())
             ->constraints($this->meta('constraints'))
-            ->meta($this->meta());
+            ->meta($this->meta('table'));
 
         return $this->connection()->query($query->toString());
     }
