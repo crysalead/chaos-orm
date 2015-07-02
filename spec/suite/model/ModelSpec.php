@@ -13,7 +13,7 @@ use kahlan\plugin\Stub;
 describe("Model", function() {
 
     before(function() {
-        $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
+        $this->model = Stub::classname(['extends' => Model::class]);
     });
 
     afterEach(function() {

@@ -99,7 +99,7 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Dialect
     /**
      * Helper for creating columns
      *
-     * @see    chaos\source\sql\Sql::column()
+     * @see    chaos\source\sql\Dialect::column()
      * @param  array $field A field array
      * @return string The SQL column string
      */

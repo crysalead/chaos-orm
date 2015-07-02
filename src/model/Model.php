@@ -253,10 +253,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @param  array $fetchOptions The fecthing options.
      * @return mixed               The result.
      */
-    public static function id($id, $fetchOptions = [])
+    public static function id($id, $options = [], $fetchOptions = [])
     {
-        $query = $this->schema->query();
-        return $query->conditions([static::schema()->primaryKey() => $id])->first($fetchOptions);
+        $options['conditions'] = [static::schema()->primaryKey() => $id];
+        return static::find($options)->first($fetchOptions);
     }
 
     /**

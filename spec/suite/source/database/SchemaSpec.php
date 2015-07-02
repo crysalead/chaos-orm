@@ -10,7 +10,7 @@ use chaos\spec\fixture\Fixtures;
 
 $connections = [
     "MySQL" => box('chaos.spec')->get('source.database.mysql'),
-    //"PgSql" => box('chaos.spec')->get('source.database.mysql')
+    "PgSql" => box('chaos.spec')->get('source.database.postgresql')
 ];
 
 foreach ($connections as $db => $connection) {
@@ -136,32 +136,122 @@ foreach ($connections as $db => $connection) {
 
         });
 
-        fit("save a nested entity", function() {
+        it("saves a hasMany relationship", function() {
+
+            $data = [
+                'name' => 'Foo Gallery',
+                'images' => [
+                    ['name' => 'amiga_1200.jpg', 'title' => 'Amiga 1200'],
+                    ['name' => 'srinivasa_ramanujan.jpg', 'title' => 'Srinivasa Ramanujan'],
+                    ['name' => 'las_vegas.jpg', 'title' => 'Las Vegas'],
+                ]
+            ];
+
+            $model = $this->gallery;
+            $gallery = $model::create($data);
+            expect($gallery->save(['with' => true]))->toBe(true);
+
+            expect($gallery->primaryKey())->not->toBe(null);
+            foreach ($gallery->images as $image) {
+                expect($image->gallery_id)->toBe($gallery->primaryKey());
+            }
+
+            $result = $model::id($gallery->primaryKey(),  ['with' => ['images']]);
+            expect($gallery->data())->toEqual($result->data());
+
+        });
+
+        it("saves a belongsTo relationship", function() {
+
+            $data = [
+                'name' => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200',
+                'gallery' => [
+                    'name' => 'Foo Gallery'
+                ]
+            ];
+
+            $model = $this->image;
+            $image = $model::create($data);
+            expect($image->save(['with' => true]))->toBe(true);
+
+            expect($image->primaryKey())->not->toBe(null);
+            expect($image->gallery_id)->toBe($image->gallery->primaryKey());
+
+            $result = $model::id($image->primaryKey(),  ['with' => ['gallery']]);
+            expect($image->data())->toEqual($result->data());
+
+        });
+
+        it("saves a hasOne relationship", function() {
+
+            $data = [
+                'name' => 'Foo Gallery',
+                'detail' => [
+                    'description' => 'Foo Gallery Description'
+                ]
+            ];
+
+            $model = $this->gallery;
+            $gallery = $model::create($data);
+
+            expect($gallery->save(['with' => true]))->toBe(true);
+
+            expect($gallery->primaryKey())->not->toBe(null);
+            expect($gallery->detail->gallery_id)->toBe($gallery->primaryKey());
+
+            $result = $model::id($gallery->primaryKey(),  ['with' => ['detail']]);
+            expect($gallery->data())->toEqual($result->data());
+
+        });
+
+        it("saves a hasManyTrough relationship", function() {
+
+            $data = [
+                'name' => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200',
+                'gallery' => [
+                    'name' => 'Foo Gallery'
+                ],
+                'tags' => [
+                    ['name' => 'tag1'],
+                    ['name' => 'tag2'],
+                    ['name' => 'tag3']
+                ]
+            ];
+
+            $model = $this->image;
+            $image = $model::create($data);
+            expect($image->save(['with' => true]))->toBe(true);
+
+            expect($image->primaryKey())->not->toBe(null);
+            expect($image->images_tags)->toHaveLength(3);
+            expect($image->tags)->toHaveLength(3);
+
+            foreach ($image->images_tags as $index => $image_tag) {
+                expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
+                expect($image_tag->image_id)->toBe($image->primaryKey());
+                expect($image_tag->tag)->toBe($image->tags[$index]);
+            }
+
+            $result = $model::id($image->primaryKey(),  ['with' => ['gallery', 'tags']]);
+            expect($image->data())->toEqual($result->data());
+
+        });
+
+        it("saves a nested entities", function() {
 
             $data = [
                 'name' => 'Foo Gallery',
                 'images' => [
                     [
-                        'name' => 'someimage.png',
-                        'title' => 'Image1 Title',
+                        'name' => 'amiga_1200.jpg',
+                        'title' => 'Amiga 1200',
                         'tags' => [
                             ['name' => 'tag1'],
                             ['name' => 'tag2'],
                             ['name' => 'tag3']
                         ]
-                    ],
-                    [
-                        'name' => 'anotherImage.jpg',
-                        'title' => 'Our Vacation',
-                        'tags' => [
-                            ['name' => 'tag4'],
-                            ['name' => 'tag5']
-                        ]
-                    ],
-                    [
-                        'name' => 'me.bmp',
-                        'title' => 'Me.',
-                        'tags' => []
                     ]
                 ]
             ];
@@ -170,8 +260,23 @@ foreach ($connections as $db => $connection) {
             $gallery = $model::create($data);
             expect($gallery->save(['with' => true]))->toBe(true);
 
-            $result = $model::find()->with(['images.tags'])->all();
-            print_r($result->data());
+            expect($gallery->primaryKey())->not->toBe(null);
+            expect($gallery->images)->toHaveLength(1);
+
+            foreach ($gallery->images as $image) {
+                expect($image->gallery_id)->toBe($gallery->primaryKey());
+                expect($image->images_tags)->toHaveLength(3);
+                expect($image->tags)->toHaveLength(3);
+
+                foreach ($image->images_tags as $index => $image_tag) {
+                    expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
+                    expect($image_tag->image_id)->toBe($image->primaryKey());
+                    expect($image_tag->tag)->toBe($image->tags[$index]);
+                }
+            }
+
+            $result = $model::id($gallery->primaryKey(),  ['with' => ['images.tags']]);
+            expect($gallery->data())->toEqual($result->data());
 
         });
 

@@ -123,7 +123,7 @@ class PostgreSql extends \chaos\source\database\Database {
         parent::__construct($config + $defaults);
 
         $this->type('id',       ['use' => 'integer']);
-        $this->type('serial',   ['use' => 'integer', 'serial' => true]);
+        $this->type('serial',   ['use' => 'serial', 'serial' => true]);
         $this->type('string',   ['use' => 'varchar', 'length' => 255]);
         $this->type('text',     ['use' => 'text']);
         $this->type('integer',  ['use' => 'integer']);
@@ -326,6 +326,17 @@ class PostgreSql extends \chaos\source\database\Database {
         } catch (PDOException $e) {
             return false;
         }
+    }
+
+    /**
+     * Get the last insert id from the database.
+     *
+     * @param $query lithium\data\model\Query $context The given query.
+     */
+    public function lastInsertId($source = null, $field = null) { //TODO change parameters
+        $sequence = "{$source}_{$field}_seq";
+        $id = $this->_pdo->lastInsertId($sequence);
+        return ($id && $id !== '0') ? $id : null;
     }
 
     /**

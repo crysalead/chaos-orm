@@ -40,6 +40,27 @@ class Cursor implements \Iterator
     protected $_valid = false;
 
     /**
+     * Indicates whether the cursor is valid or not.
+     *
+     * @var boolean
+     */
+    protected $_error = false;
+
+    /**
+     * Stores the error number.
+     *
+     * @var mixed
+     */
+    protected $_errno = 0;
+
+    /**
+     * Stores the error message.
+     *
+     * @var mixed
+     */
+    protected $_errmsg = '';
+
+    /**
      * If the result resource has been initialized
      */
     protected $_key = null;
@@ -52,16 +73,28 @@ class Cursor implements \Iterator
     public function __construct($config = [])
     {
         $defaults = [
-            'data'   => [],
-            'resource' => null
+            'data'     => [],
+            'resource' => null,
+            'error'    => false,
+            'errno'    => 0,
+            'errmsg'   => ''
         ];
         $config += $defaults;
         $this->_resource = $config['resource'];
         $this->_data = $config['data'];
+        $this->_error = $config['error'];
+        $this->_errno = $config['errno'];
+        $this->_errmsg = $config['errmsg'];
+
+        if (!$this->_resource && !$this->_data) {
+            throw new SourceException("Invalid data or ressource");
+        }
     }
 
     /**
      * Returns the bound data.
+     *
+     * @return array
      */
     public function data()
     {
@@ -70,10 +103,42 @@ class Cursor implements \Iterator
 
     /**
      * Returns the bound resource.
+     *
+     * @return ressource
      */
     public function resource()
     {
         return $this->_resource;
+    }
+
+    /**
+     * Returns the error value.
+     *
+     * @return boolean
+     */
+    public function error()
+    {
+        return $this->_error;
+    }
+
+    /**
+     * Returns the error number.
+     *
+     * @return mixed
+     */
+    public function errno()
+    {
+        return $this->_errno;
+    }
+
+    /**
+     * Returns the error message.
+     *
+     * @return string
+     */
+    public function errmsg()
+    {
+        return $this->_errmsg;
     }
 
     /**
@@ -157,10 +222,11 @@ class Cursor implements \Iterator
         $this->_init = true;
         if ($this->_data) {
             return $this->_fetchArray();
-        } else if($this->_resource) {
+        }
+        if($this->_resource) {
             return $this->_fetchResource();
         }
-        throw new SourceException("Invalid data or ressource");
+        return false;
     }
 
     /**

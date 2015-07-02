@@ -378,9 +378,23 @@ abstract class Database
     public function query($sql, $data = [], $options = [])
     {
         $statement = $this->_pdo->prepare($sql);
-        $statement->execute($data);
+
+        try {
+            $error = !$statement->execute($data);
+        } catch (Exception $e) {
+            $error = true;
+        }
+
+        $err = $statement->errorInfo();
+        $errmsg = $err[0] === '0000' ? '' : $err[0] . ($err[1] ? ' (' . $err[1] . ')' : '') . ':' . $err[2];
+
         $cursor = $this->_classes['cursor'];
-        return new $cursor($options + ['resource' => $statement]);
+        return new $cursor($options + [
+            'resource' => $statement,
+            'failed'   => $error,
+            'errno'    => $err[0],
+            'errmsg'   => $errmsg
+        ]);
     }
 
     /**

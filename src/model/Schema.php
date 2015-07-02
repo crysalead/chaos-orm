@@ -293,7 +293,7 @@ class Schema
         $result = [];
         foreach ($this->_fields as $name => $field) {
             $value = isset($field[$attribute]) ? $field[$attribute] : null;
-            if ($value !== null) {
+            if ($value !== null || $field['null']) {
                 $result[$name] = $value;
             }
         }
@@ -368,8 +368,7 @@ class Schema
     {
         $defaults = [
             'type'  => 'string',
-            'array' => false,
-            'null'  => true
+            'array' => false
         ];
         if (is_string($field)) {
             $field = ['type' => $field];
@@ -377,7 +376,8 @@ class Schema
             $field['type'] = $field[0];
             unset($field[0]);
         }
-        return $field + $defaults;
+        $field += $defaults;
+        return $field + ['null' => ($field['type'] !== 'serial')];
     }
 
     /**
@@ -708,10 +708,10 @@ class Schema
      */
     public function _cast($properties, $data, $options)
     {
-        $model = $options['model'];
         if (isset($properties['to'])) {
             $options['model'] = $properties['to'];
         }
+        $model = $options['model'];
 
         if ($properties['array']) {
             if ($properties['relation'] === 'hasManyThrough') {

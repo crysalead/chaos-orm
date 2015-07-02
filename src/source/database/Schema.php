@@ -225,10 +225,12 @@ class Schema extends \chaos\model\Schema
             $statement->into($source);
         }
         $statement->values(array_diff_key($entity->data(), array_fill_keys($exclude, true)));
-        $result = $connection->query($statement->toString());
+        $cursor = $connection->query($statement->toString());
+        $result = !$cursor->error();
 
         if (!$entity->exists()) {
-            $entity->sync($connection->lastInsertId(), [], ['exists' => true]);
+            $id = $entity->primaryKey() === null ? $connection->lastInsertId($this->source(), $this->primaryKey()) : null;
+            $entity->sync($id, [], ['exists' => true]);
         }
 
         $hasRelations = ['hasManyThrough', 'hasMany', 'hasOne'];

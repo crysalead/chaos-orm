@@ -265,6 +265,8 @@ class Query implements IteratorAggregate
      */
     public function count()
     {
+        $model = $this->_model;
+        $schema = $model::schema();
         $this->_statement->fields([':plain' => 'COUNT(*)']);
         $cursor = $this->connection()->query($this->_statement->toString());
         $result = $cursor->current();

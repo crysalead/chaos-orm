@@ -10,7 +10,7 @@ use chaos\spec\fixture\Fixtures;
 
 $connections = [
     "MySQL" => box('chaos.spec')->get('source.database.mysql'),
-    "PgSql" => box('chaos.spec')->get('source.database.mysql')
+    "PgSql" => box('chaos.spec')->get('source.database.postgresql')
 ];
 
 foreach ($connections as $db => $connection) {
@@ -21,7 +21,7 @@ foreach ($connections as $db => $connection) {
 
             $this->connection = $connection;
             $this->fixtures = new Fixtures([
-                'connection' => $this->connection,
+                'connection' => $connection,
                 'fixtures'   => [
                     'gallery'   => 'chaos\spec\fixture\schema\Gallery',
                     'image'     => 'chaos\spec\fixture\schema\Image',
@@ -31,10 +31,10 @@ foreach ($connections as $db => $connection) {
             ]);
 
             $this->fixtures->populate('gallery');
-            $gallery = $this->fixtures->get('gallery')->model();
+            $this->gallery = $this->fixtures->get('gallery')->model();
 
             $this->query = new Query([
-                'model'      => $gallery,
+                'model'      => $this->gallery,
                 'connection' => $this->connection
             ]);
 
@@ -61,7 +61,7 @@ foreach ($connections as $db => $connection) {
             it("finds all records", function() {
 
                 $result = $this->query->all()->data();
-                expect($result)->toBe([
+                expect($result)->toEqual([
                     ['id' => '1', 'name' => 'Foo Gallery'],
                     ['id' => '2', 'name' => 'Bar Gallery']
                 ]);
@@ -75,7 +75,7 @@ foreach ($connections as $db => $connection) {
             it("finds all records", function() {
 
                 $result = $this->query->get()->data();
-                expect($result)->toBe([
+                expect($result)->toEqual([
                     ['id' => '1', 'name' => 'Foo Gallery'],
                     ['id' => '2', 'name' => 'Bar Gallery']
                 ]);
@@ -85,7 +85,7 @@ foreach ($connections as $db => $connection) {
             it("finds all records using array hydration", function() {
 
                 $result = $this->query->get(['return' => 'array']);
-                expect($result)->toBe([
+                expect($result)->toEqual([
                     ['id' => '1', 'name' => 'Foo Gallery'],
                     ['id' => '2', 'name' => 'Bar Gallery']
                 ]);
@@ -109,7 +109,7 @@ foreach ($connections as $db => $connection) {
             it("finds the first record", function() {
 
                 $result = $this->query->first()->data();
-                expect($result)->toBe(['id' => '1', 'name' => 'Foo Gallery']);
+                expect($result)->toEqual(['id' => '1', 'name' => 'Foo Gallery']);
 
             });
 
@@ -122,7 +122,7 @@ foreach ($connections as $db => $connection) {
                 $this->query->where(['name' => 'Foo Gallery']);
 
                 foreach ($this->query as $record) {
-                    expect($record->data())->toBe(['id' => '1', 'name' => 'Foo Gallery']);
+                    expect($record->data())->toEqual(['id' => '1', 'name' => 'Foo Gallery']);
                 }
 
             });
@@ -155,7 +155,7 @@ foreach ($connections as $db => $connection) {
                 expect($gallery)->toReceive('::bar')->with($query);
 
                 $result = $query->bar()->first()->data();
-                expect($result)->toBe(['id' => '2', 'name' => 'Bar Gallery']);
+                expect($result)->toEqual(['id' => '2', 'name' => 'Bar Gallery']);
 
             });
 
@@ -165,7 +165,11 @@ foreach ($connections as $db => $connection) {
 
             it("finds all records", function() {
 
-                $count = $this->query->count();
+                $query = new Query([
+                    'model'      => $this->gallery,
+                    'connection' => $this->connection
+                ]);
+                $count = $query->count();
                 expect($count)->toBe(2);
 
             });

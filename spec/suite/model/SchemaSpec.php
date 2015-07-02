@@ -53,7 +53,7 @@ describe("Schema", function() {
                 'id' => [
                     'type'  => 'serial',
                     'array' => false,
-                    'null'  => true
+                    'null'  => false
                 ],
                 'age' => [
                     'type'   => 'integer',
@@ -168,7 +168,7 @@ describe("Schema", function() {
                 'id' => [
                     'type'  => 'serial',
                     'array' => false,
-                    'null'  => true
+                    'null'  => false
                 ],
                 'gallery_id' => [
                     'type'  => 'integer',
@@ -195,8 +195,9 @@ describe("Schema", function() {
         it("returns an attribute only", function() {
 
             expect($this->schema->fields('default'))->toBe([
-                'name'  => 'Enter The Name Here',
-                'title' => 'Enter The Title Here'
+                'gallery_id' => null,
+                'name'       => 'Enter The Name Here',
+                'title'      => 'Enter The Title Here'
             ]);
 
             expect($this->schema->fields('type'))->toBe([
@@ -217,7 +218,7 @@ describe("Schema", function() {
             expect($this->schema->field('id'))->toBe([
                 'type'  => 'serial',
                 'array' => false,
-                'null'  => true
+                'null'  => false
             ]);
 
         });
@@ -358,7 +359,7 @@ describe("Schema", function() {
                     'id' => [
                         'type'  => 'serial',
                         'array' => false,
-                        'null'  => true
+                        'null'  => false
                     ],
                     'name' => [
                         'type'  => 'string',
@@ -393,7 +394,7 @@ describe("Schema", function() {
                     'id' => [
                         'type'  => 'serial',
                         'array' => false,
-                        'null'  => true
+                        'null'  => false
                     ],
                     'name' => [
                         'type'  => 'string',
