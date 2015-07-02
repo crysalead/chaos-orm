@@ -35,7 +35,8 @@ class BelongsTo extends \chaos\model\Relationship
             throw new SourceException("The `{$class}` relation is missing a `'schema'` dependency.");
         }
 
-        $related = $this->related($collection, $options);
+        $indexes = $this->_index($collection, $this->keys('from'));
+        $related = $this->_find(array_keys($indexes), $options);
 
         $name = $this->name();
         $indexes = $this->_index($related, $this->keys('to'));
@@ -74,10 +75,18 @@ class BelongsTo extends \chaos\model\Relationship
         if (!isset($entity->{$name})) {
             return true;
         }
-
         $related = $entity->{$name};
         $result = $related->save($options);
-        $conditions = $this->match($related);
+
+        $keys = $this->keys();
+        list($from, $to) = each($keys);
+
+        $conditions = [];
+        if (!isset($related->{$to})) {
+            throw new SourceException("The `'{$to}'` key is missing from related data.");
+        }
+        $conditions[$from] = $related->{$to};
+
         $entity->set($conditions);
         return $result;
     }

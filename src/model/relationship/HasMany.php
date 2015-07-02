@@ -20,10 +20,11 @@ class HasMany extends \chaos\model\Relationship
             throw new SourceException("The `{$class}` relation is missing a `'schema'` dependency.");
         }
 
-        $related = $this->related($collection, $options);
+        $indexes = $this->_index($collection, $this->keys('from'));
+        $related = $this->_find(array_keys($indexes), $options);
 
         $name = $this->name();
-        $indexes = $this->_index($collection, $this->keys('from'));
+
         $this->_cleanup($collection);
 
         foreach ($collection as $index => $entity) {
@@ -71,9 +72,24 @@ class HasMany extends \chaos\model\Relationship
 
         $conditions = $this->match($entity);
         $to = $this->to();
-        $erase = array_fill_keys(array_keys($conditions), null);
-        $to::update($erase, $conditions);
-        $result = $related->set($conditions)->save($options);
+        $previous = $to::all(['conditions' => $conditions]);
+
+        $indexes = $this->_index($previous, $this->keys('to'));
+
+        $result = true;
+
+        foreach ($entity->{$name} as $item) {
+            if ($item->exists() && isset($indexes[$item->primaryKey()])) {
+                unset($previous[$indexes[$item->primaryKey()]]);
+            }
+            $item->set($conditions);
+            $result = $result && $item->save($options);
+        }
+
+        foreach ($previous as $deprecated) {
+            $deprecated->delete();
+        }
+
         return $result;
     }
 }

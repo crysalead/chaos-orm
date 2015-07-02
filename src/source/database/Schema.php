@@ -146,7 +146,6 @@ class Schema extends \chaos\model\Schema
         return $this->connection()->query($query->toString());
     }
 
-
     /**
      * An instance method (called on record and document objects) to create or update the record or
      * document in the database.
@@ -200,13 +199,20 @@ class Schema extends \chaos\model\Schema
         ];
         $options += $defaults;
 
-        if (!$this->_save('belongsTo', $options)) {
+        // TODO
+        // if (!$entity->modified()) {
+        //     return true;
+        // }
+
+        if (!$this->_save($entity, 'belongsTo', $options)) {
             return false;
         }
 
         if (($whitelist = $options['whitelist']) || $options['locked']) {
             $whitelist = $whitelist ?: array_keys($this->fields());
         }
+
+        $exclude = array_diff($this->relations(), array_keys($this->fields()));
 
         $connection = $this->connection();
         $source = $this->source();
@@ -218,12 +224,16 @@ class Schema extends \chaos\model\Schema
             $statement = $connection->dialect()->statement('insert');
             $statement->into($source);
         }
-        $statement->values($entity->data());
+        $statement->values(array_diff_key($entity->data(), array_fill_keys($exclude, true)));
         $result = $connection->query($statement->toString());
+
+        if (!$entity->exists()) {
+            $entity->sync($connection->lastInsertId(), [], ['exists' => true]);
+        }
 
         $hasRelations = ['hasManyThrough', 'hasMany', 'hasOne'];
 
-        if (!$this->_save($hasRelations, $options)) {
+        if (!$this->_save($entity, $hasRelations, $options)) {
             return false;
         }
         return $result;
@@ -234,7 +244,7 @@ class Schema extends \chaos\model\Schema
      *
      * @param array $types Type of relations to save.
      */
-    protected function _save($types, $options = [])
+    protected function _save($entity, $types, $options = [])
     {
         $defaults = ['with' => false];
         $options += $defaults;

@@ -44,7 +44,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
             'parent'  => null,
             'model'   => null,
             'through' => null,
-            'using'   => null
+            'using'   => null,
+            'data'     => []
         ];
         $config += $defaults;
         $this->_parent = $config['parent'];
@@ -58,6 +59,10 @@ class Through implements \ArrayAccess, \Iterator, \Countable
             }
             $key = '_' . $name;
             $this->{$key} = $config[$name];
+        }
+
+        foreach ($config['data'] as $entity) {
+            $this[] = $entity;
         }
     }
 
@@ -170,7 +175,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
         $relThrough = $parent::relation($name);
         $through = $relThrough->to();
 
-        $item = $through::create($relThrough->match($this->_parent));
+        $item = $through::create($this->_parent->exists() ? $relThrough->match($this->_parent) : []);
         $item->{$this->_using} = $data;
 
         return $offset !== null ? $this->_parent->{$name}[$offset] = $item : $this->_parent->{$name}[] = $item;

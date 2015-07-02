@@ -421,7 +421,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = [
             'exists'   => false,
             'parent'   => null,
-            'rootPath' => '',
+            'rootPath' => null,
             'data'     => []
         ];
         $options += $defaults;

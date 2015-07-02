@@ -624,12 +624,18 @@ class Schema
             'parent'    => null,
             'type'      => 'entity',
             'model'     => Model::class,
-            'rootPath'  => '',
+            'rootPath'  => null,
             'exists'    => false
         ];
         $options += $defaults;
 
-        $name = $options['rootPath'] ? $options['rootPath'] . '.' . $name : $name;
+        $name = is_int($name) ? null : $name;
+
+        if ($name) {
+            $name = $options['rootPath'] ? $options['rootPath'] . '.' . $name : $name;
+        } else {
+            $name = $options['rootPath'];
+        }
 
         if ($name === null) {
             $model = $options['model'];
@@ -665,8 +671,9 @@ class Schema
             }
         }
 
-        $options['rootPath'] = $name;
-
+        if (isset($this->_fields[$name])) {
+            $options['rootPath'] = $name;
+        }
         return $this->_cast($properties, $data, $options);
     }
 
@@ -705,6 +712,7 @@ class Schema
         if (isset($properties['to'])) {
             $options['model'] = $properties['to'];
         }
+
         if ($properties['array']) {
             if ($properties['relation'] === 'hasManyThrough') {
                 $options['through'] = $properties['through'];
@@ -735,7 +743,7 @@ class Schema
             return  false;
         }
         if ($with === true) {
-            $with = array_fill_keys(array_keys($this->relations()), true);
+            $with = array_fill_keys($this->relations(), true);
         } else {
             $with = Set::expand(Set::normalize((array) $with));
         }

@@ -83,6 +83,13 @@ class HasManyThrough extends \chaos\model\Relationship
         $through = $this->through();
         $using = $this->using();
 
+        $relThrough = $this->_schema->relation($through);
+        $middle = $relThrough->embed($collection, $options);
+
+        $pivot = $relThrough->to();
+        $relUsing = $pivot::schema()->relation($using);
+        $related = $relUsing->embed($middle, $options);
+
         $this->_cleanup($collection);
 
         foreach ($collection as $index => $entity) {
@@ -107,23 +114,7 @@ class HasManyThrough extends \chaos\model\Relationship
                 }
             }
         }
-        return $collection;
-    }
-
-    /**
-     * Gets all entities attached to a collection en entities.
-     *
-     * @param  mixed  $collection A collection of entities.
-     */
-    public function related($collection, $options = [])
-    {
-        $from = $collection->model();
-        $relThrough = $from::relation($this->through());
-        $related = $relThrough->related($collection, $options);
-
-        $pivot = $relThrough->to();
-        $relUsing = $pivot::relation($this->using());
-        return $relUsing->related($related, $options);
+        return $related;
     }
 
     /**
@@ -135,103 +126,6 @@ class HasManyThrough extends \chaos\model\Relationship
      */
     public function save($entity, $options = [])
     {
-        if ($this->link() !== static::LINK_KEY) {
-            return true;
-        }
-
-        $name = $this->name();
-        if (!isset($entity->{$name})) {
-            return true;
-        }
-
-        $relThrough = $entity::relation($this->through());
-        $conditions = $relThrough->match($entity);
-        $middle = $relThrough->to();
-        $using = $this->using();
-        $relTo = $middle::relation($using);
-        $strategy = '_' . $this->mode();
-        $result = $this->{$strategy}($related, $relTo, $relThrough, $conditions, $options);
-        unset($entity->{$using});
-
-        $conditions = $this->match($entity);
-        $to = $this->to();
-        $erase = array_fill_keys(array_keys($conditions), null);
-        $to::update($erase, $conditions);
-        $result = $related->set($conditions)->save($options);
-        return $result;
-    }
-
-    /**
-     * Perform a hasManyThrough diff saving (i.e only create/delete the unexisted/deleted associations)
-     *
-     * @param  object  $collection      The pivot collection.
-     * @param  object  $relTo           The destination relation.
-     * @param  object  $relVia          The middle relation.
-     * @param  array   $conditionsFrom  The association data extracted from the through relation.
-     * @param  array   $options         Saving options.
-     * @return boolean
-     */
-    protected function _diff($collection, $relTo, $relThrough, $conditionsFrom, $options = [])
-    {
-        $return = true;
-        $to = $relTo->to();
-        $middle = $relThrough->to();
-        $alreadySaved = $middle::find('all', ['conditions' => $conditionsFrom]);
-
-        foreach ($collection as $entity) {
-            $finded = false;
-            $entity->save($options);
-            $conditionsTo = $relTo->match($entity);
-
-            foreach ($alreadySaved as $key => $value) {
-                if (!array_intersect_assoc($conditionsTo, $value)) {
-                    continue;
-                }
-                $finded = true;
-                unset($alreadySaved[$key]);
-                break;
-            }
-
-            if (!$finded) {
-                $item = $middle::create($conditionsFrom + $relTo->match($entity));
-                $return &= $item->save($options);
-            }
-        }
-
-        $toDelete = [];
-
-        foreach ($alreadySaved as $key => $entity) {
-            $toDelete[] = $entity->primaryKey();
-        }
-
-        if ($toDelete) {
-            $primaryKey = $entity::schema()->primaryKey();
-            $return &= $middle::remove([$primaryKey => $toDelete]);
-        }
         return true;
-    }
-
-    /**
-     * Perform a hasManyThrough flush saving (i.e remove & recreate all associations)
-     *
-     * @param  object  $collection      The pivot collection.
-     * @param  object  $relTo           The destination relation.
-     * @param  object  $relVia          The middle relation.
-     * @param  array   $conditionsFrom  The association data extracted from the through relation.
-     * @param  array   $options         Saving options.
-     * @return boolean
-     */
-    protected function _flush($collection, $relTo, $relThrough, $conditionsFrom, $options = [])
-    {
-        $return = true;
-        $to = $relTo->to();
-        $middle = $relThrough->to();
-        $return &= $middle::remove($conditionsFrom);
-        foreach ($collection as $entity) {
-            $entity->save($options);
-            $item = $middle::create($conditionsFrom + $relTo->match($entity));
-            $return &= $item->save($options);
-        }
-        return $return;
     }
 }

@@ -200,17 +200,6 @@ class Relationship
     }
 
     /**
-     * Get a related object (or objects) for the given object connected to it by this relationship.
-     *
-     * @return boolean Returns `true` if the relationship is a `'hasMany'` or `'hasManyThrough`' relation,
-     *                 returns `false` otherwise.
-     */
-    public function isMany()
-    {
-        return preg_match('~Many~', static::class);
-    }
-
-    /**
      * Returns the "primary key/foreign key" matching definition. The key corresponds
      * to field name in the source model and the value is the one in the target model.
      *
@@ -252,23 +241,6 @@ class Relationship
     }
 
     /**
-     * Validates an entity relation.
-     *
-     * @param  object  $entity The relation's entity
-     * @param  array   $options Validates option.
-     * @return boolean
-     */
-    public function validates($entity, $options = [])
-    {
-        $defaults = ['with' => false];
-        $name = $this->name();
-        if (!isset($entity->{$name})) {
-            return [true];
-        }
-        return (array) $entity->{$name}->validates($options + $defaults);
-    }
-
-    /**
      * Gets the related data.
      *
      * @param  $entity An entity.
@@ -307,39 +279,64 @@ class Relationship
                 return $relationship->hasMany() ? $entity->parent()->parent() : $entity->parent();
             },
             static::LINK_KEY => function($entity, $relationship, $options) {
-                $query = $relationship->schema()->query([
-                    'model' => $relationship->to(),
-                    'conditions' => [
-                        $relationship->keys('to') => $entity->{$relationship->keys('from')}
-                    ]
-                ]);
-                return $relationship->hasMany() ? $query->all($options) : $query->first($options);
+                if ($relationship->type() === 'hasManyThrough') {
+                    $collection = [$entity];
+                    $this->embed($collection, $options);
+                    return $entity->{$relationship->name()};
+                }
+                $collection = $this->_find($entity->{$relationship->keys('from')}, $options);
+                return $relationship->hasMany() ? $collection : reset($collection);
             },
             static::LINK_KEY_LIST  => function($object, $relationship, $options) {
-                $query = $relationship->schema()->query([
-                    'model' => $relationship->to(),
-                    'conditions' => [
-                        $relationship->keys('to') => $entity->{$relationship->keys('from')}
-                    ]
-                ]);
-                return $query->all($options);
+                return $this->_find($entity->{$relationship->keys('from')}, $options);
             }
         ];
     }
 
     /**
+     * Get a related object (or objects) for the given object connected to it by this relationship.
+     *
+     * @return boolean Returns `true` if the relationship is a `'hasMany'` or `'hasManyThrough`' relation,
+     *                 returns `false` otherwise.
+     */
+    public function isMany()
+    {
+        return preg_match('~Many~', static::class);
+    }
+
+    /**
+     * Validates an entity relation.
+     *
+     * @param  object  $entity The relation's entity
+     * @param  array   $options Validates option.
+     * @return boolean
+     */
+    public function validates($entity, $options = [])
+    {
+        $defaults = ['with' => false];
+        $name = $this->name();
+        if (!isset($entity->{$name})) {
+            return [true];
+        }
+        return (array) $entity->{$name}->validates($options + $defaults);
+    }
+
+    /**
      * Gets all entities attached to a collection en entities.
      *
-     * @param  mixed  $collection A collection of entities.
+     * @param  mixed  $id An id or an array of ids.
+     * @return object     A collection of items matching the id/ids.
      */
-    public function related($collection, $options = [])
+    protected function _find($id, $options = [])
     {
         if ($this->link() !== static::LINK_KEY) {
             throw new SourceException("This relation is not based on a foreign key.");
         }
-        $indexes = $this->_index($collection, $this->keys('from'));
+        if ($id === []) {
+            return [];
+        }
         $query = $this->schema()->query(['model' => $this->to(), 'conditions' => [
-            $this->keys('to') => array_keys($indexes)
+            $this->keys('to') => $id
         ]]);
         return $query->all($options);
     }
