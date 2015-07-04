@@ -47,7 +47,7 @@ describe("Model", function() {
         it("returns the exists value", function() {
 
             $model = $this->model;
-            $entity = new $model(['exists' => true]);
+            $entity = $model::create([], ['exists' => true, 'partial' => false]);
             expect($entity->exists())->toBe(true);
 
         });
@@ -60,7 +60,7 @@ describe("Model", function() {
 
             $parent = Stub::create();
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $entity->parent($parent);
             expect($entity->parent())->toBe($parent);
 
@@ -70,7 +70,7 @@ describe("Model", function() {
 
             $parent = Stub::create();
             $model = $this->model;
-            $entity = new $model(['parent' => $parent]);
+            $entity = $model::create([], ['parent' => $parent]);
             expect($entity->parent())->toBe($parent);
 
         });
@@ -82,7 +82,7 @@ describe("Model", function() {
         it("returns the root path", function() {
 
             $model = $this->model;
-            $entity = new $model(['rootPath' => 'items']);
+            $entity = $model::create([], ['rootPath' => 'items']);
             expect($entity->rootPath())->toBe('items');
 
         });
@@ -94,11 +94,11 @@ describe("Model", function() {
         it("returns the entity's primary key value", function() {
 
             $model = $this->model;
-            $entity = new $model(['data' => [
+            $entity = $model::create([
                 'id'      => 123,
                 'title'   => 'Hello',
                 'body'    => 'World'
-            ]]);
+            ]);
             expect($entity->primaryKey())->toBe(123);
 
         });
@@ -111,11 +111,11 @@ describe("Model", function() {
 
             $closure = function() {
                 $model = $this->model;
-                $entity = new $model(['data' => [
+                $entity = $model::create([
                     'id'      => 123,
                     'title'   => 'Hello',
                     'body'    => 'World'
-                ]]);
+                ]);
                 $entity->primaryKey();
             };
             expect($closure)->toThrow(new SourceException("No primary key has been defined for `{$model}`'s schema."));
@@ -129,21 +129,17 @@ describe("Model", function() {
         it("syncs an entity to its persisted value", function() {
 
             $model = $this->model;
-            $entity = new $model(['data' => [
-                'loaded'   => 'loaded'
-            ]]);
+            $entity = $model::create();
             $entity->modified = 'modified';
 
             expect($entity->exists())->toBe(false);
             expect($entity->primaryKey())->toBe(null);
-            expect($entity->modified('loaded'))->toBe(false);
             expect($entity->modified('modified'))->toBe(true);
 
             $entity->sync(123, ['added' => 'added'], ['exists' => true]);
 
             expect($entity->exists())->toBe(true);
             expect($entity->primaryKey())->toBe(123);
-            expect($entity->modified('loaded'))->toBe(false);
             expect($entity->modified('modified'))->toBe(false);
             expect($entity->modified('added'))->toBe(false);
             expect($entity->added)->toBe('added');
@@ -155,21 +151,17 @@ describe("Model", function() {
             it("syncs an entity to its persisted value", function() {
 
                 $model = $this->model;
-                $entity = new $model(['data' => [
-                    'loaded'   => 'loaded'
-                ]]);
+                $entity = $model::create();
                 $entity->modified = 'modified';
 
                 expect($entity->exists())->toBe(false);
                 expect($entity->primaryKey())->toBe(null);
-                expect($entity->modified('loaded'))->toBe(false);
                 expect($entity->modified('modified'))->toBe(true);
 
                 $entity->sync(null, ['added' => 'added'], ['exists' => true]);
 
                 expect($entity->exists())->toBe(true);
                 expect($entity->primaryKey())->toBe(null);
-                expect($entity->modified('loaded'))->toBe(false);
                 expect($entity->modified('modified'))->toBe(false);
                 expect($entity->modified('added'))->toBe(false);
                 expect($entity->added)->toBe('added');
@@ -187,7 +179,7 @@ describe("Model", function() {
             $date = new DateTime('2014-10-26 00:25:15');
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $entity->set([
                 'title'   => 'Hello',
                 'body'    => 'World',
@@ -207,7 +199,7 @@ describe("Model", function() {
         it("sets value", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $entity->hello = 'world';
             expect($entity->hello)->toBe('world');
 
@@ -216,7 +208,7 @@ describe("Model", function() {
         it("sets a value using a dedicated method", function() {
 
             $entity = Stub::create([
-                'extends' => 'chaos\model\Model',
+                'extends' => $this->model,
                 'methods' => ['setHello']
             ]);
             Stub::on($entity)->method('setHello', function($value = null) {
@@ -235,7 +227,7 @@ describe("Model", function() {
         it("returns `null` for undefined fields", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             expect($entity->foo)->toBe(null);
 
         });
@@ -244,11 +236,11 @@ describe("Model", function() {
 
             $date = time();
             $model = $this->model;
-            $entity = new $model(['data' => [
+            $entity = $model::create([
                 'title'   => 'Hello',
                 'body'    => 'World',
                 'created' => $date
-            ]]);
+            ]);
             expect($entity->get())->toBe([
                 'title'   => 'Hello',
                 'body'    => 'World',
@@ -260,7 +252,7 @@ describe("Model", function() {
         it("gets a value using a dedicated method", function() {
 
             $entity = Stub::create([
-                'extends' => 'chaos\model\Model',
+                'extends' => $this->model,
                 'methods' => ['getHello']
             ]);
             Stub::on($entity)->method('getHello', function($value = null) {
@@ -278,7 +270,7 @@ describe("Model", function() {
         it("gets value", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $entity->hello = 'world';
             expect($entity->hello)->toBe('world');
         });
@@ -287,7 +279,7 @@ describe("Model", function() {
 
            $closure = function() {
                 $model = $this->model;
-                $entity = new $model();
+                $entity = $model::create();
                 $empty = '';
                 $entity->{$empty};
             };
@@ -297,40 +289,56 @@ describe("Model", function() {
 
     });
 
-    describe("->loaded()", function() {
+    describe("->persisted()", function() {
 
-        it("returns `loaded` data", function() {
+        it("returns persisted data", function() {
 
             $model = $this->model;
-            $entity = new $model(['data' => [
-                'title'   => 'Hello',
-                'body'    => 'World'
-            ]]);
+            Stub::on($model)->method('::id', function() {
+                return static::create([
+                    'id'      => '1',
+                    'title'   => 'Hello',
+                    'body'    => 'World'
+                ]);
+            });
 
-            $entity->set([
+            $entity = $model::create([
+                'id' => 1,
                 'title'   => 'Good Bye',
                 'body'    => 'Folks'
-            ]);
+            ], ['exists' => true]);
 
-            expect($entity->loaded('title'))->toBe('Hello');
-            expect($entity->loaded('body'))->toBe('World');
+
+            expect($entity->persisted('title'))->toBe('Hello');
+            expect($entity->persisted('body'))->toBe('World');
+
+            expect($entity->title)->toBe('Good Bye');
+            expect($entity->body)->toBe('Folks');
+
+            expect($entity->modified('title'))->toBe(true);
+            expect($entity->modified('body'))->toBe(true);
 
         });
 
-        it("returns all `loaded` data with no parameter", function() {
+        it("returns all persisted data with no parameter", function() {
 
             $model = $this->model;
-            $entity = new $model(['data' => [
-                'title'   => 'Hello',
-                'body'    => 'World'
-            ]]);
+            Stub::on($model)->method('::id', function() {
+                return static::create([
+                    'id'      => 1,
+                    'title'   => 'Hello',
+                    'body'    => 'World'
+                ]);
+            });
 
-            $entity->set([
+            $entity = $model::create([
+                'id' => 1,
                 'title'   => 'Good Bye',
                 'body'    => 'Folks'
-            ]);
+            ], ['exists' => true]);
 
-            expect($entity->loaded())->toBe([
+            expect($entity->persisted())->toBe([
+                'id' => 1,
                 'title'   => 'Hello',
                 'body'    => 'World'
             ]);
@@ -344,74 +352,68 @@ describe("Model", function() {
         it("returns a boolean indicating if a field has been modified", function() {
 
             $model = $this->model;
-            $entity = new $model(['data' => [
-                'loaded'   => 'loaded'
-            ]]);
+            $entity = $model::create(['title' => 'original'], ['exists' => true, 'partial' => false]);
 
-            expect($entity->modified('loaded'))->toBe(false);
-            expect($entity->modified('modified'))->toBe(false);
+            expect($entity->modified('title'))->toBe(false);
 
-            $entity->modified = 'modified';
-
-            expect($entity->modified('loaded'))->toBe(false);
-            expect($entity->modified('modified'))->toBe(true);
-
-            $entity->loaded = 'modified';
-
-            expect($entity->modified('loaded'))->toBe(true);
+            $entity->title = 'modified';
+            expect($entity->modified('title'))->toBe(true);
 
         });
 
         it("returns `false` if a field has been updated with a same scalar value", function() {
 
             $model = $this->model;
-            $entity = new $model(['data' => [
-                'loaded'   => 'loaded'
-            ]]);
+            $entity = $model::create(['title' => 'original'], ['exists' => true, 'partial' => false]);
 
-            $entity->loaded = 'loaded';
+            expect($entity->modified('title'))->toBe(false);
 
-            expect($entity->modified('loaded'))->toBe(false);
+            $entity->title = 'original';
+            expect($entity->modified('title'))->toBe(false);
 
         });
 
         it("returns `false` if a field has been updated with a similar object value", function() {
 
             $model = $this->model;
-            $entity = new $model(['data' => [
-                'loaded'   => (object) 'loaded'
-            ]]);
+            $entity = $model::create(['body'  => (object) 'body'], ['exists' => true, 'partial' => false]);
 
-            $entity->loaded = (object) 'loaded';
+            expect($entity->modified('body'))->toBe(false);
 
-            expect($entity->modified('loaded'))->toBe(false);
+            $entity->title = (object) 'body';
+            expect($entity->modified('body'))->toBe(false);
 
         });
 
         it("delegates the job for values which has a `modified()` method", function() {
 
             $model = $this->model;
-            $child = new $model(['data' => [
-                'loaded'   => 'loaded'
-            ]]);
+            $child = Stub::classname(['extends' => $this->model]);
+            $model::schema()->set('child', [
+                'type' => 'object',
+                'to'   => $child
+            ]);
 
-            $entity = new $model(['data' => ['child' => $child]]);
-            expect($entity->modified('child'))->toBe(false);
+            $subentity = $child::create(['field' => 'value'], ['exists' => true, 'partial' => false]);
 
-            $child->loaded = 'modified';
-            expect($entity->modified('child'))->toBe(true);
+            $entity = $model::create(['child' => $subentity], ['exists' => true, 'partial' => false]);
+
+            expect($entity->modified())->toBe(false);
+
+            $entity->child->field = 'modified';
+            expect($entity->modified())->toBe(true);
 
         });
 
         it("returns all modified field names with no parameter", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
 
             $entity->modified1 = 'modified';
             $entity->modified2 = 'modified';
 
-            expect($entity->modified())->toBe(['modified1', 'modified2']);
+            expect($entity->modified())->toBe(true);
 
         });
 
@@ -422,7 +424,7 @@ describe("Model", function() {
         it("returns true if a element exist", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $entity['field1'] = 'foo';
             $entity['field2'] = null;
 
@@ -434,7 +436,7 @@ describe("Model", function() {
         it("returns false if a element doesn't exist", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             expect(isset($entity['undefined']))->toBe(false);
 
         });
@@ -446,7 +448,7 @@ describe("Model", function() {
         it("allows array access", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $entity['field1'] = 'foo';
             expect($entity['field1'])->toBe('foo');
             expect($entity)->toHaveLength(1);
@@ -456,7 +458,7 @@ describe("Model", function() {
         it("sets at a specific key", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $entity['mykey'] = 'foo';
             expect($entity['mykey'])->toBe('foo');
             expect($entity)->toHaveLength(1);
@@ -466,7 +468,7 @@ describe("Model", function() {
         it("throws an exception for invalid key", function() {
             $closure = function() {
                 $model = $this->model;
-                $entity = new $model();
+                $entity = $model::create();
                 $entity[] = 'foo';
             };
             expect($closure)->toThrow(new SourceException("Field name can't be empty."));
@@ -476,13 +478,13 @@ describe("Model", function() {
         context("when a model is defined", function() {
 
             beforeEach(function() {
-                $this->model = Stub::classname(['extends' => 'chaos\model\Model']);
+                $this->model = Stub::classname(['extends' => $this->model]);
             });
 
             it("autoboxes setted data", function() {
 
                 $model = $this->model;
-                $child = Stub::classname(['extends' => 'chaos\model\Model']);
+                $child = Stub::classname(['extends' => $this->model]);
 
                 $schema = new Schema(['model' => $model]);
                 $schema->set('child', [
@@ -492,7 +494,7 @@ describe("Model", function() {
 
                 $model::config(compact('schema'));
 
-                $entity = new $model();
+                $entity = $model::create();
 
                 $entity['child'] = [
                     'id'      => 1,
@@ -522,7 +524,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
             unset($entity['body']);
             unset($entity['enabled']);
 
@@ -542,7 +544,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
 
             foreach ($entity as $i => $word) {
                 unset($entity[$i]);
@@ -561,7 +563,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
 
             foreach ($entity as $i => $word) {
                 if ($word === 'Delete me') {
@@ -585,7 +587,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
 
             foreach ($entity as $i => $word) {
                 if ($word === 'Delete me') {
@@ -610,7 +612,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
 
             $loop = 0;
             foreach ($entity as $i => $word) {
@@ -637,7 +639,7 @@ describe("Model", function() {
 
             $data = ['field' => 'value'];
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
             $value = $entity->key();
             expect($value)->toBe('field');
 
@@ -646,7 +648,7 @@ describe("Model", function() {
         it("returns null if non valid", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             $value = $entity->key();
             expect($value)->toBe(null);
 
@@ -660,7 +662,7 @@ describe("Model", function() {
 
             $data = ['field' => 'value'];
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
             $value = $entity->current();
             expect($value)->toBe('value');
 
@@ -678,7 +680,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
             $value = $entity->next();
             expect($value)->toBe('value2');
 
@@ -697,7 +699,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
 
             $entity->rewind();
             expect($entity->next())->toBe('test record');
@@ -724,7 +726,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
 
             expect($entity->end())->toBe('test body');
             expect($entity->rewind())->toBe(1);
@@ -740,7 +742,7 @@ describe("Model", function() {
         it("returns true only when the collection is valid", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             expect($entity->valid())->toBe(false);
 
             $data = [
@@ -748,7 +750,7 @@ describe("Model", function() {
                 'title'   => 'test record',
                 'body'    => 'test body'
             ];
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
             expect($entity->valid())->toBe(true);
 
         });
@@ -760,7 +762,7 @@ describe("Model", function() {
         it("returns 0 on empty", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             expect($entity)->toHaveLength(0);
 
         });
@@ -777,7 +779,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
             expect($entity)->toHaveLength(6);
 
         });
@@ -798,7 +800,7 @@ describe("Model", function() {
             ];
 
             $model = $this->model;
-            $entity = new $model(compact('data'));
+            $entity = $model::create($data);
             expect((string) $entity)->toBe('test record');
 
         });
@@ -810,9 +812,9 @@ describe("Model", function() {
         it("returns the model", function() {
 
             $model = $this->model;
-            $entity = new $model();
-            $schema = $entity->schema();
+            $schema = $model::schema();
             expect($schema)->toBeAnInstanceOf('chaos\model\Schema');
+            expect($schema)->toBe($model::schema());
 
         });
 

@@ -112,7 +112,7 @@ class Query implements IteratorAggregate
     }
 
     /**
-     * When not supported, delegate the call to the sql statement.
+     * When not supported, delegate the call to the model.
      *
      * @param  string $name   The name of the matcher.
      * @param  array  $params The parameters to pass to the matcher.
@@ -120,17 +120,8 @@ class Query implements IteratorAggregate
      */
     public function __call($name, $params = [])
     {
-        if (method_exists($this->_statement, $name)) {
-            call_user_func_array([$this->_statement, $name], $params);
-            return $this;
-        }
         array_unshift($params, $this);
         return call_user_func_array([$this->_model, $name], $params);
-    }
-
-    public function statement()
-    {
-        return $this->_statement;
     }
 
     /**
@@ -145,6 +136,16 @@ class Query implements IteratorAggregate
             throw new SourceException("Error, missing connection for this query.");
         }
         return $this->_connection;
+    }
+
+    /**
+     * Gets the query statement.
+     *
+     * @return object    Returns a connection instance.
+     */
+    public function statement()
+    {
+        return $this->_statement;
     }
 
     /**
@@ -189,9 +190,7 @@ class Query implements IteratorAggregate
         switch ($return) {
             case 'record':
                 foreach ($cursor as $key => $record) {
-                    $collection[] = $model::create($record, [
-                        'defaults' => false
-                    ]);
+                    $collection[] = $model::create($record, ['exists' => true, 'partial' => false]);
                 }
                 $collection = $model::create($collection, ['type' => 'set']);
             break;
@@ -202,7 +201,7 @@ class Query implements IteratorAggregate
                 }
             break;
             default:
-                throw new SourceException("Invalid value `'{$options['return']}'` as `'return'` option.");
+                throw new SourceException("Invalid `'{$options['return']}'` mode as `'return'` value");
             break;
         }
         $collection = $this->_collect($collection, $options);

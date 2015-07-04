@@ -195,6 +195,7 @@ describe("Schema", function() {
         it("returns an attribute only", function() {
 
             expect($this->schema->fields('default'))->toBe([
+                'id'         => null,
                 'gallery_id' => null,
                 'name'       => 'Enter The Name Here',
                 'title'      => 'Enter The Title Here'
@@ -208,6 +209,15 @@ describe("Schema", function() {
             ]);
 
         });
+
+    });
+
+    it("returns defaults", function() {
+
+        expect($this->schema->defaults())->toBe([
+            'name'       => 'Enter The Name Here',
+            'title'      => 'Enter The Title Here'
+        ]);
 
     });
 

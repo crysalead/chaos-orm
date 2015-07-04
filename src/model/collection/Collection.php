@@ -262,16 +262,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets the plain array value of the `Collection`.
-     *
-     * @return array Returns an "unboxed" array of the `Collection`'s value.
-     */
-    public function plain()
-    {
-        return $this->_data;
-    }
-
-    /**
      * Returns the currently pointed to record's unique key.
      *
      * @param  boolean $full If true, returns the complete key.
@@ -488,6 +478,16 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     {
         $model = $this->_model;
         $model::schema()->embed($this, $relations);
+    }
+
+    /**
+     * Gets the plain array value of the `Collection`.
+     *
+     * @return array Returns an "unboxed" array of the `Collection`'s value.
+     */
+    public function plain()
+    {
+        return $this->_data;
     }
 
     /**

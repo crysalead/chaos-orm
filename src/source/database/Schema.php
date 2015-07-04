@@ -69,28 +69,42 @@ class Schema extends \chaos\model\Schema
     }
 
     /**
-     * Update multiple records or documents with the given data, restricted by the given set of
-     * criteria (optional).
+     * Insert a records  with the given data.
+     *
+     * @param  mixed $data       Typically an array of key/value pairs that specify the new data with which
+     *                           the records will be updated. For SQL databases, this can optionally be
+     *                           an SQL fragment representing the `SET` clause of an `UPDATE` query.
+     * @param  array $options    Any database-specific options to use when performing the operation.
+     * @return boolean           Returns `true` if the update operation succeeded, otherwise `false`.
+     */
+    public function insert($data, $options = [])
+    {
+        $insert = $this->connection()->dialect()->statement('insert');
+        $insert->into($this->source())
+            ->values($data);
+
+        return $this->connection()->query($insert->toString());
+    }
+
+    /**
+     * Update multiple records with the given data, restricted by the given set of criteria (optional).
      *
      * @param  mixed $data       Typically an array of key/value pairs that specify the new data with which
      *                           the records will be updated. For SQL databases, this can optionally be
      *                           an SQL fragment representing the `SET` clause of an `UPDATE` query.
      * @param  mixed $conditions An array of key/value pairs representing the scope of the records
      *                           to be updated.
-     * @param  array $options    Any database-specific options to use when performing the operation. See
-     *                           the `delete()` method of the corresponding backend database for
-     *                           available options.
+     * @param  array $options    Any database-specific options to use when performing the operation.
      * @return boolean           Returns `true` if the update operation succeeded, otherwise `false`.
      */
     public function update($data, $conditions = [], $options = [])
     {
         $update = $this->connection()->dialect()->statement('update');
-
         $update->table($this->source())
             ->where($conditions)
             ->values($data);
 
-        return $this->connection()->execute($update->toString());
+        return $this->connection()->query($update->toString());
     }
 
     /**
@@ -114,7 +128,7 @@ class Schema extends \chaos\model\Schema
         $update->table($this->source())
             ->where($conditions);
 
-        return $this->connection()->execute($statement->toString());
+        return $this->connection()->query($statement->toString());
     }
 
     /**
@@ -199,10 +213,9 @@ class Schema extends \chaos\model\Schema
         ];
         $options += $defaults;
 
-        // TODO
-        // if (!$entity->modified()) {
-        //     return true;
-        // }
+        if (!$entity->modified()) {
+            return true;
+        }
 
         if (!$this->_save($entity, 'belongsTo', $options)) {
             return false;
@@ -217,15 +230,15 @@ class Schema extends \chaos\model\Schema
         $connection = $this->connection();
         $source = $this->source();
 
+        $values = array_diff_key($entity->data(), array_fill_keys($exclude, true));
+
         if ($entity->exists()) {
-            $statement = $connection->dialect()->statement('update');
-            $statement->table($source);
+            $id = $this->primaryKey();
+            $cursor = $this->update($values, [$id => $entity->primaryKey()]);
         } else {
-            $statement = $connection->dialect()->statement('insert');
-            $statement->into($source);
+            $cursor = $this->insert($values);
         }
-        $statement->values(array_diff_key($entity->data(), array_fill_keys($exclude, true)));
-        $cursor = $connection->query($statement->toString());
+
         $result = !$cursor->error();
 
         if (!$entity->exists()) {
@@ -279,8 +292,9 @@ class Schema extends \chaos\model\Schema
      */
     public function delete($entity, $options = [])
     {
-        //Adds entity conditions
-        $statement = $this->connection()->dialect()->statement('delete');
-        $result = $this->connection()->execute($statement->toString());
+        if (!$id = $this->primaryKey() || !$entity->exists()) {
+            return false;
+        }
+        return $this->remove([$id => $entity->primaryKey()]);
     }
 }

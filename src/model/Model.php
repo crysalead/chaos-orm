@@ -81,7 +81,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @var array
      */
-    protected $_loaded = [];
+    protected $_persisted = [];
 
     /**
      * Contains the values of updated fields. These values will be persisted to the backend data
@@ -300,7 +300,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $options['defaults'] = !$options['exists'];
 
         if ($options['defaults'] && $options['type'] === 'entity') {
-            $data = Set::merge(Set::expand(static::schema()->fields('default')), $data);
+            $data = Set::merge(Set::expand(static::schema()->defaults()), $data);
         }
 
         $type = $options['type'];
@@ -331,21 +331,21 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function schema()
     {
-        $class = static::class;
-        if (isset(static::$_schemas[$class])) {
-            return static::$_schemas[$class];
+        $self = static::class;
+        if (isset(static::$_schemas[$self])) {
+            return static::$_schemas[$self];
         }
         $conventions = static::conventions();
         $config = [
-            'classes'     => ['entity' => $class] + static::$_classes,
+            'classes'     => ['entity' => $self] + static::$_classes,
             'connection'  => static::$_connection,
             'conventions' => $conventions,
-            'model'       => static::class
+            'model'       => $self
         ];
         $config += ['source' => $conventions->apply('source', $config['classes']['entity'])];
 
         $class = static::$_schema;
-        $schema = static::$_schemas[$class] = new $class($config);
+        $schema = static::$_schemas[$self] = new $class($config);
         static::_schema($schema);
         return $schema;
     }
@@ -422,15 +422,28 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'exists'   => false,
             'parent'   => null,
             'rootPath' => null,
-            'data'     => []
+            'data'     => [],
+            'partial'  => true
         ];
         $options += $defaults;
         $this->_exists = $options['exists'];
         $this->_parent = $options['parent'];
         $this->_rootPath = $options['rootPath'];
-        $this->_loaded = $options['data'];
-        $this->set($this->_loaded);
-        $this->_loaded = $this->_data;
+        if (!$this->exists()) {
+            $this->set($options['data']);
+            return;
+        }
+        if (!$options['partial']) {
+            $this->set($options['data']);
+            $this->_persisted = $this->_data;
+            return;
+        }
+        $persisted = static::id($this->primaryKey());
+        if (!$persisted) {
+            throw new SourceException("The entity id:`{$this->primaryKey()}` doesn't exists.");
+        }
+        $this->_persisted = $this->_data = $persisted->plain();
+        $this->set($options['data']);
     }
 
     /**
@@ -513,7 +526,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if ($id && $pk = static::schema()->primaryKey()) {
             $data[$pk] = $id;
         }
-        $this->_loaded = $this->_data = $data + $this->_data;
+        $this->_persisted = $this->_data = $data + $this->_data;
         return $this;
     }
 
@@ -618,6 +631,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * Gets the plain array value of the `Collection`.
+     *
+     * @return array Returns an "unboxed" array of the `Collection`'s value.
+     */
+    public function plain()
+    {
+        return $this->_data;
+    }
+
+    /**
      * Access the data fields of the record.
      *
      * @param  string $options Options.
@@ -629,17 +652,17 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the loaded data or a previous field value.
+     * Returns the persisted data.
      *
      * @param  string $field A field name or `null` to retreive all data.
      * @return mixed
      */
-    public function loaded($field = null)
+    public function persisted($field = null)
     {
         if (!$field) {
-            return $this->_loaded;
+            return $this->_persisted;
         }
-        return isset($this->_loaded[$field]) ? $this->_loaded[$field] : null;
+        return isset($this->_persisted[$field]) ? $this->_persisted[$field] : null;
     }
 
     /**
@@ -652,30 +675,40 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function modified($field = null)
     {
+        if (!$this->exists()) {
+            return true;
+        }
+        $schema = static::schema();
+
         $result = [];
-        $fields = $field ? [$field] : array_keys($this->_data);
+        $fields = $field ? [$field] : array_keys($this->_persisted);
 
         foreach ($fields as $key) {
-            if (!isset($this->_loaded[$key])) {
+            if (!isset($this->_persisted[$key])) {
                 if (isset($this->_data[$key])) {
                     $result[$key] = null;
                 }
                 continue;
             }
             $modified = false;
-            $value = $this->_data[$key];
-            if (method_exists($value, 'modified')) {
-                $modified = !empty($value->modified());
+            $value = array_key_exists($key, $this->_data) ? $this->_data[$key] : $this->_persisted[$key];
+            if (method_exists($value, 'modified') && $schema->has($key)) {
+                $modified = $value->modified();
             } elseif (is_object($value)) {
-                $modified = $this->_loaded[$key] != $value;
+                $modified = $this->_persisted[$key] != $value;
             } else {
-                $modified = $this->_loaded[$key] !== $value;
+                $modified = $this->_persisted[$key] !== $value;
             }
             if ($modified) {
-                $result[$key] = $this->_loaded[$key];
+                $result[$key] = $this->_persisted[$key];
             }
         }
-        return $field ? !empty($result) : array_keys($result);
+        if ($field && $field !== true) {
+            return !empty($result);
+        }
+        $result = array_keys($result);
+        $result = $field ? $result : !!$result;
+        return $result;
     }
 
     /**

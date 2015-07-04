@@ -293,9 +293,7 @@ class Schema
         $result = [];
         foreach ($this->_fields as $name => $field) {
             $value = isset($field[$attribute]) ? $field[$attribute] : null;
-            if ($value !== null || $field['null']) {
-                $result[$name] = $value;
-            }
+            $result[$name] = $value;
         }
         return $result;
     }
@@ -326,6 +324,26 @@ class Schema
     }
 
     /**
+     * Returns default values.
+     *
+     * @param  array $name An optionnal field name.
+     * @return mixed       Returns all default values or a specific one if `$name` is set.
+     */
+    public function defaults($name = null)
+    {
+        if ($name) {
+            return isset($this->_fields[$name]['default']) ? $this->_fields[$name]['default'] : null;
+        }
+        $defaults = [];
+        foreach ($this->_fields as $key => $value) {
+            if (isset($value['default'])) {
+                $defaults[$key] = $value['default'];
+            }
+        }
+        return $defaults;
+    }
+
+    /**
      * Returns the type value of a field name.
      *
      * @param  string $name The field name.
@@ -342,19 +360,23 @@ class Schema
      * @param  string $name The field name.
      * @return object       Returns `$this`.
      */
-    public function set($name, $value = [])
+    public function set($name, $params = [])
     {
-        $field = $this->_fields[$name] = $this->_initField($value);
+        $field = $this->_initField($params);
 
         if ($field['type'] === 'object') {
             $relationship = $this->_classes['relationship'];
 
-            $this->bind($name, [
+            $field += [
                 'relation' => $field['array'] ? 'hasMany' : 'hasOne',
-                'to'       => isset($field['class']) ? $field['class'] : Model::class,
+                'to'       => isset($field['to']) ? $field['to'] : Model::class,
                 'link'     => $relationship::LINK_EMBEDDED
-            ]);
+            ];
+
+            $this->bind($name, $field);
         }
+        $this->_fields[$name] = $field;
+
         return $this;
     }
 
@@ -765,4 +787,14 @@ class Schema
         return $this->_conventions;
     }
 
+    /**
+     * Returns a query to retrieve data from the connected data source.
+     *
+     * @param  array  $options Query options.
+     * @return object          An instance of `Query`.
+     */
+    public function query($options = [])
+    {
+        throw new SourceException("Missing `query()` implementation for this schema.");
+    }
 }
