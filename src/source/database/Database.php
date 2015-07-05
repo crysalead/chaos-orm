@@ -115,7 +115,7 @@ abstract class Database
 
         $this->_dialect = $config['dialect'];
         unset($this->_config['dialect']);
-        $this->_handlers = $config['handlers'];
+        $this->_handlers = Set::merge($config['handlers'], $this->_handlers());
 
         if ($this->_dialect === null) {
             $dialect = $this->_classes['dialect'];
@@ -125,6 +125,28 @@ abstract class Database
         if ($this->_config['connect']) {
             $this->connect();
         }
+
+        $handlers = $this->_handlers;
+
+        $this->formatter('cast', 'id',        $handlers['cast']['integer']);
+        $this->formatter('cast', 'serial',    $handlers['cast']['integer']);
+        $this->formatter('cast', 'integer',   $handlers['cast']['integer']);
+        $this->formatter('cast', 'float',     $handlers['cast']['float']);
+        $this->formatter('cast', 'decimal',   $handlers['cast']['decimal']);
+        $this->formatter('cast', 'date',      $handlers['cast']['date']);
+        $this->formatter('cast', 'datetime',  $handlers['cast']['date']);
+        $this->formatter('cast', 'boolean',   $handlers['cast']['boolean']);
+        $this->formatter('cast', '_default_', $handlers['cast']['string']);
+
+        $this->formatter('datasource', 'id',        $handlers['cast']['string']);
+        $this->formatter('datasource', 'serial',    $handlers['cast']['string']);
+        $this->formatter('datasource', 'integer',   $handlers['cast']['string']);
+        $this->formatter('datasource', 'float',     $handlers['cast']['string']);
+        $this->formatter('datasource', 'decimal',   $handlers['cast']['string']);
+        $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
+        $this->formatter('datasource', 'datetime',  $handlers['datasource']['date']);
+        $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
+        $this->formatter('datasource', '_default_', $handlers['datasource']['quote']);
     }
 
     /**
@@ -262,30 +284,51 @@ abstract class Database
     protected function _handlers()
     {
         return [
-            'importDecimal' => function($value, $params = []) {
-                $params += ['precision' => 2];
-                return number_format($number, $params['precision']);
-            },
-            'importDate'     => function($value, $params = []) {
-                if (is_numeric($value)) {
-                    return new DateTime('@' . $value);
-                }
-                return DateTime::createFromFormat($this->_dateFormat, $value);
-            },
-            'exportDate' => function($value, $params = []) {
-                $params += ['format' => null];
-                $format = $params['format'];
-                if ($format) {
-                    if ($value instanceof DateTime) {
-                        return $value->format($format);
-                    } elseif(($time = strtotime($value)) !== false) {
-                        return date($format, $time);
+            'cast' => [
+                'string' => function($value, $params = []) {
+                    return (string) $value;
+                },
+                'integer' => function($value, $params = []) {
+                    return (integer) $value;
+                },
+                'float'   => function($value, $params = []) {
+                    return (float) $value;
+                },
+                'decimal' => function($value, $params = []) {
+                    $params += ['precision' => 2];
+                    return number_format($number, $params['precision']);
+                },
+                'boolean' => function($value, $params = []) {
+                    return !!$value;
+                },
+                'date'    => function($value, $params = []) {
+                    if (is_numeric($value)) {
+                        return new DateTime('@' . $value);
                     }
+                    return DateTime::createFromFormat($this->_dateFormat, $value);
                 }
-                throw new SourceException("Invalid date value: `" . print_r($value, true) . "`.");
-            },
-            'importBoolean' => function($value, $params = []) { return !!$value; },
-            'exportBoolean' => function($value, $params = []) { return $value ? 1 : 0; }
+            ],
+            'datasource' => [
+                'string' => function($value, $params = []) {
+                    return (string) $value;
+                },
+                'quote' => function($value, $params = []) {
+                    return $this->dialect()->quote((string) $value);
+                },
+                'date' => function($value, $params = []) {
+                    $params += ['format' => null];
+                    $format = $params['format'];
+                    if (!$format) {
+                        throw new SourceException("Invalid date format:`{$format}`.");
+                    }
+                    if ($value instanceof DateTime) {
+                        return $this->dialect()->quote($value->format($format));
+                    } else {
+                        throw new SourceException("Invalid date, must be an instance of `DateTime`.");
+                    }
+                },
+                'boolean' => function($value, $params = []) { return $value ? 'TRUE' : 'FALSE'; }
+            ]
         ];
     }
 
@@ -308,68 +351,39 @@ abstract class Database
     }
 
     /**
-     * Gets/sets an internal type casting definition
+     * Gets/sets a formatter handler.
      *
      * @param  string   $type          The type name.
      * @param  callable $importHandler The callable import handler.
      * @param  callable $exportHandler The callable export handler. If not set use `$importHandler`.
      */
-    public function format($type, $importHandler = null, $exportHandler = null)
+    public function formatter($mode, $type, $handler = null)
     {
-        switch(func_num_args()) {
-            case 1:
-                $handlers = [];
-                if (isset($this->_formatters['import'][$type])) {
-                    $handlers['import'] = $this->_formatters['import'][$type];
-                }
-                if (isset($this->_formatters['export'][$type])) {
-                    $handlers['export'] = $this->_formatters['export'][$type];
-                }
-                return $handlers + ['import' => 'strval', 'export' => 'strval'];
-            break;
-            case 2:
-                $exportHandler = $importHandler;
-            case 3:
-                $this->_format('import', $type, $importHandler);
-                $this->_format('export', $type, $exportHandler);
-            break;
+        if (func_num_args() === 2) {
+            return isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : $this->_formatters[$mode]['_default_'];
         }
+        $this->_formatters[$mode][$type] = $handler;
     }
 
     /**
-     * Set an type format definition.
+     * Formats a value according to its definition.
      *
-     * @param  string   $mode    The format mode (i.e. `'import'` or `'export'`).
-     * @param  string   $type    The type name.
-     * @param  callable $handler The callable handler.
-     */
-    protected function _format($mode, $type, $handler)
-    {
-        if (is_callable($handler)) {
-            $this->_formatters[$mode][$type] = $handler;
-            return;
-        }
-        if (!isset($this->_handlers[$handler])) {
-            throw new SourceException("Invalid cast handler `{$handler}`.");
-        }
-        $this->_formatters[$mode][$type] = $this->_handlers[$handler];
-    }
-
-    /**
-     * Cast a value according to a type definition.
-     *
-     * @param   string $mode  The format mode (i.e. `'import'` or `'export'`).
+     * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
      * @param   string $type  The type name.
-     * @param   mixed  $value The value to cast.
-     * @return  mixed         The casted value.
+     * @param   mixed  $value The value to format.
+     * @return  mixed         The formated value.
      */
-    public function cast($mode, $type, $value) {
-        $formatter = isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : 'strval';
+    public function format($mode, $type, $value)
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+        $formatter = isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : $this->_formatters[$mode]['_default_'];
         return $formatter($value);
     }
 
     /**
-     * Find records with custom SQL query.
+     * Finds records using a SQL query.
      *
      * @param  string $sql  SQL query to execute.
      * @param  array  $data Array of bound parameters to use as values for query.
@@ -389,6 +403,7 @@ abstract class Database
         $errmsg = $err[0] === '0000' ? '' : $err[0] . ($err[1] ? ' (' . $err[1] . ')' : '') . ':' . $err[2];
 
         $cursor = $this->_classes['cursor'];
+
         return new $cursor($options + [
             'resource' => $statement,
             'failed'   => $error,
@@ -402,7 +417,8 @@ abstract class Database
      *
      * @param $query lithium\data\model\Query $context The given query.
      */
-    public function lastInsertId($source = null, $field = null) {
+    public function lastInsertId($source = null, $field = null)
+    {
         return $this->_pdo->lastInsertId();
     }
 
@@ -411,7 +427,8 @@ abstract class Database
      *
      * @return array
      */
-    public function error() {
+    public function error()
+    {
         if ($error = $this->_pdo->errorInfo()) {
             return [$error[1], $error[2]];
         }
@@ -422,7 +439,8 @@ abstract class Database
      *
      * @return boolean Returns `true` on success, else `false`.
      */
-    public function disconnect() {
+    public function disconnect()
+    {
         $this->_pdo = null;
         return true;
     }

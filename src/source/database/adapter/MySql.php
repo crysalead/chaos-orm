@@ -88,7 +88,7 @@ class MySql extends \chaos\source\database\Database
             'classes' => [
                 'dialect' => 'chaos\source\database\sql\dialect\MySqlDialect'
             ],
-            'handlers' => $this->_handlers(),
+            'handlers' => [],
         ];
         $config = Set::merge($defaults, $config);
         parent::__construct($config);
@@ -106,15 +106,6 @@ class MySql extends \chaos\source\database\Database
         $this->type('datetime', ['use' => 'datetime']);
         $this->type('binary',   ['use' => 'blob']);
         $this->type('uuid',     ['use' => 'char', 'length' => 36]);
-
-        $this->format('id',       'intval');
-        $this->format('serial',   'intval');
-        $this->format('integer',  'intval');
-        $this->format('float',    'floatval');
-        $this->format('decimal',  'importDecimal');
-        $this->format('date',     'importDate',    'exportDate');
-        $this->format('datetime', 'importDate',    'exportDate');
-        $this->format('boolean',  'importBoolean', 'exportBoolean');
     }
 
     /**

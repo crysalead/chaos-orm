@@ -76,7 +76,7 @@ class MySqlDialect extends \chaos\source\database\sql\Dialect
                 ':regex'       => ['format' => '%s REGEXP %s'],
                 ':rlike'       => [],
                 ':sounds like' => [],
-                // Set operators
+                // Algebraic operations
                 ':union'       => ['type' => 'set'],
                 ':union all'   => ['type' => 'set'],
                 ':minus'       => ['type' => 'set'],
@@ -103,7 +103,7 @@ class MySqlDialect extends \chaos\source\database\sql\Dialect
 
         $column = $this->name($name) . ' ' . $use;
 
-        $allowPrecision = preg_match('/^(decimal|float|double|real|numeric)$/',$use);
+        $allowPrecision = preg_match('/^(decimal|float|double|real|numeric)$/', $use);
         $precision = ($precision && $allowPrecision) ? ",{$precision}" : '';
 
         if ($length && ($allowPrecision || preg_match('/(char|binary|int|year)/',$use))) {

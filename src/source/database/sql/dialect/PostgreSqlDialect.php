@@ -82,7 +82,7 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Dialect
                 '@'               => ['format' => '@ %s'],
                 '<@'              => [],
                 '@>'              => [],
-                // Set operators
+                // Algebraic operations
                 ':union'          => ['type' => 'set'],
                 ':union all'      => ['type' => 'set'],
                 ':except'         => ['type' => 'set'],
@@ -110,24 +110,20 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Dialect
             $use = 'numeric';
         }
 
-        $column = $this->name($name);
+        $column = $this->name($name) . ' ' . $use;
 
-        if (isset($increment) && $increment) {
-            $result = [$column];
-            $result[] = 'serial NOT NULL';
+        $allowPrecision = preg_match('/^(decimal|float|double|real|numeric)$/', $use);
+        $precision = ($precision && $allowPrecision) ? ",{$precision}" : '';
+
+        if ($length && ($allowPrecision || preg_match('/char|numeric|interval|bit|time/',$use))) {
+            $column .= "({$length}{$precision})";
+        }
+
+        $result = [$column];
+
+        if (isset($serial) && $serial) {
+            $result[] = 'NOT NULL';
         } else {
-            $column .= ' ' . $use;
-
-            if ($precision) {
-                $precision = $use === 'numeric' ? ",{$precision}" : '';
-            }
-
-            if ($length && preg_match('/char|numeric|interval|bit|time/', $use)) {
-                $column .= "({$length}{$precision})";
-            }
-
-            $result = [$column];
-
             $result[] = is_bool($null) ? ($null ? 'NULL' : 'NOT NULL') : '' ;
             if ($default) {
                 if (is_array($default)) {

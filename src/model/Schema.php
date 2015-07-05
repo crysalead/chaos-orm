@@ -483,6 +483,8 @@ class Schema
             $config['to'] = substr($from, 0, $pos + 1) . $config['to'];
         }
 
+        $config['array'] = !!preg_match('~Many~', $config['relation']);
+
         $this->_relations[$name] = $config;
         $this->_relationships[$name] = null;
         return true;
@@ -672,13 +674,17 @@ class Schema
 
         $properties = $this->_properties($name);
 
+        if (isset($properties['to'])) {
+            $options['model'] = $properties['to'];
+        }
+
         if (is_object($data)) {
             if ($properties['type'] !== 'object') {
                 return $data;
             }
             if (!$properties['array']) {
-                $to = $properties['to'];
-                if ($data instanceof $to) {
+                $model = $options['model'];
+                if ($data instanceof $model) {
                     return $data;
                 } else {
                     throw new SourceException("Invalid data, the passed object must be an instance of `{$to}`");
@@ -700,27 +706,6 @@ class Schema
     }
 
     /**
-     * Returns all field name attached properties.
-     *
-     * @param  string $name The field name.
-     * @return array        The field name properties.
-     */
-    public function _properties($name)
-    {
-        if (isset($this->_fields[$name])) {
-            return $this->_fields[$name];
-        }
-        if (isset($this->_relations[$name])) {
-            $properties = $this->_relations[$name];
-            if (!isset($properties['array'])) {
-                $properties['array'] = !!preg_match('~Many~', $properties['relation']);
-            }
-            return $properties;
-        }
-        return $properties = $this->_initField('string');
-    }
-
-    /**
      * Casting helper
      *
      * @param  array  $properties The field properties which define the casting.
@@ -730,9 +715,6 @@ class Schema
      */
     public function _cast($properties, $data, $options)
     {
-        if (isset($properties['to'])) {
-            $options['model'] = $properties['to'];
-        }
         $model = $options['model'];
 
         if ($properties['array']) {
@@ -752,6 +734,24 @@ class Schema
             return;
         }
         return isset($properties['format']) ? $properties['format']($data) : $data;
+    }
+
+    /**
+     * Returns all field name attached properties.
+     *
+     * @param  string $name The field name.
+     * @return array        The field name properties.
+     */
+    public function _properties($name)
+    {
+        if (isset($this->_fields[$name])) {
+            return $this->_fields[$name];
+        }
+        if (isset($this->_relations[$name])) {
+            $properties = $this->_relations[$name];
+            return $properties;
+        }
+        return $properties = $this->_initField('string');
     }
 
     /**

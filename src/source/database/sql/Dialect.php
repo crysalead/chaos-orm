@@ -534,18 +534,14 @@ class Dialect
      */
     public function value($value, $type = null)
     {
-        if ($type && $connection = $this->connection()) {
-            $value = $connection->cast('export', $type, $value);
+        if ($connection = $this->connection()) {
+            return $connection->format('datasource', $type ?: gettype($value), $value);
         }
         switch (true) {
-            case is_null($value):
-                return 'NULL';
             case is_bool($value):
                 return $value ? 'TRUE' : 'FALSE';
             case is_string($value):
                 return $this->quote($value);
-            case is_array($value):
-                return '{' . join(', ', $value) . '}';
         }
         return (string) $value;
     }

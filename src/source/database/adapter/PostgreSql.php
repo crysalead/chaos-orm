@@ -98,25 +98,33 @@ class PostgreSql extends \chaos\source\database\Database {
                 'dialect' => 'chaos\source\database\sql\dialect\PostgreSqlDialect'
             ],
             'handlers' => [
-                'importBoolean' => function($value, $params = []) { return $value === 't'; },
-                'exportBoolean' => function($value, $params = []) { return $value ? 'true' : 'false'; },
-                'exportArray' => function($data) {
-                    $data = (array) $data;
-                    $result = [];
-                    foreach ($data as $value) {
-                        if (is_array($value)) {
-                            $result[] = $this->_handlers['exportArray']($value);
-                        } else {
-                            $value = str_replace('"', '\\"', $value);
-                            if (!is_numeric($value)) {
-                                $value = '"' . $value . '"';
+                'cast' => [
+                    'boolean' => function($value, $params = []) {
+                        return $value === 't';
+                    },
+                ],
+                'datasource' => [
+                    'boolean' => function($value, $params = []) {
+                        return $value ? 'true' : 'false';
+                    },
+                    'array' => function($data) {
+                        $data = (array) $data;
+                        $result = [];
+                        foreach ($data as $value) {
+                            if (is_array($value)) {
+                                $result[] = $this->_handlers['datasource']['array']($value);
+                            } else {
+                                $value = str_replace('"', '\\"', $value);
+                                if (!is_numeric($value)) {
+                                    $value = '"' . $value . '"';
+                                }
+                                $result[] = $value;
                             }
-                            $result[] = $value;
                         }
+                        return '{' . join(",", $result) . '}';
                     }
-                    return '{' . join(",", $result) . '}';
-                }
-            ] + $this->_handlers()
+                ]
+            ]
         ];
 
         $config = Set::merge($defaults, $config);
@@ -136,14 +144,7 @@ class PostgreSql extends \chaos\source\database\Database {
         $this->type('binary',   ['use' => 'bytea']);
         $this->type('uuid',     ['use' => 'uuid']);
 
-        $this->format('id',       'intval');
-        $this->format('serial',   'intval');
-        $this->format('integer',  'intval');
-        $this->format('float',    'floatval');
-        $this->format('decimal',  'importDecimal');
-        $this->format('date',     'importDate',    'exportDate');
-        $this->format('datetime', 'importDate',    'exportDate');
-        $this->format('boolean',  'importBoolean', 'exportBoolean');
+        $this->formatter('datasource', 'array', $this->_handlers['datasource']['array']);
     }
 
     /**
