@@ -526,7 +526,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if ($id && $pk = static::schema()->primaryKey()) {
             $data[$pk] = $id;
         }
-        $this->_persisted = $this->_data = $data + $this->_data;
+        $this->set($data + $this->_data);
+        $this->_persisted = $this->_data;
         return $this;
     }
 

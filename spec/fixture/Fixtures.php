@@ -151,6 +151,7 @@ class Fixtures
             $model = $instance->model();
             $model::remove();
         }
+        $this->_instances = [];
     }
 
     /**
@@ -160,6 +161,9 @@ class Fixtures
     {
         foreach ($this->_instances as $instance) {
             $instance->drop();
+            $model = $instance->model();
+            $model::config();
         }
+        $this->_instances = [];
     }
 }

@@ -30,8 +30,6 @@ describe("Schema", function() {
             $connection = Stub::create();
             $conventions = Stub::create();
 
-            $toInteger = function($value) { return (int) $value; };
-
             $schema = new Schema([
                 'connection'   => $connection,
                 'source'       => 'image',
@@ -40,7 +38,6 @@ describe("Schema", function() {
                 'locked'       => false,
                 'fields'       => ['id' => 'serial', 'age' => 'integer'],
                 'meta'         => ['some' => ['meta']],
-                'handlers'     => ['integer' => $toInteger],
                 'conventions'  => $conventions
             ]);
 
@@ -58,8 +55,7 @@ describe("Schema", function() {
                 'age' => [
                     'type'   => 'integer',
                     'array'  => false,
-                    'null'   => true,
-                    'format' => $toInteger
+                    'null'   => true
                 ]
             ]);
             expect($schema->meta())->toBe(['some' => ['meta']]);

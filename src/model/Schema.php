@@ -320,9 +320,6 @@ class Schema
             return isset($field[$attribute]) ? $field[$attribute] : null;
         } else {
             $type = $field['type'];
-            if (isset($this->_handlers[$type])) {
-                $field['format'] = $this->_handlers[$type];
-            }
         }
         return $field;
     }
@@ -706,7 +703,7 @@ class Schema
         if (isset($this->_fields[$name])) {
             $options['rootPath'] = $name;
         }
-        return $this->_cast($properties, $data, $options);
+        return $this->_cast($name, $properties, $data, $options);
     }
 
     /**
@@ -717,7 +714,7 @@ class Schema
      * @param  array  $options    Options for the casting.
      * @return mixed              The casted data.
      */
-    public function _cast($properties, $data, $options)
+    public function _cast($name, $properties, $data, $options)
     {
         $model = $options['model'];
 
@@ -737,7 +734,7 @@ class Schema
         if ($properties['null'] && ($data === null || $data === '')) {
             return;
         }
-        return isset($properties['format']) ? $properties['format']($data) : $data;
+        return $this->format('cast', $name, $data);
     }
 
     /**
@@ -777,11 +774,7 @@ class Schema
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-
-        if (!$formatter) {
-            throw new SourceException("Unexisting formatter for `{$type}` type using `{$mode}` handlers.");
-        }
-        return $formatter($value);
+        return $formatter ? $formatter($value) : $value;
     }
 
     /**
