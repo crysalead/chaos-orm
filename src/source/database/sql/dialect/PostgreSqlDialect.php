@@ -131,7 +131,7 @@ class PostgreSqlDialect extends \chaos\source\database\sql\Dialect
                 } else {
                     $operator = ':value';
                 }
-                $result[] = 'DEFAULT ' . $this->format($operator, $default, $type);
+                $result[] = 'DEFAULT ' . $this->format($operator, $default, compact('type'));
             }
         }
 

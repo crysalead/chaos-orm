@@ -154,7 +154,7 @@ class CreateTable extends \chaos\source\database\sql\Statement
                 throw new SourceException("Missing contraint type.");
             }
             $name = $constraint['type'];
-            if ($meta = $this->dialect()->constraint($name, $constraint, ['' => $this])) {
+            if ($meta = $this->dialect()->constraint($name, $constraint, ['type' => [$this, 'type']])) {
                 $result[] = $meta;
             }
             if ($name === 'primary') {

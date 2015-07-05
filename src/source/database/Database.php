@@ -136,6 +136,7 @@ abstract class Database
         $this->formatter('cast', 'date',      $handlers['cast']['date']);
         $this->formatter('cast', 'datetime',  $handlers['cast']['date']);
         $this->formatter('cast', 'boolean',   $handlers['cast']['boolean']);
+        $this->formatter('cast', 'null',      $handlers['cast']['null']);
         $this->formatter('cast', '_default_', $handlers['cast']['string']);
 
         $this->formatter('datasource', 'id',        $handlers['cast']['string']);
@@ -146,6 +147,7 @@ abstract class Database
         $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
         $this->formatter('datasource', 'datetime',  $handlers['datasource']['date']);
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
+        $this->formatter('datasource', 'null',      $handlers['datasource']['null']);
         $this->formatter('datasource', '_default_', $handlers['datasource']['quote']);
     }
 
@@ -306,6 +308,9 @@ abstract class Database
                         return new DateTime('@' . $value);
                     }
                     return DateTime::createFromFormat($this->_dateFormat, $value);
+                },
+                'null'    => function($value, $params = []) {
+                    return null;
                 }
             ],
             'datasource' => [
@@ -327,7 +332,12 @@ abstract class Database
                         throw new SourceException("Invalid date, must be an instance of `DateTime`.");
                     }
                 },
-                'boolean' => function($value, $params = []) { return $value ? 'TRUE' : 'FALSE'; }
+                'boolean' => function($value, $params = []) {
+                    return $value ? 'TRUE' : 'FALSE';
+                },
+                'null'    => function($value, $params = []) {
+                    return 'NULL';
+                }
             ]
         ];
     }
@@ -363,6 +373,20 @@ abstract class Database
             return isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : $this->_formatters[$mode]['_default_'];
         }
         $this->_formatters[$mode][$type] = $handler;
+        return $this;
+    }
+
+    /**
+     * Gets/sets all formatters.
+     *
+     */
+    public function formatters($formatters = null)
+    {
+        if (!func_num_args()) {
+            return $this->_formatters;
+        }
+        $this->_formatters = $formatters;
+        return $this;
     }
 
     /**
@@ -376,7 +400,18 @@ abstract class Database
     public function format($mode, $type, $value)
     {
         if ($value === null) {
-            return 'NULL';
+            $type = 'null';
+        }
+
+        $formatter = null;
+
+        if (isset($this->_formatters[$mode][$type])) {
+            $formatter = $this->_formatters[$mode][$type];
+        } elseif (isset($this->_formatters[$mode]['_default_'])) {
+            $formatter = $this->_formatters[$mode]['_default_'];
+        }
+        if (!$formatter) {
+            throw new SourceException("Unexisting formatter for `{$type}` type using `{$mode}` handlers.");
         }
         $formatter = isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : $this->_formatters[$mode]['_default_'];
         return $formatter($value);

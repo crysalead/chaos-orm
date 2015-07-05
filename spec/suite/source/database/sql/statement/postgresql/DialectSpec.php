@@ -118,7 +118,7 @@ describe("Dialect", function() {
                         'population' => ['type' => 'integer'],
                         'name' => ['type' => 'string', 'length' => 255]
                     ],
-                    'adapter' => $this->adapter
+                    'connection' => $this->adapter
                 ]);
 
                 $data = [
@@ -127,7 +127,9 @@ describe("Dialect", function() {
                         'name' => 'Los Angeles'
                     ]
                 ];
-                $result = $this->dialect->constraint('check', $data, ['' => $schema]);
+                $result = $this->dialect->constraint('check', $data, [
+                    'schemas' => ['' => $schema]
+                ]);
                 expect($result)->toBe('CHECK ("population" > 20 AND "name" = \'Los Angeles\')');
 
             });

@@ -185,13 +185,13 @@ class Dialect
     protected function _formatters()
     {
         return [
-            ':name' => function ($value, $type, $states) {
+            ':name' => function ($value, $states) {
                 return $this->name($value);
             },
-            ':value' => function ($value, $type, $states) {
-                return $this->value($value, $type);
+            ':value' => function ($value, $states) {
+                return $this->value($value, $states);
             },
-            ':plain' => function ($value, $type, $states) {
+            ':plain' => function ($value, $states) {
                 return (string) $value;
             }
         ];
@@ -332,8 +332,8 @@ class Dialect
             $conditions = [$conditions];
         }
 
-        $states = [
-            'schemas' => $options['schemas'],
+        $states = $options + [
+            'schemas' => [],
             'schema' => null,
             'name' => null,
         ];
@@ -392,25 +392,20 @@ class Dialect
         foreach ($conditions as $name => $value) {
             $operator = strtolower($name);
             if (isset($this->_formatters[$operator])) {
-                $parts[] = $this->format($operator, $value, $this->_type($states), $states);
+                $parts[] = $this->format($operator, $value, $states);
             } elseif ($this->isOperator($operator)) {
                 $parts[] = $this->_operator($operator, $value, $states);
             } elseif (is_numeric($name)) {
                 if (is_array($value)) {
                     $parts = array_merge($parts, $this->_conditions($value, $states));
                 } else {
-                    $parts[] = $this->value($value, $this->_type($states));
+                    $parts[] = $this->value($value, $states);
                 }
             } else {
                 $parts[] = $this->_name($name, $value, $states);
             }
         }
         return $parts;
-    }
-
-    protected function _type($states)
-    {
-        return ($states['name'] && $states['schema']) ? $states['schema']->type($states['name']) : null;
     }
 
     /**
@@ -429,12 +424,12 @@ class Dialect
         $states['schema'] = $schema;
 
         if (!is_array($value)) {
-            return "{$escaped} = " . $this->value($value, $this->_type($states));
+            return "{$escaped} = " . $this->value($value, $states);
         }
 
         $operator = strtolower(key($value));
         if (isset($this->_formatters[$operator])) {
-            return "{$escaped} = " . $this->format($operator, current($value), $this->_type($states), $states);
+            return "{$escaped} = " . $this->format($operator, current($value), $states);
         } elseif (!isset($this->_operators[$operator])) {
             return $this->_operator(':in', [[':name' => $name], $value], $states);
         }
@@ -453,13 +448,13 @@ class Dialect
      * @param  string $type     The value type.
      * @return string           Returns a SQL string.
      */
-    public function format($operator, $value, $type = null, $states = [])
+    public function format($operator, $value, $states = [])
     {
         if (!isset($this->_formatters[$operator])) {
             throw new SourceException("Unexisting formatter `'{$operator}'`.");
         }
         $formatter = $this->_formatters[$operator];
-        return $formatter($value, $type, $states);
+        return $formatter($value, $states);
     }
 
     /**
@@ -532,10 +527,17 @@ class Dialect
      * @param  string $type  The value type.
      * @return mixed         The formatted value.
      */
-    public function value($value, $type = null)
+    public function value($value, $states = [])
     {
+        if (!empty($states['name']) && !empty($states['schema'])) {
+            return $states['schema']->format('datasource', $states['name'], $value);
+        }
         if ($connection = $this->connection()) {
-            return $connection->format('datasource', $type ?: gettype($value), $value);
+            $type = isset($states['type']) ? $states['type'] : gettype($value);
+            if (is_array($type)) {
+                $type = call_user_func($type, $states['name']);
+            }
+            return $connection->format('datasource', $type, $value);
         }
         switch (true) {
             case is_bool($value):
@@ -633,7 +635,7 @@ class Dialect
      * @param  mixed  $value The value used for building the meta.
      * @return string        The SQL meta string.
      */
-    public function constraint($name, $value, $schemas = [])
+    public function constraint($name, $value, $options = [])
     {
         $value += ['options' => []];
         $meta = isset($this->_constraints[$name]) ? $this->_constraints[$name] : null;
@@ -661,7 +663,7 @@ class Dialect
                 break;
                 case 'expr':
                     if (is_array($value)) {
-                        $data[$name] = $this->conditions($value, compact('schemas'));
+                        $data[$name] = $this->conditions($value, $options);
                     } else {
                         $data[$name] = $value;
                     }

@@ -159,6 +159,10 @@ class Schema
         foreach ($config['fields'] as $key => $value) {
             $this->_fields[$key] = $this->_initField($value);
         }
+
+        if ($this->_connection) {
+            $this->_formatters = $this->_connection->formatters();
+        }
     }
 
     /**
@@ -752,6 +756,32 @@ class Schema
             return $properties;
         }
         return $properties = $this->_initField('string');
+    }
+
+    /**
+     * Formats a value according to a field definition.
+     *
+     * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param   string $name  The field name.
+     * @param   mixed  $value The value to format.
+     * @return  mixed         The formated value.
+     */
+    public function format($mode, $name, $value)
+    {
+        $type = $value === null ? 'null' : $this->type($name);
+
+        $formatter = null;
+
+        if (isset($this->_formatters[$mode][$type])) {
+            $formatter = $this->_formatters[$mode][$type];
+        } elseif (isset($this->_formatters[$mode]['_default_'])) {
+            $formatter = $this->_formatters[$mode]['_default_'];
+        }
+
+        if (!$formatter) {
+            throw new SourceException("Unexisting formatter for `{$type}` type using `{$mode}` handlers.");
+        }
+        return $formatter($value);
     }
 
     /**
