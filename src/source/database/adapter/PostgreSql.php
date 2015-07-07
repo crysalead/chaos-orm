@@ -330,12 +330,12 @@ class PostgreSql extends \chaos\source\database\Database {
     }
 
     /**
-     * Get the last insert id from the database.
+     * Returns the last insert id from the database.
      *
-     * @param $query lithium\data\model\Query $context The given query.
+     * @return mixed Returns the last insert id.
      */
-    public function lastInsertId($source = null, $field = null) { //TODO change parameters
-        $sequence = "{$source}_{$field}_seq";
+    public function lastInsertId($sequence = null)
+    {
         $id = $this->_pdo->lastInsertId($sequence);
         return ($id && $id !== '0') ? $id : null;
     }

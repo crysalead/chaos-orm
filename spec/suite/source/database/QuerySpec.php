@@ -55,6 +55,7 @@ foreach ($connections as $db => $connection) {
 
         afterEach(function() {
             $this->fixtures->drop();
+            $this->fixtures->reset();
         });
 
         describe("->connection()", function() {

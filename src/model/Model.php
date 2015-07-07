@@ -13,9 +13,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var array
      */
     protected static $_classes = [
-        'set'          => 'chaos\model\collection\Collection',
-        'through'      => 'chaos\model\collection\Through',
-        'conventions'  => 'chaos\model\Conventions'
+        'set'         => 'chaos\model\collection\Collection',
+        'through'     => 'chaos\model\collection\Through',
+        'conventions' => 'chaos\model\Conventions'
     ];
 
     /**
@@ -900,6 +900,161 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * An instance method (called on record and document objects) to create or update the record or
+     * document in the database.
+     *
+     * For example, to create a new record or document:
+     * {{{
+     * $post = Posts::create(); // Creates a new object, which doesn't exist in the database yet
+     * $post->title = "My post";
+     * $success = $post->save();
+     * }}}
+     *
+     * It is also used to update existing database objects, as in the following:
+     * {{{
+     * $post = Posts::first($id);
+     * $post->title = "Revised title";
+     * $success = $post->save();
+     * }}}
+     *
+     * By default, an object's data will be checked against the validation rules of the model it is
+     * bound to. Any validation errors that result can then be accessed through the `errors()`
+     * method.
+     *
+     * {{{
+     * if (!$post->save($someData)) {
+     *     return array('errors' => $post->errors());
+     * }
+     * }}}
+     *
+     * To override the validation checks and save anyway, you can pass the `'validate'` option:
+     *
+     * {{{
+     * $post->title = "We Don't Need No Stinkin' Validation";
+     * $post->body = "I know what I'm doing.";
+     * $post->save(null, array('validate' => false));
+     * }}}
+     *
+     * @param array $options Options:
+     *                       - `'whitelist'` _array_:   An array of fields that are allowed to
+     *                          be saved to this record.
+     *                       - `'locked'`    _boolean_: Lock data to the schema fields.
+     *                       - `'with'`      _boolean_: List of relations to save.
+     * @return boolean       Returns `true` on a successful save operation, `false` on failure.
+     */
+    public function save($options = [])
+    {
+        $schema = static::schema();
+
+        $defaults = [
+            'whitelist' => null,
+            'locked' => $schema->locked(),
+            'with' => false
+        ];
+        $options += $defaults;
+
+        if (!$this->modified()) {
+            return true;
+        }
+
+        if (!$this->_save('belongsTo', $options)) {
+            return false;
+        }
+
+        if (($whitelist = $options['whitelist']) || $options['locked']) {
+            $whitelist = $whitelist ?: array_keys($schema->fields());
+        }
+
+        $exclude = array_diff($schema->relations(), array_keys($schema->fields()));
+
+        $values = array_diff_key($this->data(), array_fill_keys($exclude, true));
+
+        if ($this->exists()) {
+            $id = $this->primaryKey();
+            $cursor = $schema->update($values, [$id => $schema->primaryKey()]);
+        } else {
+            $cursor = $schema->insert($values);
+        }
+
+        $result = !$cursor->error();
+
+        if (!$this->exists()) {
+            $id = $this->primaryKey() === null ? $schema->lastInsertId() : null;
+            $this->sync($id, [], ['exists' => true]);
+        }
+
+        $hasRelations = ['hasManyThrough', 'hasMany', 'hasOne'];
+
+        if (!$this->_save($hasRelations, $options)) {
+            return false;
+        }
+        return $result;
+    }
+
+    /**
+     * Save relations helper.
+     *
+     * @param array $types Type of relations to save.
+     */
+    protected function _save($types, $options = [])
+    {
+        $defaults = ['with' => false];
+        $options += $defaults;
+
+        if (!$with = $this->_with($options['with'])) {
+            return true;
+        }
+        $schema = static::schema();
+
+        $types = (array) $types;
+        foreach ($types as $type) {
+            foreach ($with as $relName => $value) {
+                if (!($rel = $schema->relation($relName)) || $rel->type() !== $type) {
+                    continue;
+                }
+                if (!$rel->save($this, ['with' => $value] + $options)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * The `'with'` option formatter function
+     *
+     * @return array The formatter with array
+     */
+    protected function _with($with)
+    {
+        if (!$with) {
+            return  false;
+        }
+        if ($with === true) {
+            $with = array_fill_keys(static::schema()->relations(), true);
+        } else {
+            $with = Set::expand(Set::normalize((array) $with));
+        }
+        return $with;
+    }
+
+    /**
+     * Deletes the data associated with the current `Model`.
+     *
+     * @param array $options Options.
+     * @return boolean Success.
+     * @filter
+     */
+    public function delete($options = [])
+    {
+        $schema = static::schema();
+        if (!$id = $schema->primaryKey() || !$this->exists()) {
+            return false;
+        }
+        return $schema->remove([$id => $this->primaryKey()]);
+    }
+
+    /**
      * Validates the instance datas.
      *
      * @param  array  $options Available options:
@@ -951,7 +1106,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     protected function _validates()
     {
         $relationship = static::$_classes['relationship'];
-        if (!$with = $relationship::with($options['with'])) {
+        if (!$with = $this->_with($options['with'])) {
             return true;
         }
         foreach ($with as $field => $value) {

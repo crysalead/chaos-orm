@@ -448,11 +448,11 @@ abstract class Database
     }
 
     /**
-     * Get the last insert id from the database.
+     * Returns the last insert id from the database.
      *
-     * @param $query lithium\data\model\Query $context The given query.
+     * @return mixed Returns the last insert id.
      */
-    public function lastInsertId($source = null, $field = null)
+    public function lastInsertId()
     {
         return $this->_pdo->lastInsertId();
     }

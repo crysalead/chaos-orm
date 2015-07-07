@@ -47,6 +47,7 @@ foreach ($connections as $db => $connection) {
 
         afterEach(function() {
             $this->fixtures->drop();
+            $this->fixtures->reset();
         });
 
         context("with all data populated", function() {

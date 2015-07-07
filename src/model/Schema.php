@@ -778,24 +778,6 @@ class Schema
     }
 
     /**
-     * The `'with'` option formatter function
-     *
-     * @return array The formatter with array
-     */
-    public function with($with)
-    {
-        if (!$with) {
-            return  false;
-        }
-        if ($with === true) {
-            $with = array_fill_keys($this->relations(), true);
-        } else {
-            $with = Set::expand(Set::normalize((array) $with));
-        }
-        return $with;
-    }
-
-    /**
      * Gets/sets the connection object to which this schema is bound.
      *
      * @return object    Returns a connection instance.
@@ -819,5 +801,16 @@ class Schema
     public function query($options = [])
     {
         throw new SourceException("Missing `query()` implementation for this schema.");
+    }
+
+    /**
+     * Returns the last insert id from the database.
+     *
+     * @return mixed Returns the last insert id.
+     */
+    public function lastInsertId()
+    {
+        $sequence = $this->source(). '_' . $this->primaryKey() . '_seq';
+        return $this->connection()->lastInsertId($sequence);
     }
 }

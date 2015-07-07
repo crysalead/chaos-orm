@@ -22,6 +22,7 @@ describe("PostgreSql", function() {
 
     afterEach(function() {
         $this->fixtures->drop();
+        $this->fixtures->reset();
     });
 
     describe("->sources()", function() {
