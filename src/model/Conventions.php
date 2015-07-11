@@ -45,7 +45,7 @@ class Conventions
                     return Inflector::underscore(Inflector::singularize($basename));
                 },
                 'usingName' => function($name) {
-                    return Inflector::underscore(Inflector::singularize($name));
+                    return Inflector::singularize($name);
                 }
             ]
         ];

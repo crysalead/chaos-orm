@@ -325,6 +325,20 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * Gets/sets the default query parameters used on finds.
+     *
+     * @param  array $query The query parameters.
+     * @return array        Returns the default query parameters.
+     */
+    public static function query($query = [])
+    {
+        if (func_num_args()) {
+            static::$_query = is_array($query) ? $query : [];
+        }
+        return static::$_query;
+    }
+
+    /**
      * Returns the schema of this instance.
      *
      * @return object
@@ -438,25 +452,15 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             $this->_persisted = $this->_data;
             return;
         }
-        $persisted = static::id($this->primaryKey());
+        $schema = static::schema();
+        $primaryKey = $schema->primaryKey();
+        $id = isset($options['data'][$primaryKey]) ? $options['data'][$primaryKey] : null;
+        $persisted = static::id($id);
         if (!$persisted) {
-            throw new SourceException("The entity id:`{$this->primaryKey()}` doesn't exists.");
+            throw new SourceException("The entity id:`{$id}` doesn't exists.");
         }
         $this->_persisted = $this->_data = $persisted->plain();
         $this->set($options['data']);
-    }
-
-    /**
-     * When not supported, delegate the call to the schema.
-     *
-     * @param  string $name   The name of the matcher.
-     * @param  array  $params The parameters to pass to the matcher.
-     * @return object         Returns `$this`.
-     */
-    public function __call($name, $params = [])
-    {
-        array_unshift($params, $this);
-        return call_user_func_array([$this->schema(), $name], $params);
     }
 
     /**
@@ -682,13 +686,14 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $schema = static::schema();
 
         $result = [];
-        $fields = $field ? [$field] : array_keys($this->_persisted);
+        $fields = $field ? [$field] : array_keys($this->_data);
 
         foreach ($fields as $key) {
-            if (!isset($this->_persisted[$key])) {
-                if (isset($this->_data[$key])) {
-                    $result[$key] = null;
-                }
+            if (!array_key_exists($key, $this->_data)) {
+                continue;
+            }
+            if (!array_key_exists($key, $this->_persisted)) {
+                $result[$key] = null;
                 continue;
             }
             $modified = false;
@@ -798,16 +803,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $value = $this->_skipNext ? current($this->_data) : next($this->_data);
         $this->_skipNext = false;
         return key($this->_data) !== null ? $value : null;
-    }
-
-    /**
-     * Alias to `::rewind()`.
-     *
-     * @return mixed The current item after rewinding.
-     */
-    public function reset()
-    {
-        return $this->rewind();
     }
 
     /**
@@ -1149,7 +1144,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
                 $result = $this->__toString();
             break;
             default:
-                $result = $this;
+                throw new SourceException("Unsupported format `'{$format}'`.");
             break;
         }
         return $result;

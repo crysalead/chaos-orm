@@ -21,7 +21,7 @@ describe("Model", function() {
         $model::config(); // (acts like a reset)
     });
 
-	describe("->__construct()", function() {
+    describe("->__construct()", function() {
 
         it("loads the data", function() {
 
@@ -37,6 +37,18 @@ describe("Model", function() {
             expect($entity->body)->toBe('World');
             expect($entity->created)->toBe($date);
             expect($entity)->toHaveLength(3);
+
+        });
+
+    });
+
+    describe("->model()", function() {
+
+        it("returns the fully namespaced model class name", function() {
+
+            $model = $this->model;
+            $entity = $model::create([]);
+            expect($entity->model())->toBe($model);
 
         });
 
@@ -263,6 +275,29 @@ describe("Model", function() {
 
         });
 
+        it("lazy loads relations", function() {
+
+            $model = $this->model;
+            $schema = $model::schema();
+
+            $schema->bind('abc', [
+                'relation' => 'hasOne',
+                'to'       => 'TargetModel',
+            ]);
+
+            $relation = Stub::create();
+            $entity = $model::create();
+
+            Stub::on($entity)->method('::relation', function() use ($relation) {
+                return $relation;
+            });
+
+            expect($relation)->toReceive('get')->with($entity);
+
+            $entity->abc;
+
+        });
+
     });
 
     describe("->__get()", function() {
@@ -345,6 +380,24 @@ describe("Model", function() {
 
         });
 
+        it("throws an exception if no persisted data exists", function() {
+
+            $model = $this->model;
+            Stub::on($model)->method('::id', function() { return; });
+
+            $closure = function() {
+                $model = $this->model;
+                $entity = $model::create([
+                    'id' => 1,
+                    'title'   => 'Good Bye',
+                    'body'    => 'Folks'
+                ], ['exists' => true]);
+            };
+
+            expect($closure)->toThrow(new SourceException("The entity id:`1` doesn't exists."));
+
+        });
+
     });
 
     describe("->modified()", function() {
@@ -405,15 +458,22 @@ describe("Model", function() {
 
         });
 
-        it("returns all modified field names with no parameter", function() {
+        it("returns `true` when an unexisting field has been added", function() {
 
             $model = $this->model;
-            $entity = $model::create();
+            $entity = $model::create([], ['exists' => true, 'partial' => false]);
 
-            $entity->modified1 = 'modified';
-            $entity->modified2 = 'modified';
+            $entity->modified = 'modified';
 
             expect($entity->modified())->toBe(true);
+
+        });
+
+        it("returns `false` when an unexisting field is checked", function() {
+
+            $model = $this->model;
+            $entity = $model::create([], ['exists' => true, 'partial' => false]);
+            expect($entity->modified('unexisting'))->toBe(false);
 
         });
 
@@ -786,22 +846,223 @@ describe("Model", function() {
 
     });
 
+    describe("->to()", function() {
+
+        it("exports into an array", function() {
+
+            $data = [
+                'id'      => 1,
+                'title'   => 'test record'
+            ];
+
+            $model = $this->model;
+            $entity = $model::create($data);
+            expect($entity->to('array'))->toBe($data);
+
+        });
+
+        it("exports into a string", function() {
+
+            $data = [
+                'id'      => 1,
+                'title'   => 'test record'
+            ];
+
+            $model = $this->model;
+            $entity = $model::create($data);
+            expect($entity->to('string'))->toBe('test record');
+
+        });
+
+        it("throws an exception for unsupported format", function() {
+
+            $closure = function() {
+                $model = $this->model;
+                $entity = $model::create();
+                $entity->to('unsupported');
+            };
+
+            expect($closure)->toThrow(new SourceException("Unsupported format `'unsupported'`."));
+
+        });
+
+    });
+
     describe("->__toString()", function() {
 
         it("returns the title field", function() {
 
             $data = [
                 'id'      => 1,
-                'title'   => 'test record',
-                'body'    => 'test body',
-                'enabled' => true,
-                'null'    => null,
-                'onject'  => new stdClass()
+                'title'   => 'test record'
             ];
 
             $model = $this->model;
             $entity = $model::create($data);
             expect((string) $entity)->toBe('test record');
+
+        });
+
+    });
+
+    describe("::conventions()", function() {
+
+        it("gets/sets a conventions", function() {
+
+            $conventions = Stub::create();
+            $model = $this->model;
+            $model::conventions($conventions);
+            expect($model::conventions())->toBe($conventions);
+
+        });
+
+    });
+
+    describe("::connection()", function() {
+
+        it("gets/sets a connection", function() {
+
+            $connection = Stub::create();
+            $model = $this->model;
+            $model::connection($connection);
+            expect($model::connection())->toBe($connection);
+
+        });
+
+    });
+
+    describe("::query()", function() {
+
+        it("gets/sets the default query parameters", function() {
+
+            $connection = Stub::create();
+            $model = $this->model;
+            $model::query(['query' => 'options']);
+            expect($model::query())->toBe(['query' => 'options']);
+
+        });
+
+    });
+
+    describe("::find()", function() {
+
+        beforeEach(function() {
+            $model = $this->model;
+            $schema = $model::schema();
+            $this->query = $query = Stub::create(['methods' => ['method1', 'method2']]);
+            Stub::on($schema)->method('query', function() use ($query) {
+                return $query;
+            });
+        });
+
+        it("returns a query instance from the schema class", function() {
+
+            $model = $this->model;
+            expect($model::find())->toBe($this->query);
+
+        });
+
+        it("delegates passed options", function() {
+
+            $model = $this->model;
+
+            expect($this->query)->toReceive('method1')->with('param1');
+            expect($this->query)->toReceive('method2')->with('param2');
+
+            $model::find([
+                'method1' => 'param1',
+                'method2' => 'param2'
+            ]);
+
+        });
+
+        it("merges default query parameters on find", function() {
+
+            $model = $this->model;
+
+            $model::query(['method1' => 'param1']);
+
+            expect($this->query)->toReceive('method1')->with('param1');
+            expect($this->query)->toReceive('method2')->with('param2');
+
+            $model::find([
+                'method2' => 'param2'
+            ]);
+
+        });
+
+    });
+
+    describe("::first()", function() {
+
+        beforeEach(function() {
+            $model = $this->model;
+            $schema = $model::schema();
+            $this->query = $query = Stub::create();
+            Stub::on($schema)->method('query', function() use ($query) {
+                return $query;
+            });
+        });
+
+        it("delegates to `::find`", function() {
+
+            $model = $this->model;
+
+            expect($model)->toReceive('::find')->with(['query' => 'options']);
+            expect($this->query)->toReceive('first')->with(['fetch' => 'options']);
+
+            $model::first(['query' => 'options'], ['fetch' => 'options']);
+
+        });
+
+    });
+
+    describe("::id()", function() {
+
+        beforeEach(function() {
+            $model = $this->model;
+            $schema = $model::schema();
+            $this->query = $query = Stub::create();
+            Stub::on($schema)->method('query', function() use ($query) {
+                return $query;
+            });
+        });
+
+        it("delegates to `::find`", function() {
+
+            $model = $this->model;
+
+            expect($model)->toReceive('::find')->with([
+                'query' => 'options',
+                'conditions' => ['id' => 1]
+            ]);
+            expect($this->query)->toReceive('first')->with(['fetch' => 'options']);
+
+            $model::id(1, ['query' => 'options'], ['fetch' => 'options']);
+
+        });
+
+    });
+
+    describe("::all()", function() {
+
+        beforeEach(function() {
+            $model = $this->model;
+            $schema = $model::schema();
+            $this->query = $query = Stub::create();
+            Stub::on($schema)->method('query', function() use ($query) {
+                return $query;
+            });
+        });
+
+        it("delegates to `::all`", function() {
+
+            $model = $this->model;
+
+            expect($model)->toReceive('::find')->with(['query' => 'options']);
+            expect($this->query)->toReceive('all')->with(['fetch' => 'options']);
+
+            $model::all(['query' => 'options'], ['fetch' => 'options']);
 
         });
 
@@ -820,27 +1081,35 @@ describe("Model", function() {
 
     });
 
-    describe("::conventions()", function() {
+    describe("::relations()", function() {
 
-        it("sets/gets a conventions", function() {
+        it("delegates calls to schema", function() {
 
-            $conventions = Stub::create();
             $model = $this->model;
-            $model::conventions($conventions);
-            expect($model::conventions())->toBe($conventions);
+
+            expect($model::schema())->toReceive('relations')->with('hasMany');
+
+            $model::relations('hasMany');
 
         });
 
     });
 
-    describe("::connection()", function() {
+    describe("::relation()", function() {
 
-        it("sets/gets a connection", function() {
+        it("delegates calls to schema", function() {
 
-            $connection = Stub::create();
             $model = $this->model;
-            $model::connection($connection);
-            expect($model::connection())->toBe($connection);
+
+            $schema = $model::schema();
+            $schema->bind('abc', [
+                'relation' => 'hasOne',
+                'to'       => 'TargetModel',
+            ]);
+
+            expect($model::schema())->toReceive('relation')->with('abc');
+
+            $model::relation('abc');
 
         });
 

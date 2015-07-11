@@ -22,8 +22,13 @@ describe("Through", function() {
         ]);
 
         $this->tagModel = $tagModel = Stub::classname([
-            'extends' => Tag::class
+            'extends' => Tag::class,
+            'methods' => ['tagMethod']
         ]);
+
+        Stub::on($tagModel)->method('tagMethod', function($options) {
+            return $options;
+        });
 
         for ($i = 0; $i < 5; $i++) {
             $image_tag = new $imageTagModel();
@@ -103,15 +108,11 @@ describe("Through", function() {
 
         it("dispatches a method against all items in the collection", function() {
 
-            Stub::on($this->tagModel)->method('hello', function() {
-                return 'world';
-            });
-
             foreach ($this->image->images_tags as $image_tag) {
-                expect($image_tag->tag)->toReceive('hello');
+                expect($image_tag->tag)->toReceive('tagMethod');
             }
 
-            $result = $this->through->invoke('hello');
+            $result = $this->through->invoke('tagMethod', ['world']);
             expect($result->data())->toBe(array_fill(0, 5, 'world'));
 
         });

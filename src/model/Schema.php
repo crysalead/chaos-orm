@@ -542,10 +542,11 @@ class Schema
         $result = [];
 
         if ($type === null) {
-            return array_keys($this->_relationships);
+            return array_keys($this->_relations);
         }
-        foreach ($relations as $field => $relation) {
-            if ($relation['type'] === $name) {
+        foreach ($this->_relations as $field => $config) {
+            $relation = $this->relation($name);
+            if ($relation->type() === $name) {
                 $result[] = $field;
             }
         }
@@ -716,25 +717,34 @@ class Schema
      */
     public function _cast($name, $properties, $data, $options)
     {
-        $model = $options['model'];
-
         if ($properties['array']) {
-            if ($properties['relation'] === 'hasManyThrough') {
-                $options['through'] = $properties['through'];
-                $options['using'] = $properties['using'];
-                $options['type'] = 'through';
-            } else {
-                $options['type'] = 'set';
-            }
-            return $model::create($data, $options);
+            return $this->_castArray($name, $properties, $data, $options);
         }
         if ($properties['type'] === 'object') {
+            $model = $options['model'];
             return $model::create($data, $options);
         }
         if ($properties['null'] && ($data === null || $data === '')) {
             return;
         }
         return $this->format('cast', $name, $data);
+    }
+
+    public function _castArray($name, $properties, $data, $options)
+    {
+        if ($properties['relation'] === 'hasManyThrough') {
+            if (!isset($properties['through'])) {
+                throw SourceException("Missing `'through'` relation name.");
+            }
+            $properties += ['using' => $this->_conventions->apply('usingName', $name)];
+            $options['through'] = $properties['through'];
+            $options['using'] = $properties['using'];
+            $options['type'] = 'through';
+        } else {
+            $options['type'] = 'set';
+        }
+        $model = $options['model'];
+        return $model::create($data, $options);
     }
 
     /**

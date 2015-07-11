@@ -24,6 +24,7 @@ describe("Conventions", function() {
             expect($conventions->apply('source', $model))->toBe('my_post');
             expect($conventions->apply('foreignKey', $model))->toBe('my_post_id');
             expect($conventions->apply('fieldName', $model))->toBe('my_post');
+            expect($conventions->apply('usingName', 'tag'))->toBe('tag');
 
         });
 
@@ -34,6 +35,7 @@ describe("Conventions", function() {
             expect($conventions->apply('source', $model))->toBe('my_comments');
             expect($conventions->apply('foreignKey', $model))->toBe('my_comment_id');
             expect($conventions->apply('fieldName', $model))->toBe('my_comment');
+            expect($conventions->apply('usingName', 'tags'))->toBe('tag');
 
         });
 
