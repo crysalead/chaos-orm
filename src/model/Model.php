@@ -15,7 +15,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     protected static $_classes = [
         'set'         => 'chaos\model\collection\Collection',
         'through'     => 'chaos\model\collection\Through',
-        'conventions' => 'chaos\model\Conventions'
+        'conventions' => 'chaos\model\Conventions',
+        'validator'   => 'validator\Validator'
     ];
 
     /**
@@ -31,6 +32,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var array
      */
     protected static $_schemas = [];
+
+    /**
+     * Stores validator instances.
+     *
+     * @var array
+     */
+    protected static $_validators = [];
 
     /**
      * MUST BE re-defined in sub-classes which require a different connection.
@@ -128,6 +136,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = [
             'classes'     => static::$_classes,
             'schema'      => null,
+            'validator'   => null,
             'connection'  => null,
             'conventions' => null
         ];
@@ -138,19 +147,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         } else {
             unset(static::$_schemas[static::class]);
         }
+
+        if ($config['validator']) {
+            static::$_validators[static::class] = $config['validator'];
+        } else {
+            unset(static::$_validators[static::class]);
+        }
+
         static::$_classes = $config['classes'];
         static::$_connection = $config['connection'];
         static::$_conventions = $config['conventions'];
-    }
-
-    /**
-     * Gets the model class name.
-     *
-     * @return string The fully namespaced model class name.
-     */
-    public function model()
-    {
-        return static::class;
     }
 
     /**
@@ -193,8 +199,18 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * ]);
      * ```
      *
+     * @param object $schema The schema instance.
      */
     protected static function _schema($schema)
+    {
+    }
+
+    /**
+     * This function called once for initializing the validator instance.
+     *
+     * @param object $validator The validator instance.
+     */
+    protected static function _rules($validator)
     {
     }
 
@@ -339,7 +355,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the schema of this instance.
+     * Returns the schema instance of this model.
      *
      * @return object
      */
@@ -362,6 +378,23 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $schema = static::$_schemas[$self] = new $class($config);
         static::_schema($schema);
         return $schema;
+    }
+
+    /**
+     * Returns the validator instance of this model.
+     *
+     * @return object
+     */
+    public static function validator()
+    {
+        $self = static::class;
+        if (isset(static::$_validators[$self])) {
+            return static::$_validators[$self];
+        }
+        $class = static::$_classes['validator'];
+        $validator = static::$_validators[$self] = new $class();
+        static::_rules($validator);
+        return $validator;
     }
 
     /**
@@ -461,6 +494,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
         $this->_persisted = $this->_data = $persisted->plain();
         $this->set($options['data']);
+    }
+
+    /**
+     * Gets the model class name.
+     *
+     * @return string The fully namespaced model class name.
+     */
+    public function model()
+    {
+        return static::class;
     }
 
     /**
@@ -1023,7 +1066,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     protected function _with($with)
     {
         if (!$with) {
-            return  false;
+            return [];
         }
         if ($with === true) {
             $with = array_fill_keys(static::schema()->relations(), true);
@@ -1053,65 +1096,78 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Validates the instance datas.
      *
      * @param  array  $options Available options:
-     *                         - `'rules'` _array_: If specified, this array will _replace_ the default
-     *                           validation rules defined in `$validates`.
      *                         - `'events'` _mixed_: A string or array defining one or more validation
-     *                           _events_. Events are different contexts in which data events can occur, and
+     *                           events. Events are different contexts in which data events can occur, and
      *                           correspond to the optional `'on'` key in validation rules. For example, by
      *                           default, `'events'` is set to either `'create'` or `'update'`, depending on
-     *                           whether `$entity` already exists. Then, individual rules can specify
+     *                           whether the entity already exists. Then, individual rules can specify
      *                           `'on' => 'create'` or `'on' => 'update'` to only be applied at certain times.
-     *                           Using this parameter, you can set up custom events in your rules as well, such
-     *                           as `'on' => 'login'`. Note that when defining validation rules, the `'on'` key
-     *                           can also be an array of multiple events.
+     *                           You can also set up custom events in your rules as well, such as `'on' => 'login'`.
+     *                           Note that when defining validation rules, the `'on'` key can also be an array of
+     *                           multiple events.
      * @return boolean           Returns `true` if all validation rules on all fields succeed, otherwise
      *                           `false`. After validation, the messages for any validation failures are assigned
      *                           to the entity, and accessible through the `errors()` method of the entity object.
      */
-    public function validates()
+    public function validate($options = [])
     {
         $defaults = [
-            'rules'  => static::model()->rules(),
-            'events' => $this->exists() ? 'update' : 'create',
+            'events'   => $this->exists() ? 'update' : 'create',
+            'required' => $this->exists() ? false : true,
             'with'   => false
         ];
         $options += $defaults;
-        $validator = $this->_classes['validator'];
+        $validator = static::validator();
 
-        $this->_errors = [];
+        $valid = $this->_validate($options);
 
-        if (!$this->_validates()) {
-            return false;
-        }
-
-        $rules = $options['rules'];
-        unset($options['rules']);
-
-        if ($errors = $validator::check($this->data(), $rules, $options)) {
-            $this->errors($errors);
-        }
-        return !$errors;
+        $success = $validator->validate($this->data(), $options);
+        $this->_errors = $validator->errors();
+        return $success && $valid;
     }
 
     /**
      * Validates relationships.
      *
-     * @return boolean
+     * @param  array   $options Available options:
+     * @return boolean          Returns `true` if all validation rules on all fields succeed, otherwise `false`.
      */
-    protected function _validates()
+    protected function _validate($options)
     {
-        $relationship = static::$_classes['relationship'];
         if (!$with = $this->_with($options['with'])) {
             return true;
         }
-        foreach ($with as $field => $value) {
-            $relation = static::relation($field);
-            $errors = $relation->validates($this->$field, ['with' => $value] + $options);
-            if (count($errors) !== count(array_filter($errors))) {
+        foreach ($with as $name => $value) {
+            $relation = static::relation($name);
+            $fieldname = $relation->name();
+            if (isset($this->{$fieldname}) && !$this->{$fieldname}->validate(['with' => $value] + $options)) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Returns the errors from the last validate call.
+     *
+     * @return array The occured errors.
+     */
+    public function errors($options = [])
+    {
+        $defaults = ['with' => false];
+        $options += $defaults;
+
+        $with = $this->_with($options['with']);
+
+        $errors = $this->_errors;
+
+        foreach ($with as $name => $value) {
+            $relation = static::relation($name);
+            $fieldname = $relation->name();
+            $errors[$fieldname] = $this->{$fieldname}->errors(['with' => $value] + $options);
+        }
+
+        return $errors;
     }
 
     /**

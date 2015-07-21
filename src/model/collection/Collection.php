@@ -501,6 +501,38 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * Validates a collection.
+     *
+     * @param  array   $options Validates option.
+     * @return boolean
+     */
+    public function validate($options = [])
+    {
+        $success = true;
+        foreach ($this as $entity) {
+            if (!$entity->validate($options)) {
+                $success = false;
+            }
+        }
+        return $success;
+    }
+
+    /**
+     * Returns the errors from the last validate call.
+     *
+     * @return array The occured errors.
+     */
+    public function errors($options = [])
+    {
+        $errors = [];
+        foreach ($this as $entity) {
+            $errors[] = $entity->errors();
+        }
+        return $errors;
+    }
+
+
+    /**
      * Exports a `Collection` instance to an array. Used by `Collection::to()`.
      *
      * @param  mixed $data    Either a `Collection` instance, or an array representing a

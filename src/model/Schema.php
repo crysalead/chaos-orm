@@ -724,7 +724,7 @@ class Schema
             $model = $options['model'];
             return $model::create($data, $options);
         }
-        if ($properties['null'] && ($data === null || $data === '')) {
+        if ($data === null && $properties['null']) {
             return;
         }
         return $this->format('cast', $name, $data);

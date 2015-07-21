@@ -305,23 +305,6 @@ class Relationship
     }
 
     /**
-     * Validates an entity relation.
-     *
-     * @param  object  $entity The relation's entity
-     * @param  array   $options Validates option.
-     * @return boolean
-     */
-    public function validates($entity, $options = [])
-    {
-        $defaults = ['with' => false];
-        $name = $this->name();
-        if (!isset($entity->{$name})) {
-            return [true];
-        }
-        return (array) $entity->{$name}->validates($options + $defaults);
-    }
-
-    /**
      * Gets all entities attached to a collection en entities.
      *
      * @param  mixed  $id An id or an array of ids.
