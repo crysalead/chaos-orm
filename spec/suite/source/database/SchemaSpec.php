@@ -8,9 +8,11 @@ use chaos\source\database\Query;
 use kahlan\plugin\Stub;
 use chaos\spec\fixture\Fixtures;
 
+$box = box('chaos.spec');
+
 $connections = [
-    "MySQL" => box('chaos.spec')->get('source.database.mysql'),
-    "PgSql" => box('chaos.spec')->get('source.database.postgresql')
+    "MySQL" => $box->has('source.database.mysql') ? $box->get('source.database.mysql') : null,
+    "PgSql" => $box->has('source.database.postgresql') ? $box->get('source.database.postgresql') : null
 ];
 
 foreach ($connections as $db => $connection) {
@@ -18,6 +20,8 @@ foreach ($connections as $db => $connection) {
     describe("Schema[{$db}]", function() use ($connection) {
 
         beforeEach(function() use ($connection) {
+
+            skipIf(!$connection);
 
             $this->connection = $connection;
             $this->fixtures = new Fixtures([

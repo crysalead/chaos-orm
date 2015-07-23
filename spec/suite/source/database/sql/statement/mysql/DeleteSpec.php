@@ -4,7 +4,9 @@ namespace chaos\spec\suite\source\database\sql\statement;
 describe("Delete", function() {
 
     beforeEach(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.mysql');
+        $box = box('chaos.spec');
+        skipIf(!$box->has('source.database.mysql'));
+        $this->adapter = $box->get('source.database.mysql');
         $this->delete = $this->adapter->dialect()->statement('delete');
     });
 

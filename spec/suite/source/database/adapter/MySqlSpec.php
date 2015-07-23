@@ -11,7 +11,9 @@ use chaos\spec\fixture\Fixtures;
 describe("MySql", function() {
 
     beforeEach(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.mysql');
+        $box = box('chaos.spec');
+        skipIf(!$box->has('source.database.mysql'));
+        $this->adapter = $box->get('source.database.mysql');
         $this->fixtures = new Fixtures([
             'connection' => $this->adapter,
             'fixtures'   => [

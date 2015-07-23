@@ -22,10 +22,4 @@ $box->service('source.database.postgresql', function() {
     ]);
 });
 
-$box->service('source.database.sqlite3', function() {
-    return new Sqlite3([
-        'database' => ':memory:'
-    ]);
-});
-
 ?>

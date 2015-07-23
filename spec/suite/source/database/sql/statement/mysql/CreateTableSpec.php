@@ -6,7 +6,9 @@ use chaos\SourceException;
 describe("CreateTable", function() {
 
     beforeEach(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.mysql');
+        $box = box('chaos.spec');
+        skipIf(!$box->has('source.database.mysql'));
+        $this->adapter = $box->get('source.database.mysql');
         $this->create = $this->adapter->dialect()->statement('create table');
     });
 

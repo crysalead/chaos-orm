@@ -11,7 +11,9 @@ use chaos\spec\fixture\Fixtures;
 describe("PostgreSql", function() {
 
     before(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.postgresql');
+        $box = box('chaos.spec');
+        skipIf(!$box->has('source.database.postgresql'));
+        $this->adapter = $box->get('source.database.postgresql');
         $this->fixtures = new Fixtures([
             'connection' => $this->adapter,
             'fixtures'   => [

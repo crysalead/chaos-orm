@@ -4,7 +4,9 @@ namespace chaos\spec\suite\source\database\sql\statement;
 describe("Update", function() {
 
     beforeEach(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.mysql');
+        $box = box('chaos.spec');
+        skipIf(!$box->has('source.database.mysql'));
+        $this->adapter = $box->get('source.database.mysql');
         $this->update = $this->adapter->dialect()->statement('update');
     });
 

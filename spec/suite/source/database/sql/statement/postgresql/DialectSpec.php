@@ -7,7 +7,9 @@ use chaos\model\Schema;
 describe("Dialect", function() {
 
     beforeEach(function() {
-        $this->adapter = box('chaos.spec')->get('source.database.postgresql');
+        $box = box('chaos.spec');
+        skipIf(!$box->has('source.database.postgresql'));
+        $this->adapter = $box->get('source.database.postgresql');
         $this->dialect = $this->adapter->dialect();
     });
 
