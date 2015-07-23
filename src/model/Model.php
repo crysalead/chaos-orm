@@ -142,21 +142,20 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         ];
         $config = Set::merge($defaults, $config);
 
+        static::$_classes = $config['classes'];
+
+        static::conventions($config['conventions']);
+        static::connection($config['connection']);
+
         if ($config['schema']) {
-            static::$_schemas[static::class] = $config['schema'];
-        } else {
-            unset(static::$_schemas[static::class]);
+            static::schema($config['schema']);
         }
 
         if ($config['validator']) {
-            static::$_validators[static::class] = $config['validator'];
-        } else {
-            unset(static::$_validators[static::class]);
+            static::validator($config['validator']);
         }
 
-        static::$_classes = $config['classes'];
-        static::$_connection = $config['connection'];
-        static::$_conventions = $config['conventions'];
+
     }
 
     /**
@@ -336,6 +335,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     {
         if (func_num_args()) {
             static::$_connection = $connection;
+            unset(static::$_schemas[static::class]);
         }
         return static::$_connection;
     }
@@ -359,8 +359,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @return object
      */
-    public static function schema()
+    public static function schema($schema = null)
     {
+        if (func_num_args()) {
+            return static::$_schemas[static::class] = $schema;
+        }
         $self = static::class;
         if (isset(static::$_schemas[$self])) {
             return static::$_schemas[$self];
@@ -385,8 +388,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @return object
      */
-    public static function validator()
+    public static function validator($validator = null)
     {
+        if (func_num_args()) {
+            return static::$_validators[static::class] = $validator;
+        }
         $self = static::class;
         if (isset(static::$_validators[$self])) {
             return static::$_validators[$self];

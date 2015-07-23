@@ -9,7 +9,7 @@ $box = box('chaos.spec', new Box());
 $box->service('source.database.mysql', function() {
     return new MySql([
         'database' => 'chaos_test',
-        'login' => 'root',
+        'username' => 'root',
         'password' => 'root'
     ]);
 });
@@ -17,7 +17,7 @@ $box->service('source.database.mysql', function() {
 $box->service('source.database.postgresql', function() {
     return new PostgreSql([
         'database' => 'chaos_test',
-        'login' => 'root',
+        'username' => 'root',
         'password' => 'root'
     ]);
 });

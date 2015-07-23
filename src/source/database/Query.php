@@ -169,7 +169,7 @@ class Query implements IteratorAggregate
     public function get($options = [])
     {
         $defaults = [
-            'return' => 'record',
+            'return' => 'entity',
             'fetch'  => PDO::FETCH_ASSOC
         ];
         $options += $defaults;
@@ -188,7 +188,7 @@ class Query implements IteratorAggregate
         ]);
 
         switch ($return) {
-            case 'record':
+            case 'entity':
                 foreach ($cursor as $key => $record) {
                     $collection[] = $model::create($record, ['exists' => true, 'partial' => false]);
                 }

@@ -75,7 +75,7 @@ abstract class Database
      *  - `'dns'`       : _string_ The full dsn connection url. Defaults to `null`.
      *  - `'database'`  : _string_ Name of the database to use. Defaults to `null`.
      *  - `'host'`      : _string_ Name/address of server to connect to. Defaults to 'localhost'.
-     *  - `'login'`     : _string_ Username to use when connecting to server. Defaults to 'root'.
+     *  - `'username'`  : _string_ Username to use when connecting to server. Defaults to 'root'.
      *  - `'password'`  : _string_ Password to use when connecting to server. Defaults to `''`.
      *  - `'encoding'`  : _string_ The database character encoding.
      *  - `'persistent'`: _boolean_ If true a persistent connection will be attempted, provided the
@@ -97,7 +97,7 @@ abstract class Database
             'meta' => ['key' => 'id', 'locked' => true],
             'persistent' => true,
             'host'       => 'localhost',
-            'login'      => 'root',
+            'username'   => 'root',
             'password'   => '',
             'database'   => null,
             'encoding'   => null,
@@ -198,7 +198,7 @@ abstract class Database
         ];
 
         try {
-            $this->_pdo = new PDO($dsn, $config['login'], $config['password'], $options);
+            $this->_pdo = new PDO($dsn, $config['username'], $config['password'], $options);
         } catch (PDOException $e) {
             $this->_exception($e);
         }
