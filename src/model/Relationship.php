@@ -258,7 +258,7 @@ class Relationship
         }
 
         $link = $this->link();
-        $strategies = static::strategies();
+        $strategies = $this->strategies();
 
         if (!isset($strategies[$link]) || !is_callable($strategies[$link])) {
             throw new SourceException("Attempted to get object for invalid relationship link type `{$link}`.");
@@ -269,7 +269,7 @@ class Relationship
     /**
      * Strategies used to query related objects, indexed by key.
      */
-    public static function strategies()
+    public function strategies()
     {
         return [
             static::LINK_EMBEDDED => function($entity, $relationship) {
@@ -285,7 +285,10 @@ class Relationship
                     return $entity->{$relationship->name()};
                 }
                 $collection = $this->_find($entity->{$relationship->keys('from')}, $options);
-                return $relationship->hasMany() ? $collection : reset($collection);
+                if ($relationship->hasMany()) {
+                    return $collection;
+                }
+                return $collection ? reset($collection) : null;
             },
             static::LINK_KEY_LIST  => function($object, $relationship, $options) {
                 return $this->_find($entity->{$relationship->keys('from')}, $options);
@@ -315,7 +318,7 @@ class Relationship
         if ($this->link() !== static::LINK_KEY) {
             throw new SourceException("This relation is not based on a foreign key.");
         }
-        if ($id === []) {
+        if (!$id) {
             return [];
         }
         $query = $this->schema()->query(['model' => $this->to(), 'conditions' => [
@@ -337,9 +340,13 @@ class Relationship
         $indexes = [];
         foreach ($collection as $key => $entity) {
             if (is_object($entity)) {
-                $indexes[$entity->{$name}] = $key;
+                if ($entity->{$name}) {
+                    $indexes[$entity->{$name}] = $key;
+                }
             } else {
-                $indexes[$entity[$name]] = $key;
+                if (isset($entity[$name])) {
+                    $indexes[$entity[$name]] = $key;
+                }
             }
         }
         return $indexes;
@@ -360,5 +367,26 @@ class Relationship
                 unset($entity[$name]);
             }
         }
+    }
+
+    /**
+     * Validating an entity relation.
+     *
+     * @param  object  $entity The relation's entity
+     * @param  array   $options Saving options.
+     * @return boolean
+     */
+    public function validate($entity, $options = [])
+    {
+        $fieldname = $this->name();
+
+        if (!$this->hasMany()) {
+            return !isset($entity->{$fieldname}) || $entity->{$fieldname}->validate($options);
+        }
+        $success = true;
+        foreach ($entity->{$fieldname} as $value) {
+            $success = $success && $value->validate($options);
+        }
+        return $success;
     }
 }

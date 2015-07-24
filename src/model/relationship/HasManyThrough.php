@@ -1,6 +1,7 @@
 <?php
 namespace chaos\model\relationship;
 
+use chaos\SourceException;
 use chaos\model\Model;
 use chaos\model\collection\Through;
 
@@ -125,6 +126,18 @@ class HasManyThrough extends \chaos\model\Relationship
      * @return boolean
      */
     public function save($entity, $options = [])
+    {
+        return true;
+    }
+
+    /**
+     * Validating an entity relation.
+     *
+     * @param  object  $entity The relation's entity
+     * @param  array   $options Saving options.
+     * @return boolean
+     */
+    public function validate($entity, $options = [])
     {
         return true;
     }

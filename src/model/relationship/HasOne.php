@@ -1,6 +1,8 @@
 <?php
 namespace chaos\model\relationship;
 
+use chaos\SourceException;
+
 /**
  * The `HasOne` relationship.
  */

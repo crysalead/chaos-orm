@@ -63,14 +63,6 @@ class Query implements IteratorAggregate
     protected $_schemas = [];
 
     /**
-     * Array containing mappings of relationship and field names, which allow database results to
-     * be mapped to the correct objects.
-     *
-     * @var array
-     */
-    protected $_map = [];
-
-    /**
      * The relations to include.
      *
      * @var array
@@ -105,23 +97,10 @@ class Query implements IteratorAggregate
         $schema = $model::schema();
         $source = $schema->source();
         $this->_statement = $this->connection()->dialect()->statement('select');
-        $this->_statement->from([$source => $this->_alias('', $schema)]);
+        $this->_statement->from([$source => $this->alias('', $schema)]);
         if (isset($config['conditions'])) {
             $this->_statement->where($config['conditions']);
         }
-    }
-
-    /**
-     * When not supported, delegate the call to the model.
-     *
-     * @param  string $name   The name of the matcher.
-     * @param  array  $params The parameters to pass to the matcher.
-     * @return object         Returns `$this`.
-     */
-    public function __call($name, $params = [])
-    {
-        array_unshift($params, $this);
-        return call_user_func_array([$this->_model, $name], $params);
     }
 
     /**
@@ -179,18 +158,23 @@ class Query implements IteratorAggregate
 
         $this->_applyHas();
 
-        $model = $this->_model;
+        if ($noFields = !$this->_statement->data('fields')) {
+            $this->_statement->fields([$this->alias() => ['*']]);
+        }
 
         $collection = [];
         $return = $options['return'];
+
         $cursor = $this->_statement->execute([
             'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 
+        $model = $this->_model;
+
         switch ($return) {
             case 'entity':
                 foreach ($cursor as $key => $record) {
-                    $collection[] = $model::create($record, ['exists' => true, 'partial' => false]);
+                    $collection[] = $model::create($record, ['exists' => $noFields ? true : null, 'autoreload' => false]);
                 }
                 $collection = $model::create($collection, ['type' => 'set']);
             break;
@@ -204,7 +188,14 @@ class Query implements IteratorAggregate
                 throw new SourceException("Invalid `'{$options['return']}'` mode as `'return'` value");
             break;
         }
-        $collection = $this->_collect($collection, $options);
+
+        if ($collection) {
+            $id = $model::schema()->primaryKey();
+            if ($id && isset($collection[0]->{$id})) {
+                $collection = $this->_collect($collection, $options);
+            }
+        }
+
         $model::schema()->embed($collection, $this->_with, $options);
         return $collection;
     }
@@ -273,6 +264,29 @@ class Query implements IteratorAggregate
     }
 
     /**
+     * Adds some fields to the query
+     *
+     * @param  string|array $fields The fields.
+     * @return string               Formatted fields list.
+     */
+    public function fields($fields)
+    {
+        $fields = is_array($fields) && func_num_args() === 1 ? $fields : func_get_args();
+
+        $model = $this->_model;
+        $schema = $model::schema();
+
+        foreach ($fields as $key => $value) {
+            if (is_string($value) && is_numeric($key) && $schema->has($value)) {
+                $this->_statement->fields([$this->alias() => [$value]]);
+            } else {
+                $this->_statement->fields([$key => $value]);
+            }
+        }
+        return $this;
+    }
+
+    /**
      * Adds some where conditions to the query
      *
      * @param  string|array $conditions The conditions for this query.
@@ -280,7 +294,7 @@ class Query implements IteratorAggregate
      */
     public function where($conditions)
     {
-        $conditions = $this->_statement->dialect()->prefix($conditions, $this->_alias());
+        $conditions = $this->_statement->dialect()->prefix($conditions, $this->alias());
         $this->_statement->where($conditions);
         return $this;
     }
@@ -305,7 +319,7 @@ class Query implements IteratorAggregate
     public function group($fields)
     {
         $fields = is_array($fields) ? $fields : func_get_args();
-        $fields = $this->_statement->dialect()->prefix($fields, $this->_alias());
+        $fields = $this->_statement->dialect()->prefix($fields, $this->alias());
         $this->_statement->group($fields);
         return $this;
     }
@@ -318,7 +332,7 @@ class Query implements IteratorAggregate
      */
     public function having($conditions)
     {
-        $conditions = $this->_statement->dialect()->prefix($conditions, $this->_alias());
+        $conditions = $this->_statement->dialect()->prefix($conditions, $this->alias());
         $this->_statement->having($conditions);
         return $this;
     }
@@ -332,7 +346,7 @@ class Query implements IteratorAggregate
     public function order($fields)
     {
         $fields = is_array($fields) ? $fields : func_get_args();
-        $fields = $this->_statement->dialect()->prefix($fields, $this->_alias());
+        $fields = $this->_statement->dialect()->prefix($fields, $this->alias());
         $this->_statement->order($fields);
         return $this;
     }
@@ -381,7 +395,7 @@ class Query implements IteratorAggregate
      * @param  object $schema The corresponding schema to alias.
      * @return string         A string alias.
      */
-    public function _alias($path = '', $schema = null)
+    public function alias($path = '', $schema = null)
     {
         if (func_num_args() < 2) {
             if (isset($this->_aliases[$path])) {
@@ -405,9 +419,9 @@ class Query implements IteratorAggregate
     protected function _applyHas()
     {
         $tree = Set::expand(array_fill_keys(array_keys($this->has()), false));
-        $this->_applyJoins($this->_model, $tree, '', $this->_alias());
+        $this->_applyJoins($this->_model, $tree, '', $this->alias());
         foreach ($this->has() as $path => $conditions) {
-            $this->where($conditions, $this->_alias($path));
+            $this->where($conditions, $this->alias($path));
         }
     }
 
@@ -456,7 +470,7 @@ class Query implements IteratorAggregate
         $model = $rel->to();
         $schema = $model::schema();
         $source = $schema->source();
-        $toAlias = $this->_alias($path, $schema);
+        $toAlias = $this->alias($path, $schema);
 
         $this->join(
             [$source => $toAlias],

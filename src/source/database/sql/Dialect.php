@@ -234,7 +234,7 @@ class Dialect
      */
     public function names($fields)
     {
-        return (string) join(", ", $this->_names(is_array($fields) ? $fields : [$fields], ''));
+        return (string) join(", ", $this->escapes(is_array($fields) ? $fields : [$fields], ''));
     }
 
     /**
@@ -243,7 +243,7 @@ class Dialect
      * Note: it ignores duplicates.
      *
      */
-    protected function _names($names, $prefix)
+    public function escapes($names, $prefix)
     {
         $names = is_array($names) ? $names : [$names];
         $sql = [];
@@ -265,9 +265,9 @@ class Dialect
             } else {
                 $pfx = $prefix;
                 if (!is_numeric($key)) {
-                    $pfx = $this->_escape($key);
+                    $pfx = $this->escape($key);
                 }
-                $sql = array_merge($sql, $this->_names($value, $pfx));
+                $sql = array_merge($sql, $this->escapes($value, $pfx));
             }
         }
         return $sql;
@@ -470,7 +470,7 @@ class Dialect
             return $this->names($name);
         }
         list($alias, $field) = $this->undot($name);
-        return $alias ? $this->_escape($alias) . '.' . $this->_escape($field) : $this->_escape($name);
+        return $alias ? $this->escape($alias) . '.' . $this->escape($field) : $this->escape($name);
     }
 
     /**
@@ -479,7 +479,7 @@ class Dialect
      * @param  string $name Identifier name.
      * @return string
      */
-    protected function _escape($name)
+    public function escape($name)
     {
         return $name === '*' ? '*' : $this->_escape . $name . $this->_escape;
     }

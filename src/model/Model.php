@@ -154,8 +154,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if ($config['validator']) {
             static::validator($config['validator']);
         }
-
-
     }
 
     /**
@@ -307,9 +305,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public static function create($data = [], $options = [])
     {
         $defaults = [
-            'type' => 'entity',
-            'exists' => false,
-            'model' => static::class
+            'type'    => 'entity',
+            'exists'  => false,
+            'model'   => static::class
         ];
         $options += $defaults;
         $options['defaults'] = !$options['exists'];
@@ -464,45 +462,43 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Creates a new record object with default values.
      *
      * @param array $options Possible options are:
-     *                      - `'data'`   _array_  : The entiy class.
-     *                      - `'parent'` _object_ : The parent instance.
-     *                      - `'exists'` _boolean_: The class dependencies.
+     *                      - `'data'`       _array_  : The entiy data.
+     *                      - `'parent'`     _object_ : The parent instance.
+     *                      - `'rootPath'`   _string_ : The base rootPath (for embedded entities).
+     *                      - `'exists'`     _boolean_: A boolean or `null` indicating if the entity exists.
+     *                      - `'autoreload'` _boolean_: If `true` and exists is `null`, autoreload the entity
+     *                                                  from the datasource
      *
      */
     public function __construct($options = [])
     {
         $defaults = [
-            'exists'   => false,
-            'parent'   => null,
-            'rootPath' => null,
-            'data'     => [],
-            'partial'  => true
+            'data'       => [],
+            'parent'     => null,
+            'rootPath'   => null,
+            'exists'     => false,
+            'autoreload' => true
         ];
         $options += $defaults;
         $this->_exists = $options['exists'];
         $this->_parent = $options['parent'];
         $this->_rootPath = $options['rootPath'];
-        if (!$this->exists()) {
-            $this->set($options['data']);
-            return;
-        }
-        if (!$options['partial']) {
-            $this->set($options['data']);
+        $this->set($options['data']);
+
+        if ($this->exists()) {
             $this->_persisted = $this->_data;
             return;
         }
-        $schema = static::schema();
-        $primaryKey = $schema->primaryKey();
-        $id = isset($options['data'][$primaryKey]) ? $options['data'][$primaryKey] : null;
-        $persisted = static::id($id);
-        if (!$persisted) {
-            throw new SourceException("The entity id:`{$id}` doesn't exists.");
+        if ($this->exists() === false) {
+            return;
         }
-        $this->_persisted = $this->_data = $persisted->plain();
+        if ($options['autoreload']) {
+            $this->reload();
+        }
         $this->set($options['data']);
     }
 
-    /**
+    /**+
      * Gets the model class name.
      *
      * @return string The fully namespaced model class name.
@@ -513,7 +509,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * A flag indicating whether or not this instance has been persisted somehow.
+     * Indicating whether or not this instance has been persisted somehow.
      *
      * @return boolean `True` if the record was read from or saved to the data-source, Otherwise `false`.
      */
@@ -537,7 +533,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Get the base rootPath.
+     * Get the base rootPath for embedded entities. Otherwise the rootPath will be `''`.
      *
      * @return string
      */
@@ -554,11 +550,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function primaryKey()
     {
-        if (!$key = static::schema()->primaryKey()) {
+        if (!$id = static::schema()->primaryKey()) {
             $class = static::class;
             throw new SourceException("No primary key has been defined for `{$class}`'s schema.");
         }
-        return isset($this->$key) ? $this->$key : null;
+        return $this->{$id};
     }
 
     /**
@@ -706,7 +702,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the persisted data.
+     * Returns the persisted data (i.e the data in the datastore).
      *
      * @param  string $field A field name or `null` to retreive all data.
      * @return mixed
@@ -720,7 +716,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets the current state for a given field or, if no field is given, gets the array of modified fields.
+     * Gets the modified state of a given field or, if no field is given, gets the state of the whole entity.
      *
      * @param  string $field The field name to check its state.
      * @return array         Returns `true` if a field is given and was updated, `false` otherwise.
@@ -944,19 +940,18 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * An instance method (called on record and document objects) to create or update the record or
-     * document in the database.
+     * Creates and/or updates an entity and its direct relationship data in the datasource.
      *
      * For example, to create a new record or document:
      * {{{
-     * $post = Posts::create(); // Creates a new object, which doesn't exist in the database yet
+     * $post = Post::create(); // Creates a new object, which doesn't exist in the database yet
      * $post->title = "My post";
      * $success = $post->save();
      * }}}
      *
      * It is also used to update existing database objects, as in the following:
      * {{{
-     * $post = Posts::first($id);
+     * $post = Post::first($id);
      * $post->title = "Revised title";
      * $success = $post->save();
      * }}}
@@ -976,12 +971,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * {{{
      * $post->title = "We Don't Need No Stinkin' Validation";
      * $post->body = "I know what I'm doing.";
-     * $post->save(null, array('validate' => false));
+     * $post->save(null, ['validate' => false]);
      * }}}
      *
      * @param array $options Options:
-     *                       - `'whitelist'` _array_:   An array of fields that are allowed to
-     *                          be saved to this record.
+     *                       - `'validate'`  _boolean_: If `false`, validation will be skipped, and the record will
+     *                                                  be immediately saved. Defaults to `true`.
+     *                       - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
      *                       - `'locked'`    _boolean_: Lock data to the schema fields.
      *                       - `'with'`      _boolean_: List of relations to save.
      * @return boolean       Returns `true` on a successful save operation, `false` on failure.
@@ -991,18 +987,28 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $schema = static::schema();
 
         $defaults = [
+            'validate' => true,
             'whitelist' => null,
             'locked' => $schema->locked(),
-            'with' => false
+            'with' => true
         ];
         $options += $defaults;
 
-        if (!$this->modified()) {
-            return true;
+        if ($options['validate'] && !$this->validate($options)) {
+            return false;
         }
+
+        $options['validate'] = false;
+        $options['with'] = $this->_with($options['with']);
 
         if (!$this->_save('belongsTo', $options)) {
             return false;
+        }
+
+        $hasRelations = ['hasMany', 'hasOne'];
+
+        if (!$this->modified()) {
+            return $this->_save($hasRelations, $options);
         }
 
         if (($whitelist = $options['whitelist']) || $options['locked']) {
@@ -1010,29 +1016,37 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
 
         $exclude = array_diff($schema->relations(), array_keys($schema->fields()));
-
         $values = array_diff_key($this->data(), array_fill_keys($exclude, true));
 
-        if ($this->exists()) {
-            $id = $this->primaryKey();
-            $cursor = $schema->update($values, [$id => $schema->primaryKey()]);
-        } else {
+        if ($this->exists() === false) {
             $cursor = $schema->insert($values);
+        } else {
+            $id = $this->primaryKey();
+            if ($id === null) {
+                throw new SourceException("Can't update an entity missing ID data.");
+            }
+            $cursor = $schema->update($values, [$id => $schema->primaryKey()]);
         }
 
-        $result = !$cursor->error();
+        $success = !$cursor->error();
 
-        if (!$this->exists()) {
+        if ($this->exists() === false) {
             $id = $this->primaryKey() === null ? $schema->lastInsertId() : null;
             $this->sync($id, [], ['exists' => true]);
         }
 
-        $hasRelations = ['hasManyThrough', 'hasMany', 'hasOne'];
+        return $success && $this->_save($hasRelations, $options);
+    }
 
-        if (!$this->_save($hasRelations, $options)) {
-            return false;
-        }
-        return $result;
+    /**
+     * Similar as `->save()` except the direct relationship has not been saved by default.
+     *
+     * @param  array   $options Same options as `->save()`.
+     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
+     */
+    public function persist($options = [])
+    {
+        return $this->save($options + ['with' => false]);
     }
 
     /**
@@ -1042,26 +1056,21 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected function _save($types, $options = [])
     {
-        $defaults = ['with' => false];
+        $defaults = ['with' => []];
         $options += $defaults;
-
-        if (!$with = $this->_with($options['with'])) {
-            return true;
-        }
         $schema = static::schema();
-
         $types = (array) $types;
+
+        $success = true;
         foreach ($types as $type) {
-            foreach ($with as $relName => $value) {
+            foreach ($options['with'] as $relName => $value) {
                 if (!($rel = $schema->relation($relName)) || $rel->type() !== $type) {
                     continue;
                 }
-                if (!$rel->save($this, ['with' => $value] + $options)) {
-                    return false;
-                }
+                $success = $success && $rel->save($this, ['with' => $value] + $options);
             }
         }
-        return true;
+        return $success;
     }
 
     /**
@@ -1075,11 +1084,36 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             return [];
         }
         if ($with === true) {
-            $with = array_fill_keys(static::schema()->relations(), true);
-        } else {
-            $with = Set::expand(Set::normalize((array) $with));
+            $with = static::relations();
         }
-        return $with;
+        $with = Set::expand(Set::normalize((array) $with));
+
+        $result = [];
+        $schema = static::schema();
+        foreach ($with as $relName => $value) {
+            $rel = $schema->relation($relName);
+            if ($rel->type() === 'hasManyThrough') {
+                $result[$rel->through()] = [$rel->using() => $value];
+            } else {
+                $result[$relName] = $value;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Reloads the entity from the datasource
+     */
+    public function reload()
+    {
+        $id = $this->primaryKey();
+        $persisted = $id !== null ? static::id($id) : null;
+        if (!$persisted) {
+            throw new SourceException("The entity id:`{$id}` doesn't exists.");
+        }
+        $this->_exists = true;
+        $this->set($persisted->plain());
+        $this->_persisted = $this->_data;
     }
 
     /**
@@ -1092,14 +1126,14 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function delete($options = [])
     {
         $schema = static::schema();
-        if (!$id = $schema->primaryKey() || !$this->exists()) {
+        if (!$id = $schema->primaryKey() || $this->exists() === false) {
             return false;
         }
         return $schema->remove([$id => $this->primaryKey()]);
     }
 
     /**
-     * Validates the instance datas.
+     * Validates the entity data.
      *
      * @param  array  $options Available options:
      *                         - `'events'` _mixed_: A string or array defining one or more validation
@@ -1118,9 +1152,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function validate($options = [])
     {
         $defaults = [
-            'events'   => $this->exists() ? 'update' : 'create',
-            'required' => $this->exists() ? false : true,
-            'with'   => false
+            'events'   => $this->exists() !== false ? 'update' : 'create',
+            'required' => $this->exists() !== false ? false : true,
+            'with'     => true
         ];
         $options += $defaults;
         $validator = static::validator();
@@ -1140,35 +1174,36 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected function _validate($options)
     {
-        if (!$with = $this->_with($options['with'])) {
-            return true;
-        }
+        $defaults = ['with' => true];
+        $options += $defaults;
+
+        $with = $this->_with($options['with']);
+        $schema = static::schema();
+        $success = true;
+
         foreach ($with as $name => $value) {
-            $relation = static::relation($name);
-            $fieldname = $relation->name();
-            if (isset($this->{$fieldname}) && !$this->{$fieldname}->validate(['with' => $value] + $options)) {
-                return false;
-            }
+            $rel = $schema->relation($name);
+            $success = $success && $rel->validate($this, ['with' => $value] + $options);
         }
-        return true;
+        return $success;
     }
 
     /**
-     * Returns the errors from the last validate call.
+     * Returns the errors from the last `->validate()` call.
      *
      * @return array The occured errors.
      */
     public function errors($options = [])
     {
-        $defaults = ['with' => false];
+        $defaults = ['with' => true];
         $options += $defaults;
 
         $with = $this->_with($options['with']);
-
+        $schema = static::schema();
         $errors = $this->_errors;
 
         foreach ($with as $name => $value) {
-            $relation = static::relation($name);
+            $relation = $schema->relation($name);
             $fieldname = $relation->name();
             $errors[$fieldname] = $this->{$fieldname}->errors(['with' => $value] + $options);
         }

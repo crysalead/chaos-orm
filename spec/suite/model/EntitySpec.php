@@ -42,6 +42,24 @@ describe("Entity", function() {
 
         });
 
+        it("throws an exception if exists is `null` but no record actually exists", function() {
+
+            $model = $this->model;
+            Stub::on($model)->method('::id', function() { return; });
+
+            $closure = function() {
+                $model = $this->model;
+                $entity = $model::create([
+                    'id' => 1,
+                    'title'   => 'Good Bye',
+                    'body'    => 'Folks'
+                ], ['exists' => null]);
+            };
+
+            expect($closure)->toThrow(new SourceException("The entity id:`1` doesn't exists."));
+
+        });
+
     });
 
     describe("->model()", function() {
@@ -61,7 +79,7 @@ describe("Entity", function() {
         it("returns the exists value", function() {
 
             $model = $this->model;
-            $entity = $model::create([], ['exists' => true, 'partial' => false]);
+            $entity = $model::create([], ['exists' => true]);
             expect($entity->exists())->toBe(true);
 
         });
@@ -331,20 +349,18 @@ describe("Entity", function() {
         it("returns persisted data", function() {
 
             $model = $this->model;
-            Stub::on($model)->method('::id', function() {
-                return static::create([
-                    'id'      => '1',
-                    'title'   => 'Hello',
-                    'body'    => 'World'
-                ]);
-            });
 
             $entity = $model::create([
+                'id'      => 1,
+                'title'   => 'Hello',
+                'body'    => 'World'
+            ], ['exists' => true]);
+
+            $entity->set([
                 'id' => 1,
                 'title'   => 'Good Bye',
                 'body'    => 'Folks'
-            ], ['exists' => true]);
-
+            ]);
 
             expect($entity->persisted('title'))->toBe('Hello');
             expect($entity->persisted('body'))->toBe('World');
@@ -360,43 +376,24 @@ describe("Entity", function() {
         it("returns all persisted data with no parameter", function() {
 
             $model = $this->model;
-            Stub::on($model)->method('::id', function() {
-                return static::create([
-                    'id'      => 1,
-                    'title'   => 'Hello',
-                    'body'    => 'World'
-                ]);
-            });
 
             $entity = $model::create([
+                'id'      => 1,
+                'title'   => 'Hello',
+                'body'    => 'World'
+            ], ['exists' => true]);
+
+            $entity->set([
                 'id' => 1,
                 'title'   => 'Good Bye',
                 'body'    => 'Folks'
-            ], ['exists' => true]);
+            ]);
 
             expect($entity->persisted())->toBe([
-                'id' => 1,
+                'id'      => 1,
                 'title'   => 'Hello',
                 'body'    => 'World'
             ]);
-
-        });
-
-        it("throws an exception if no persisted data exists", function() {
-
-            $model = $this->model;
-            Stub::on($model)->method('::id', function() { return; });
-
-            $closure = function() {
-                $model = $this->model;
-                $entity = $model::create([
-                    'id' => 1,
-                    'title'   => 'Good Bye',
-                    'body'    => 'Folks'
-                ], ['exists' => true]);
-            };
-
-            expect($closure)->toThrow(new SourceException("The entity id:`1` doesn't exists."));
 
         });
 
@@ -407,7 +404,7 @@ describe("Entity", function() {
         it("returns a boolean indicating if a field has been modified", function() {
 
             $model = $this->model;
-            $entity = $model::create(['title' => 'original'], ['exists' => true, 'partial' => false]);
+            $entity = $model::create(['title' => 'original'], ['exists' => true]);
 
             expect($entity->modified('title'))->toBe(false);
 
@@ -419,7 +416,7 @@ describe("Entity", function() {
         it("returns `false` if a field has been updated with a same scalar value", function() {
 
             $model = $this->model;
-            $entity = $model::create(['title' => 'original'], ['exists' => true, 'partial' => false]);
+            $entity = $model::create(['title' => 'original'], ['exists' => true]);
 
             expect($entity->modified('title'))->toBe(false);
 
@@ -431,7 +428,7 @@ describe("Entity", function() {
         it("returns `false` if a field has been updated with a similar object value", function() {
 
             $model = $this->model;
-            $entity = $model::create(['body'  => (object) 'body'], ['exists' => true, 'partial' => false]);
+            $entity = $model::create(['body'  => (object) 'body'], ['exists' => true]);
 
             expect($entity->modified('body'))->toBe(false);
 
@@ -449,9 +446,9 @@ describe("Entity", function() {
                 'to'   => $child
             ]);
 
-            $subentity = $child::create(['field' => 'value'], ['exists' => true, 'partial' => false]);
+            $subentity = $child::create(['field' => 'value'], ['exists' => true]);
 
-            $entity = $model::create(['child' => $subentity], ['exists' => true, 'partial' => false]);
+            $entity = $model::create(['child' => $subentity], ['exists' => true]);
 
             expect($entity->modified())->toBe(false);
 
@@ -463,7 +460,7 @@ describe("Entity", function() {
         it("returns `true` when an unexisting field has been added", function() {
 
             $model = $this->model;
-            $entity = $model::create([], ['exists' => true, 'partial' => false]);
+            $entity = $model::create([], ['exists' => true]);
 
             $entity->modified = 'modified';
 
@@ -474,7 +471,7 @@ describe("Entity", function() {
         it("returns `false` when an unexisting field is checked", function() {
 
             $model = $this->model;
-            $entity = $model::create([], ['exists' => true, 'partial' => false]);
+            $entity = $model::create([], ['exists' => true]);
             expect($entity->modified('unexisting'))->toBe(false);
 
         });
