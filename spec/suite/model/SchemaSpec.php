@@ -27,7 +27,10 @@ describe("Schema", function() {
 
         it("correctly sets config options", function() {
 
-            $connection = Stub::create();
+            $connection = Stub::create([
+                'extends' => 'chaos\source\database\Database',
+                'params' => [['connect' => false]]
+            ]);
             $conventions = Stub::create();
 
             $schema = new Schema([

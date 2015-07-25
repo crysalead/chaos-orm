@@ -40,7 +40,7 @@ class Schema extends \chaos\model\Schema
     }
 
     /**
-     * Create the schema.
+     * Creates the schema.
      *
      * @param  array   $options An array of options.
      * @return boolean
@@ -58,18 +58,17 @@ class Schema extends \chaos\model\Schema
         }
 
         $query = $this->connection()->dialect()->statement('create table');
-        $query
-            ->ifNotExists($options['soft'])
-            ->table($this->_source)
-            ->columns($this->fields())
-            ->constraints($this->meta('constraints'))
-            ->meta($this->meta('table'));
+        $query->ifNotExists($options['soft'])
+              ->table($this->_source)
+              ->columns($this->fields())
+              ->constraints($this->meta('constraints'))
+              ->meta($this->meta('table'));
 
         return $this->connection()->query($query->toString());
     }
 
     /**
-     * Insert a records  with the given data.
+     * Inserts a records  with the given data.
      *
      * @param  mixed $data       Typically an array of key/value pairs that specify the new data with which
      *                           the records will be updated. For SQL databases, this can optionally be
@@ -81,13 +80,13 @@ class Schema extends \chaos\model\Schema
     {
         $insert = $this->connection()->dialect()->statement('insert');
         $insert->into($this->source())
-            ->values($data);
+               ->values($data);
 
         return $this->connection()->query($insert->toString());
     }
 
     /**
-     * Update multiple records with the given data, restricted by the given set of criteria (optional).
+     * Updates multiple records with the given data, restricted by the given set of criteria (optional).
      *
      * @param  mixed $data       Typically an array of key/value pairs that specify the new data with which
      *                           the records will be updated. For SQL databases, this can optionally be
@@ -101,14 +100,14 @@ class Schema extends \chaos\model\Schema
     {
         $update = $this->connection()->dialect()->statement('update');
         $update->table($this->source())
-            ->where($conditions)
-            ->values($data);
+               ->where($conditions)
+               ->values($data);
 
         return $this->connection()->query($update->toString());
     }
 
     /**
-     * Remove multiple documents or records based on a given set of criteria. **WARNING**: If no
+     * Removes multiple documents or records based on a given set of criteria. **WARNING**: If no
      * criteria are specified, or if the criteria (`$conditions`) is an empty value (i.e. an empty
      * array or `null`), all the data in the backend data source (i.e. table or collection) _will_
      * be deleted.
@@ -119,20 +118,19 @@ class Schema extends \chaos\model\Schema
      *              the `delete()` method of the corresponding backend database for available
      *              options.
      * @return boolean Returns `true` if the remove operation succeeded, otherwise `false`.
-     * @filter
      */
     public function remove($conditions = [], $options = [])
     {
-        $statement = $this->connection()->dialect()->statement('delete');
+        $delete = $this->connection()->dialect()->statement('delete');
 
-        $update->table($this->source())
-            ->where($conditions);
+        $delete->from($this->source())
+               ->where($conditions);
 
-        return $this->connection()->query($statement->toString());
+        return $this->connection()->query($delete->toString());
     }
 
     /**
-     * Drop the schema
+     * Drops the schema
      *
      * @param  array   $options An array of options.
      * @return boolean
@@ -151,11 +149,10 @@ class Schema extends \chaos\model\Schema
             throw new SourceException("Missing table name for this schema.");
         }
         $query = $this->connection()->dialect()->statement('drop table');
-        $query
-            ->ifExists($options['soft'])
-            ->table($this->_source)
-            ->cascade($options['cascade'])
-            ->restrict($options['restrict']);
+        $query->ifExists($options['soft'])
+              ->table($this->_source)
+              ->cascade($options['cascade'])
+              ->restrict($options['restrict']);
 
         return $this->connection()->query($query->toString());
     }

@@ -4,6 +4,7 @@ namespace chaos\source\database;
 use PDO;
 use PDOException;
 use PDOStatement;
+use DateTime;
 use set\Set;
 use chaos\SourceException;
 
@@ -69,6 +70,11 @@ abstract class Database
     protected $_formatters = [];
 
     /**
+     * ISO 8601 date format.
+     */
+    protected $_dateFormat = 'Y-m-d H:i:s';
+
+    /**
      * Creates the database object and set default values for it.
      *
      * Options defined:
@@ -89,12 +95,13 @@ abstract class Database
     {
         $defaults = [
             'classes' => [
-                'cursor' => 'chaos\source\database\Cursor',
-                'schema' => 'chaos\source\database\Schema'
+                'cursor'  => 'chaos\source\database\Cursor',
+                'schema'  => 'chaos\source\database\Schema',
+                'dialect' => 'chaos\source\database\sql\Dialect'
             ],
-            'pdo'     => null,
-            'connect' => true,
-            'meta' => ['key' => 'id', 'locked' => true],
+            'pdo'        => null,
+            'connect'    => true,
+            'meta'       => ['key' => 'id', 'locked' => true],
             'persistent' => true,
             'host'       => 'localhost',
             'username'   => 'root',
@@ -139,11 +146,11 @@ abstract class Database
         $this->formatter('cast', 'null',      $handlers['cast']['null']);
         $this->formatter('cast', '_default_', $handlers['cast']['string']);
 
-        $this->formatter('datasource', 'id',        $handlers['cast']['string']);
-        $this->formatter('datasource', 'serial',    $handlers['cast']['string']);
-        $this->formatter('datasource', 'integer',   $handlers['cast']['string']);
-        $this->formatter('datasource', 'float',     $handlers['cast']['string']);
-        $this->formatter('datasource', 'decimal',   $handlers['cast']['string']);
+        $this->formatter('datasource', 'id',        $handlers['datasource']['string']);
+        $this->formatter('datasource', 'serial',    $handlers['datasource']['string']);
+        $this->formatter('datasource', 'integer',   $handlers['datasource']['string']);
+        $this->formatter('datasource', 'float',     $handlers['datasource']['string']);
+        $this->formatter('datasource', 'decimal',   $handlers['datasource']['string']);
         $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
         $this->formatter('datasource', 'datetime',  $handlers['datasource']['date']);
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
@@ -155,7 +162,7 @@ abstract class Database
      * When not supported, delegate the call to the connection.
      *
      * @param string $name   The name of the matcher.
-     * @param array  $params The parameters to pass to the matcher.
+     * @param array  $options The parameters to pass to the matcher.
      */
     public function __call($name, $params = [])
     {
@@ -287,55 +294,54 @@ abstract class Database
     {
         return [
             'cast' => [
-                'string' => function($value, $params = []) {
+                'string' => function($value, $options = []) {
                     return (string) $value;
                 },
-                'integer' => function($value, $params = []) {
+                'integer' => function($value, $options = []) {
                     return (integer) $value;
                 },
-                'float'   => function($value, $params = []) {
+                'float'   => function($value, $options = []) {
                     return (float) $value;
                 },
-                'decimal' => function($value, $params = []) {
-                    $params += ['precision' => 2];
-                    return number_format($number, $params['precision']);
+                'decimal' => function($value, $options = []) {
+                    $options += ['precision' => 2];
+                    return number_format($number, $options['precision']);
                 },
-                'boolean' => function($value, $params = []) {
+                'boolean' => function($value, $options = []) {
                     return !!$value;
                 },
-                'date'    => function($value, $params = []) {
+                'date'    => function($value, $options = []) {
                     if (is_numeric($value)) {
                         return new DateTime('@' . $value);
                     }
-                    return DateTime::createFromFormat($this->_dateFormat, $value);
+                    if ($value instanceof DateTime) {
+                        return $value;
+                    }
+                    return DateTime::createFromFormat(date($this->_dateFormat, strtotime($value)), $value);
                 },
-                'null'    => function($value, $params = []) {
+                'null'    => function($value, $options = []) {
                     return null;
                 }
             ],
             'datasource' => [
-                'string' => function($value, $params = []) {
+                'string' => function($value, $options = []) {
                     return (string) $value;
                 },
-                'quote' => function($value, $params = []) {
+                'quote' => function($value, $options = []) {
                     return $this->dialect()->quote((string) $value);
                 },
-                'date' => function($value, $params = []) {
-                    $params += ['format' => null];
-                    $format = $params['format'];
-                    if (!$format) {
-                        throw new SourceException("Invalid date format:`{$format}`.");
-                    }
+                'date' => function($value, $options = []) {
                     if ($value instanceof DateTime) {
-                        return $this->dialect()->quote($value->format($format));
+                        $date = $value->format($this->_dateFormat);
                     } else {
-                        throw new SourceException("Invalid date, must be an instance of `DateTime`.");
+                        $date = date($this->_dateFormat, is_numeric($value) ? $value : strtotime($value));
                     }
+                    return $this->dialect()->quote((string) $date);
                 },
-                'boolean' => function($value, $params = []) {
+                'boolean' => function($value, $options = []) {
                     return $value ? 'TRUE' : 'FALSE';
                 },
-                'null'    => function($value, $params = []) {
+                'null'    => function($value, $options = []) {
                     return 'NULL';
                 }
             ]
@@ -397,11 +403,9 @@ abstract class Database
      * @param   mixed  $value The value to format.
      * @return  mixed         The formated value.
      */
-    public function format($mode, $type, $value)
+    public function format($mode, $type, $value, $options = [])
     {
-        if ($value === null) {
-            $type = 'null';
-        }
+        $type = $value === null ? 'null' : $type;
 
         $formatter = null;
 
@@ -410,11 +414,7 @@ abstract class Database
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-        if (!$formatter) {
-            throw new SourceException("Unexisting formatter for `{$type}` type using `{$mode}` handlers.");
-        }
-        $formatter = isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : $this->_formatters[$mode]['_default_'];
-        return $formatter($value);
+        return $formatter ? $formatter($value, $options) : $value;
     }
 
     /**

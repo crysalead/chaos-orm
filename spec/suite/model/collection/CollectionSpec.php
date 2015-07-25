@@ -391,7 +391,7 @@ describe("Collection", function() {
 
     });
 
-    describe("->plain()", function() {
+    describe("->get()", function() {
 
         it("returns the plain data", function() {
 
@@ -401,7 +401,7 @@ describe("Collection", function() {
                 'key3' => 'three'
             ];
             $collection = new Collection(compact('data'));
-            expect($collection->plain())->toBe($data);
+            expect($collection->get())->toBe($data);
 
         });
 

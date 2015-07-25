@@ -384,6 +384,28 @@ foreach ($connections as $db => $connection) {
 
         });
 
+        describe("->delete()", function() {
+
+            it("deletes an entity", function() {
+
+                $data = [
+                    'name' => 'amiga_1200.jpg',
+                    'title' => 'Amiga 1200'
+                ];
+
+                $model = $this->image;
+                $image = $model::create($data);
+
+                expect($image->save())->toBe(true);
+                expect($image->exists())->toBe(true);
+
+                expect($image->delete())->toBe(true);
+                expect($image->exists())->toBe(false);
+
+            });
+
+        });
+
     });
 
 };

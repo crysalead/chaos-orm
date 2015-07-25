@@ -18,6 +18,12 @@ describe("Entity", function() {
         $this->model = Stub::classname(['extends' => Model::class]);
     });
 
+    beforeEach(function() {
+        $model = $this->model;
+        $schema = $model::schema();
+        $schema->set('id', ['type' => 'serial']);
+    });
+
     afterEach(function() {
         $model = $this->model;
         $model::config(); // (acts like a reset)
@@ -57,18 +63,6 @@ describe("Entity", function() {
             };
 
             expect($closure)->toThrow(new SourceException("The entity id:`1` doesn't exists."));
-
-        });
-
-    });
-
-    describe("->model()", function() {
-
-        it("returns the fully namespaced model class name", function() {
-
-            $model = $this->model;
-            $entity = $model::create([]);
-            expect($entity->model())->toBe($model);
 
         });
 
@@ -243,12 +237,12 @@ describe("Entity", function() {
                 'extends' => $this->model,
                 'methods' => ['setHello']
             ]);
-            Stub::on($entity)->method('setHello', function($value = null) {
-                return 'boy';
+            Stub::on($entity)->method('setHello', function($data) {
+                return 'Hi ' . $data;
             });
 
-            $entity->hello = 'world';
-            expect($entity->hello)->toBe('boy');
+            $entity->hello = 'boy';
+            expect($entity->hello)->toBe('Hi boy');
 
         });
 
@@ -287,11 +281,13 @@ describe("Entity", function() {
                 'extends' => $this->model,
                 'methods' => ['getHello']
             ]);
-            Stub::on($entity)->method('getHello', function($value = null) {
-                return 'boy';
+
+            Stub::on($entity)->method('getHello', function($data) {
+                return 'Hi ' . $data;
             });
 
-            expect($entity->hello)->toBe('boy');
+            $entity->hello = 'boy';
+            expect($entity->hello)->toBe('Hi boy');
 
         });
 
@@ -860,31 +856,6 @@ describe("Entity", function() {
 
         });
 
-        it("exports into a string", function() {
-
-            $data = [
-                'id'      => 1,
-                'title'   => 'test record'
-            ];
-
-            $model = $this->model;
-            $entity = $model::create($data);
-            expect($entity->to('string'))->toBe('test record');
-
-        });
-
-        it("throws an exception for unsupported format", function() {
-
-            $closure = function() {
-                $model = $this->model;
-                $entity = $model::create();
-                $entity->to('unsupported');
-            };
-
-            expect($closure)->toThrow(new SourceException("Unsupported format `'unsupported'`."));
-
-        });
-
     });
 
     describe("->__toString()", function() {
@@ -941,8 +912,8 @@ describe("Entity", function() {
             $gallery->images[] = Image::create();
             $gallery->images[] = Image::create();
 
-            expect($gallery->validate(['with' => ['images']]))->toBe(false);
-            expect($gallery->errors(['with' => ['images']]))->toBe([
+            expect($gallery->validate())->toBe(false);
+            expect($gallery->errors())->toBe([
                 'name' => ['is required'],
                 'images' => [
                     ['name' => ['is required']],
@@ -953,8 +924,8 @@ describe("Entity", function() {
             $gallery->name = '';
             $gallery->images[0]->name = '';
             $gallery->images[1]->name = '';
-            expect($gallery->validate(['with' => ['images']]))->toBe(false);
-            expect($gallery->errors(['with' => ['images']]))->toBe([
+            expect($gallery->validate())->toBe(false);
+            expect($gallery->errors())->toBe([
                 'name' => ['must not be a empty'],
                 'images' => [
                     ['name' => ['must not be a empty']],
@@ -965,11 +936,63 @@ describe("Entity", function() {
             $gallery->name = 'new gallery';
             $gallery->images[0]->name = 'image1';
             $gallery->images[1]->name = 'image2';
-            expect($gallery->validate(['with' => ['images']]))->toBe(true);
-            expect($gallery->errors(['with' => ['images']]))->toBe([
+            expect($gallery->validate())->toBe(true);
+            expect($gallery->errors())->toBe([
                 'images' => [
                     [],
                     []
+                ]
+            ]);
+
+        });
+
+    });
+
+    describe("->to('array')", function() {
+
+        it("exports data using `'array'` formatter handlers", function() {
+
+            $model = $this->model;
+
+            $schema = $model::schema();
+            $schema->set('created', ['type' => 'date']);
+
+            $entity = new $model(['data' => [
+                'title'   => 'Hello',
+                'body'    => 'World',
+                'created' => new DateTime('2014-10-26 00:25:15')
+            ]]);
+
+            expect($entity->data(['format' => 'Y-m-d']))->toBe([
+                'title'   => 'Hello',
+                'body'    => 'World',
+                'created' => '2014-10-26'
+            ]);
+
+        });
+
+        it("supports recursive structures", function() {
+
+            $data = [
+                'name' => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200',
+                'tags' => [
+                    ['name' => 'tag1']
+                ]
+            ];
+
+            $image = Image::create($data);
+            foreach ($image->tags as $tag) {
+                $tag->images[] = $image;
+            }
+            expect($image->data())->toBe([
+                'name' => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200',
+                'images_tags' => [
+                    ['tag' => ['name' => 'tag1']]
+                ],
+                'tags' => [
+                    ['name' => 'tag1']
                 ]
             ]);
 

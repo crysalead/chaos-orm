@@ -99,12 +99,12 @@ class PostgreSql extends \chaos\source\database\Database {
             ],
             'handlers' => [
                 'cast' => [
-                    'boolean' => function($value, $params = []) {
+                    'boolean' => function($value, $options = []) {
                         return $value === 't';
                     },
                 ],
                 'datasource' => [
-                    'boolean' => function($value, $params = []) {
+                    'boolean' => function($value, $options = []) {
                         return $value ? 'true' : 'false';
                     },
                     'array' => function($data) {

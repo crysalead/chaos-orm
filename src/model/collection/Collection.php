@@ -485,7 +485,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *
      * @return array Returns an "unboxed" array of the `Collection`'s value.
      */
-    public function plain()
+    public function get()
     {
         return $this->_data;
     }
@@ -548,8 +548,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     public static function toArray($data, $options = [])
     {
         $defaults = [
-            'handlers' => [],
-            'parents'  => []
+            'handlers' => []
         ];
 
         $options += $defaults;
@@ -566,12 +565,11 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
                 case (isset($options['handlers'][$class = get_class($item)])):
                     $result[$key] = $options['handlers'][$class]($item);
                 break;
-                case ($item instanceof ArrayAccess):
-                    $id = spl_object_hash($item);
-                    if (!isset($options['parents'][$id])) {
-                        $options['parents'][$id] = true;
-                        $result[$key] = static::toArray($item, $options);
-                    }
+                case $item instanceof Model:
+                    $result[$key] = $item->to('array', $options);
+                break;
+                case $item instanceof ArrayAccess:
+                    $result[$key] = static::toArray($item, $options);
                 break;
                 case (method_exists($item, '__toString')):
                     $result[$key] = (string) $item;

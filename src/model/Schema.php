@@ -2,6 +2,7 @@
 namespace chaos\model;
 
 use Iterator;
+use DateTime;
 use set\Set;
 use chaos\SourceException;
 use chaos\model\Model;
@@ -144,7 +145,7 @@ class Schema
         $this->_connection = $config['connection'];
         $this->_locked = $config['locked'];
         $this->_meta = $config['meta'];
-        $this->_handlers = $config['handlers'];
+        $this->_handlers = Set::merge($config['handlers'], $this->_handlers());
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
         $config += [
@@ -159,6 +160,19 @@ class Schema
         foreach ($config['fields'] as $key => $value) {
             $this->_fields[$key] = $this->_initField($value);
         }
+
+        $handlers = $this->_handlers;
+
+        $this->formatter('array', 'id',        $handlers['array']['integer']);
+        $this->formatter('array', 'serial',    $handlers['array']['integer']);
+        $this->formatter('array', 'integer',   $handlers['array']['integer']);
+        $this->formatter('array', 'float',     $handlers['array']['float']);
+        $this->formatter('array', 'decimal',   $handlers['array']['float']);
+        $this->formatter('array', 'date',      $handlers['array']['date']);
+        $this->formatter('array', 'datetime',  $handlers['array']['date']);
+        $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
+        $this->formatter('array', 'null',      $handlers['array']['null']);
+        $this->formatter('array', '_default_', $handlers['array']['string']);
 
         if ($this->_connection) {
             $this->_formatters = $this->_connection->formatters();
@@ -463,9 +477,12 @@ class Schema
      */
     public function bind($name, $config = [])
     {
+        $relationship = $this->_classes['relationship'];
+
         $config += [
             'from' => $this->model(),
-            'to'   => null
+            'to'   => null,
+            'link' => $relationship::LINK_KEY
         ];
         $config['type'] = 'object';
 
@@ -532,21 +549,16 @@ class Schema
     }
 
     /**
-     * Returns an array of relation names.
+     * Returns an array of external relation names.
      *
-     * @param  string $type A relation type name.
-     * @return array        Returns an array of relation names.
+     * @param  boolean $embedded Include or not embedded relations.
+     * @return array             Returns an array of relation names.
      */
-    public function relations($type = null)
+    public function relations($embedded = false)
     {
         $result = [];
-
-        if ($type === null) {
-            return array_keys($this->_relations);
-        }
         foreach ($this->_relations as $field => $config) {
-            $relation = $this->relation($name);
-            if ($relation->type() === $name) {
+            if ($embedded || strncmp($config['link'], 'key', 3) === 0) {
                 $result[] = $field;
             }
         }
@@ -665,45 +677,24 @@ class Schema
 
         if ($name === null) {
             $model = $options['model'];
-            if (!is_object($data)) {
-                return $model::create($data, $options);
-            }
             if ($data instanceof $model) {
                 return $data;
             }
-            throw new SourceException("Invalid data, the passed object must be an instance of `{$model}`");
+            return $model::create($data, $options);
         }
 
-        $properties = $this->_properties($name);
+        if (!$properties = $this->_properties($name)) {
+            return $data;
+        }
 
         if (isset($properties['to'])) {
             $options['model'] = $properties['to'];
         }
 
-        if (is_object($data)) {
-            if ($properties['type'] !== 'object') {
-                return $data;
-            }
-            if (!$properties['array']) {
-                $model = $options['model'];
-                if ($data instanceof $model) {
-                    return $data;
-                } else {
-                    throw new SourceException("Invalid data, the passed object must be an instance of `{$to}`");
-                }
-            }
-            $type = $properties['relation'] === 'hasManyThrough' ? 'through' : 'set';
-            $collection = $this->_classes[$type];
-            if ($data instanceof $collection) {
-                return $data;
-            } else {
-                throw new SourceException("Invalid data, the passed object must be an instance of `{$collection}`");
-            }
-        }
-
         if (isset($this->_fields[$name])) {
             $options['rootPath'] = $name;
         }
+
         return $this->_cast($name, $properties, $data, $options);
     }
 
@@ -722,6 +713,9 @@ class Schema
         }
         if ($properties['type'] === 'object') {
             $model = $options['model'];
+            if ($data instanceof $model) {
+                return $data;
+            }
             return $model::create($data, $options);
         }
         if ($data === null && $properties['null']) {
@@ -743,6 +737,10 @@ class Schema
         } else {
             $options['type'] = 'set';
         }
+        $collection = $this->_classes[$options['type']];
+        if ($data instanceof $collection) {
+            return $data;
+        }
         $model = $options['model'];
         return $model::create($data, $options);
     }
@@ -762,7 +760,43 @@ class Schema
             $properties = $this->_relations[$name];
             return $properties;
         }
-        return $properties = $this->_initField('string');
+        return;
+    }
+
+    /**
+     * Return default cast handlers
+     *
+     * @return array
+     */
+    protected function _handlers()
+    {
+        return [
+            'array' => [
+                'string' => function($value, $options = []) {
+                    return (string) $value;
+                },
+                'integer' => function($value, $options = []) {
+                    return (int) $value;
+                },
+                'float' => function($value, $options = []) {
+                    return (int) $value;
+                },
+                'date' => function($value, $options = []) {
+                    $options += ['format' => 'Y-m-d H:i:s'];
+                    $format = $options['format'];
+                    if ($value instanceof DateTime) {
+                        return $value->format($format);
+                    }
+                    return date($format, is_numeric($value) ? $value : strtotime($value));
+                },
+                'boolean' => function($value, $options = []) {
+                    return $value;
+                },
+                'null'    => function($value, $options = []) {
+                    return;
+                }
+            ]
+        ];
     }
 
     /**
@@ -773,7 +807,7 @@ class Schema
      * @param   mixed  $value The value to format.
      * @return  mixed         The formated value.
      */
-    public function format($mode, $name, $value)
+    public function format($mode, $name, $value, $options = [])
     {
         $type = $value === null ? 'null' : $this->type($name);
 
@@ -784,7 +818,36 @@ class Schema
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-        return $formatter ? $formatter($value) : $value;
+        return $formatter ? $formatter($value, $options) : $value;
+    }
+
+    /**
+     * Gets/sets a formatter handler.
+     *
+     * @param  string   $type          The type name.
+     * @param  callable $importHandler The callable import handler.
+     * @param  callable $exportHandler The callable export handler. If not set use `$importHandler`.
+     */
+    public function formatter($mode, $type, $handler = null)
+    {
+        if (func_num_args() === 2) {
+            return isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : $this->_formatters[$mode]['_default_'];
+        }
+        $this->_formatters[$mode][$type] = $handler;
+        return $this;
+    }
+
+    /**
+     * Gets/sets all formatters.
+     *
+     */
+    public function formatters($formatters = null)
+    {
+        if (!func_num_args()) {
+            return $this->_formatters;
+        }
+        $this->_formatters = $formatters;
+        return $this;
     }
 
     /**
@@ -822,5 +885,35 @@ class Schema
     {
         $sequence = $this->source(). '_' . $this->primaryKey() . '_seq';
         return $this->connection()->lastInsertId($sequence);
+    }
+
+    /**
+     * The `'with'` option formatter function
+     *
+     * @return array The formatter with array
+     */
+    public function with($with)
+    {
+        if (!$with) {
+            return [];
+        }
+        if ($with === true) {
+            $with = $this->relations();
+        }
+        $with = Set::expand(Set::normalize((array) $with));
+
+        $result = [];
+        foreach ($with as $relName => $value) {
+            if (!isset($this->_relations[$relName])) {
+                continue;
+            } elseif ($this->_relations[$relName]['relation'] === 'hasManyThrough') {
+                $rel = $this->relation($relName);
+                $result[$rel->through()] = [$rel->using() => $value];
+                $result[$relName] = $value;
+            } else {
+                $result[$relName] = $value;
+            }
+        }
+        return $result;
     }
 }

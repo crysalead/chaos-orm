@@ -171,7 +171,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     public function offsetSet($offset, $data)
     {
         $name = $this->_through;
-        $parent = $this->_parent->model();
+        $parent = $this->parent();
         $relThrough = $parent::relation($name);
         $through = $relThrough->to();
 

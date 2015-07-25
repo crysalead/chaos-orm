@@ -1,6 +1,7 @@
 <?php
 namespace chaos\model;
 
+use ArrayAccess;
 use set\Set;
 use chaos\SourceException;
 use chaos\model\collection\Collection;
@@ -298,6 +299,14 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @param  array  $data    Any data that this object should be populated with initially.
      * @param  array  $options Options to be passed to item.
+     *                         - `'type'`       _string_ : can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection
+     *                           of entities. Default to `'entity'`.
+     *                         - `'exists'`     _mixed_  : corresponds whether the entity is present in the datastore or not.
+     *                         - `'autoreload'` _boolean_: sets the specific behavior when exists is `null`. A '`true`' value will perform a
+     *                           reload of the entity from the datasource. Default to `'true'`.
+     *                         - `'defaults'`   _boolean_: indicates whether the entity needs to be populated with their defaults values on creation.
+     *                         - `'model'`      _string_ : the model to use for instantiating the entity. Can be useful for implementing
+     *                                                     som Single Table Inheritance.
      * @return object          Returns a new, un-saved record or document object. In addition to
      *                         the values passed to `$data`, the object will also contain any values
      *                         assigned to the `'default'` key of each field defined in the schema.
@@ -498,16 +507,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $this->set($options['data']);
     }
 
-    /**+
-     * Gets the model class name.
-     *
-     * @return string The fully namespaced model class name.
-     */
-    public function model()
-    {
-        return static::class;
-    }
-
     /**
      * Indicating whether or not this instance has been persisted somehow.
      *
@@ -636,15 +635,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'parent'   => $this,
             'model'    => static::class,
             'rootPath' => $this->_rootPath,
-            'defaults' => !$this->_exists,
-            'exists'   => $this->_exists
+            'defaults' => true,
+            'exists'   => false
         ];
         $options += $defaults;
 
         $method = 'set' . ucwords(str_replace('_', ' ', $name));
         if (method_exists($this, $method)) {
-            $data = $this->$method($name);
+            $data = $this->$method($data);
         }
+
         return $this->_data[$name] = static::schema()->cast($name, $data, $options);
     }
 
@@ -660,7 +660,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
         $method = 'get' . ucwords(str_replace('_', ' ', $name));
         if (method_exists($this, $method)) {
-            return $this->$method($name);
+            return $this->$method(array_key_exists($name, $this->_data) ? $this->_data[$name] : null);
         }
         if (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
@@ -678,16 +678,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function title()
     {
         return $this->title ?: $this->name;
-    }
-
-    /**
-     * Gets the plain array value of the `Collection`.
-     *
-     * @return array Returns an "unboxed" array of the `Collection`'s value.
-     */
-    public function plain()
-    {
-        return $this->_data;
     }
 
     /**
@@ -999,7 +989,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
 
         $options['validate'] = false;
-        $options['with'] = $this->_with($options['with']);
+        $options['with'] = $schema->with($options['with']);
 
         if (!$this->_save('belongsTo', $options)) {
             return false;
@@ -1016,7 +1006,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
 
         $exclude = array_diff($schema->relations(), array_keys($schema->fields()));
-        $values = array_diff_key($this->data(), array_fill_keys($exclude, true));
+        $values = array_diff_key($this->get(), array_fill_keys($exclude, true));
 
         if ($this->exists() === false) {
             $cursor = $schema->insert($values);
@@ -1039,7 +1029,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Similar as `->save()` except the direct relationship has not been saved by default.
+     * Similar to `->save()` except the direct relationship has not been saved by default.
      *
      * @param  array   $options Same options as `->save()`.
      * @return boolean          Returns `true` on a successful save operation, `false` on failure.
@@ -1074,34 +1064,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * The `'with'` option formatter function
-     *
-     * @return array The formatter with array
-     */
-    protected function _with($with)
-    {
-        if (!$with) {
-            return [];
-        }
-        if ($with === true) {
-            $with = static::relations();
-        }
-        $with = Set::expand(Set::normalize((array) $with));
-
-        $result = [];
-        $schema = static::schema();
-        foreach ($with as $relName => $value) {
-            $rel = $schema->relation($relName);
-            if ($rel->type() === 'hasManyThrough') {
-                $result[$rel->through()] = [$rel->using() => $value];
-            } else {
-                $result[$relName] = $value;
-            }
-        }
-        return $result;
-    }
-
-    /**
      * Reloads the entity from the datasource
      */
     public function reload()
@@ -1112,7 +1074,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             throw new SourceException("The entity id:`{$id}` doesn't exists.");
         }
         $this->_exists = true;
-        $this->set($persisted->plain());
+        $this->set($persisted->get());
         $this->_persisted = $this->_data;
     }
 
@@ -1126,10 +1088,15 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function delete($options = [])
     {
         $schema = static::schema();
-        if (!$id = $schema->primaryKey() || $this->exists() === false) {
+        if ((!$id = $schema->primaryKey()) || $this->exists() === false) {
             return false;
         }
-        return $schema->remove([$id => $this->primaryKey()]);
+        if($schema->remove([$id => $this->primaryKey()])) {
+            $this->_exists = false;
+            $this->_persisted = [];
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -1161,7 +1128,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
 
         $valid = $this->_validate($options);
 
-        $success = $validator->validate($this->data(), $options);
+        $success = $validator->validate($this->get(), $options);
         $this->_errors = $validator->errors();
         return $success && $valid;
     }
@@ -1177,8 +1144,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = ['with' => true];
         $options += $defaults;
 
-        $with = $this->_with($options['with']);
         $schema = static::schema();
+        $with = $schema->with($options['with']);
         $success = true;
 
         foreach ($with as $name => $value) {
@@ -1198,16 +1165,17 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = ['with' => true];
         $options += $defaults;
 
-        $with = $this->_with($options['with']);
         $schema = static::schema();
+        $with = $schema->with($options['with']);
         $errors = $this->_errors;
 
         foreach ($with as $name => $value) {
             $relation = $schema->relation($name);
             $fieldname = $relation->name();
-            $errors[$fieldname] = $this->{$fieldname}->errors(['with' => $value] + $options);
+            if (isset($this->{$fieldname})) {
+                $errors[$fieldname] = $this->{$fieldname}->errors(['with' => $value] + $options);
+            }
         }
-
         return $errors;
     }
 
@@ -1233,16 +1201,29 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function to($format, $options = [])
     {
-        switch ($format) {
-            case 'array':
-                $result = Collection::toArray($this, $options);
-            break;
-            case 'string':
-                $result = $this->__toString();
-            break;
-            default:
-                throw new SourceException("Unsupported format `'{$format}'`.");
-            break;
+        $defaults = [
+            'with' => true
+        ];
+        $options += $defaults;
+
+        $schema = static::schema();
+        $with = $schema->with($options['with']);
+
+        $result = [];
+        foreach ($this as $field => $value) {
+            if ($schema->hasRelation($field)) {
+                if (!array_key_exists($field, $with)) {
+                    continue;
+                }
+                $options['with'] = $with[$field];
+            }
+            if ($value instanceof Model) {
+                $result[$field] = $value->to($format, $options);
+            } elseif ($value instanceof ArrayAccess) {
+                $result[$field] = Collection::toArray($value, $options);
+            } else {
+                $result[$field] = static::schema()->format($format, $field, $value, $options);
+            }
         }
         return $result;
     }

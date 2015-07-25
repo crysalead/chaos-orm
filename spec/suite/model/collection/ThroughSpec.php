@@ -151,9 +151,9 @@ describe("Through", function() {
 
             expect($result)->toBeAnInstanceOf(Collection::class);
             expect($result->data())->toBe([
-                ['name' => 0],
-                ['name' => 2],
-                ['name' => 4]
+                ['name' => "0"],
+                ['name' => "2"],
+                ['name' => "4"]
             ]);
 
         });
@@ -207,8 +207,8 @@ describe("Through", function() {
 
             expect($result)->toBeAnInstanceOf(Collection::class);
             expect($result->data())->toBe([
-                ['name' => 2],
-                ['name' => 3]
+                ['name' => "2"],
+                ['name' => "3"]
             ]);
 
         });
@@ -236,30 +236,30 @@ describe("Through", function() {
 
         it("allows array access", function() {
 
-            expect($this->through[0]->data())->toBe(['name' => 0]);
+            expect($this->through[0]->data())->toBe(['name' => "0"]);
 
         });
 
         it("sets at a specific key", function() {
 
-            $this->through[0] = ['name' => 10];
-            expect($this->through[0]->data())->toBe(['name' => 10]);
+            $this->through[0] = ['name' => "10"];
+            expect($this->through[0]->data())->toBe(['name' => "10"]);
             expect($this->through)->toHaveLength(5);
 
         });
 
         it("adds a new item", function() {
 
-            $this->through[] = ['name' => 5];
+            $this->through[] = ['name' => "5"];
             expect($this->through)->toHaveLength(6);
 
             expect($this->through->data())->toBe([
-                ['name' => 0],
-                ['name' => 1],
-                ['name' => 2],
-                ['name' => 3],
-                ['name' => 4],
-                ['name' => 5]
+                ['name' => "0"],
+                ['name' => "1"],
+                ['name' => "2"],
+                ['name' => "3"],
+                ['name' => "4"],
+                ['name' => "5"]
             ]);
 
         });
@@ -275,9 +275,9 @@ describe("Through", function() {
 
             expect($this->through)->toHaveLength(3);
             expect($this->through->data())->toBe([
-                ['name' => 0],
-                ['name' => 3],
-                ['name' => 4]
+                ['name' => "0"],
+                ['name' => "3"],
+                ['name' => "4"]
             ]);
 
         });
@@ -328,7 +328,7 @@ describe("Through", function() {
 
         it("returns the current value", function() {
 
-            expect($this->through->current()->data())->toBe(['name' => 0]);
+            expect($this->through->current()->data())->toBe(['name' => "0"]);
 
         });
 
@@ -338,7 +338,7 @@ describe("Through", function() {
 
         it("returns the next value", function() {
 
-            expect($this->through->next()->data())->toBe(['name' => 1]);
+            expect($this->through->next()->data())->toBe(['name' => "1"]);
 
         });
 
@@ -349,16 +349,16 @@ describe("Through", function() {
         it("navigates through collection", function() {
 
             $this->through->rewind();
-            expect($this->through->next()->data())->toBe(['name' => 1]);
-            expect($this->through->next()->data())->toBe(['name' => 2]);
-            expect($this->through->next()->data())->toBe(['name' => 3]);
-            expect($this->through->next()->data())->toBe(['name' => 4]);
+            expect($this->through->next()->data())->toBe(['name' => "1"]);
+            expect($this->through->next()->data())->toBe(['name' => "2"]);
+            expect($this->through->next()->data())->toBe(['name' => "3"]);
+            expect($this->through->next()->data())->toBe(['name' => "4"]);
             expect($this->through->next())->toBe(null);
             $this->through->end();
-            expect($this->through->prev()->data())->toBe(['name' => 3]);
-            expect($this->through->prev()->data())->toBe(['name' => 2]);
-            expect($this->through->prev()->data())->toBe(['name' => 1]);
-            expect($this->through->prev()->data())->toBe(['name' => 0]);
+            expect($this->through->prev()->data())->toBe(['name' => "3"]);
+            expect($this->through->prev()->data())->toBe(['name' => "2"]);
+            expect($this->through->prev()->data())->toBe(['name' => "1"]);
+            expect($this->through->prev()->data())->toBe(['name' => "0"]);
             expect($this->through->prev())->toBe(null);
 
         });
@@ -369,8 +369,8 @@ describe("Through", function() {
 
         it("returns respectively the first and the last item of the collection", function() {
 
-            expect($this->through->end()->data())->toBe(['name' => 4]);
-            expect($this->through->rewind()->data())->toBe(['name' => 0]);
+            expect($this->through->end()->data())->toBe(['name' => "4"]);
+            expect($this->through->rewind()->data())->toBe(['name' => "0"]);
 
         });
 
@@ -419,20 +419,20 @@ describe("Through", function() {
         it("merges two collection", function() {
 
             $collection = new Collection(['data' => [
-                ['name' => 5],
-                ['name' => 6]
+                ['name' => "5"],
+                ['name' => "6"]
             ]]);
 
             $this->through->merge($collection);
 
             expect($this->through->data())->toBe([
-                ['name' => 0],
-                ['name' => 1],
-                ['name' => 2],
-                ['name' => 3],
-                ['name' => 4],
-                ['name' => 5],
-                ['name' => 6]
+                ['name' => "0"],
+                ['name' => "1"],
+                ['name' => "2"],
+                ['name' => "3"],
+                ['name' => "4"],
+                ['name' => "5"],
+                ['name' => "6"]
             ]);
 
         });
@@ -440,18 +440,18 @@ describe("Through", function() {
         it("merges two collection with key preservation", function() {
 
             $collection = new Collection(['data' => [
-                ['name' => 5],
-                ['name' => 6]
+                ['name' => "5"],
+                ['name' => "6"]
             ]]);
 
             $this->through->merge($collection, true);
 
             expect($this->through->data())->toBe([
-                ['name' => 5],
-                ['name' => 6],
-                ['name' => 2],
-                ['name' => 3],
-                ['name' => 4],
+                ['name' => "5"],
+                ['name' => "6"],
+                ['name' => "2"],
+                ['name' => "3"],
+                ['name' => "4"],
             ]);
 
         });
