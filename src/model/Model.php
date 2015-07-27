@@ -17,6 +17,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         'set'         => 'chaos\model\collection\Collection',
         'through'     => 'chaos\model\collection\Through',
         'conventions' => 'chaos\model\Conventions',
+        'finders'     => 'chaos\model\Finders',
         'validator'   => 'validator\Validator'
     ];
 
@@ -40,6 +41,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var array
      */
     protected static $_validators = [];
+
+    /**
+     * Stores finders instances.
+     *
+     * @var array
+     */
+    protected static $_finders = [];
 
     /**
      * MUST BE re-defined in sub-classes which require a different connection.
@@ -138,6 +146,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'classes'     => static::$_classes,
             'schema'      => null,
             'validator'   => null,
+            'finders'     => null,
             'connection'  => null,
             'conventions' => null
         ];
@@ -151,9 +160,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if ($config['schema']) {
             static::schema($config['schema']);
         }
-
         if ($config['validator']) {
             static::validator($config['validator']);
+        }
+        if ($config['finders']) {
+            static::finders($config['finders']);
         }
     }
 
@@ -204,11 +215,20 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * This function called once for initializing the validator instance.
+     * This function is called once for initializing the validator instance.
      *
      * @param object $validator The validator instance.
      */
     protected static function _rules($validator)
+    {
+    }
+
+    /**
+     * This function is called once for initializing finders.
+     *
+     * @param object $validator The validator instance.
+     */
+    protected static function _finders($finders)
     {
     }
 
@@ -224,7 +244,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public static function find($options = [])
     {
         $schema = static::schema();
-        $query = $schema->query();
+        $query = $schema->query(['finders' => static::finders()]);
 
         $options = Set::merge(static::$_query, $options);
 
@@ -408,6 +428,26 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $validator = static::$_validators[$self] = new $class();
         static::_rules($validator);
         return $validator;
+    }
+
+    /**
+     * Returns the finders instance of this model.
+     *
+     * @return object
+     */
+    public static function finders($finders = null)
+    {
+        if (func_num_args()) {
+            return static::$_finders[static::class] = $finders;
+        }
+        $self = static::class;
+        if (isset(static::$_finders[$self])) {
+            return static::$_finders[$self];
+        }
+        $class = static::$_classes['finders'];
+        $finders = static::$_finders[$self] = new $class();
+        static::_finders($finders);
+        return $finders;
     }
 
     /**

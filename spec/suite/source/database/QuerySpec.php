@@ -4,6 +4,7 @@ namespace chaos\spec\suite\database;
 use set\Set;
 use chaos\SourceException;
 use chaos\model\Model;
+use chaos\model\Finders;
 use chaos\source\database\Query;
 
 use kahlan\plugin\Stub;
@@ -202,6 +203,31 @@ foreach ($connections as $db => $connection) {
                 foreach ($this->query as $record) {
                     expect($record->data())->toEqual(['id' => '1', 'name' => 'Foo Gallery']);
                 }
+
+            });
+
+        });
+
+        describe("->__call()", function() {
+
+            it("delegates the call to the finders", function() {
+
+                $this->fixtures->populate('gallery');
+                $gallery = $this->gallery;
+
+                $finders = new Finders();
+                $finders->set('fooGallery', function($query) {
+                    $query->where(['name' => 'Foo Gallery']);
+                });
+
+                $query = new Query([
+                    'model'      => $gallery,
+                    'connection' => $this->connection,
+                    'finders'    => $finders
+                ]);
+
+                $result = $query->fooGallery()->all()->data();
+                expect($result)->toEqual([['id' => '1', 'name' => 'Foo Gallery']]);
 
             });
 

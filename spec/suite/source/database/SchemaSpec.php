@@ -67,77 +67,81 @@ foreach ($connections as $db => $connection) {
 
             });
 
-            it("embeds a hasMany relationship", function() {
+            describe("->embed()", function() {
 
-                $model = $this->gallery;
-                $schema = $model::schema();
-                $galleries = $model::all(['order' => 'id']);
-                $schema->embed($galleries, ['images']);
+                it("embeds a hasMany relationship", function() {
 
-                foreach ($galleries as $gallery) {
-                    foreach ($gallery->images as $image) {
-                        expect($gallery->id)->toBe($image->gallery_id);
-                    }
-                }
+                    $model = $this->gallery;
+                    $schema = $model::schema();
+                    $galleries = $model::all(['order' => 'id']);
+                    $schema->embed($galleries, ['images']);
 
-            });
-
-            it("embeds a belongsTo relationship", function() {
-
-                $model = $this->image;
-                $schema = $model::schema();
-                $images = $model::all(['order' => 'id']);
-                $schema->embed($images, ['gallery']);
-
-                foreach ($images as $image) {
-                    expect($image->gallery_id)->toBe($image->gallery->id);
-                }
-
-            });
-
-            it("embeds a hasOne relationship", function() {
-
-                $model = $this->gallery;
-                $schema = $model::schema();
-                $galleries = $model::all(['order' => 'id']);
-                $schema->embed($galleries, ['detail', 'images']);
-
-                foreach ($galleries as $gallery) {
-                    expect($gallery->id)->toBe($gallery->detail->gallery_id);
-                }
-
-            });
-
-            it("embeds a hasManyTrough relationship", function() {
-
-                $model = $this->image;
-                $schema = $model::schema();
-                $images = $model::all(['order' => 'id']);
-                $schema->embed($images, ['tags']);
-
-                foreach ($images as $image) {
-                    foreach ($image->images_tags as $index => $image_tag) {
-                        expect($image_tag->tag)->toBe($image->tags[$index]);
-                    }
-                }
-            });
-
-            it("embeds nested hasManyTrough relationship", function() {
-
-                $model = $this->image;
-                $schema = $model::schema();
-                $images = $model::all(['order' => 'id']);
-                $schema->embed($images, ['tags.images']);
-
-                foreach ($images as $image) {
-                    foreach ($image->images_tags as $index => $image_tag) {
-                        expect($image_tag->tag)->toBe($image->tags[$index]);
-
-                        foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
-                            expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                    foreach ($galleries as $gallery) {
+                        foreach ($gallery->images as $image) {
+                            expect($gallery->id)->toBe($image->gallery_id);
                         }
                     }
-                }
+
+                });
+
+                it("embeds a belongsTo relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::schema();
+                    $images = $model::all(['order' => 'id']);
+                    $schema->embed($images, ['gallery']);
+
+                    foreach ($images as $image) {
+                        expect($image->gallery_id)->toBe($image->gallery->id);
+                    }
+
+                });
+
+                it("embeds a hasOne relationship", function() {
+
+                    $model = $this->gallery;
+                    $schema = $model::schema();
+                    $galleries = $model::all(['order' => 'id']);
+                    $schema->embed($galleries, ['detail', 'images']);
+
+                    foreach ($galleries as $gallery) {
+                        expect($gallery->id)->toBe($gallery->detail->gallery_id);
+                    }
+
+                });
+
+                it("embeds a hasManyTrough relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::schema();
+                    $images = $model::all(['order' => 'id']);
+                    $schema->embed($images, ['tags']);
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
+                        }
+                    }
+                });
+
+                it("embeds nested hasManyTrough relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::schema();
+                    $images = $model::all(['order' => 'id']);
+                    $schema->embed($images, ['tags.images']);
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
+
+                            foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
+                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                            }
+                        }
+                    }
+                });
+
             });
 
         });

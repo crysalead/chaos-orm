@@ -60,6 +60,32 @@ describe("Model", function() {
 
     });
 
+    describe("::validator()", function() {
+
+        it("gets/sets a validator", function() {
+
+            $validator = Stub::create();
+            $model = $this->model;
+            $model::validator($validator);
+            expect($model::validator())->toBe($validator);
+
+        });
+
+    });
+
+    describe("::finders()", function() {
+
+        it("gets/sets a finders", function() {
+
+            $finders = Stub::create();
+            $model = $this->model;
+            $model::finders($finders);
+            expect($model::finders())->toBe($finders);
+
+        });
+
+    });
+
     describe("::find()", function() {
 
         beforeEach(function() {
@@ -89,6 +115,17 @@ describe("Model", function() {
                 'method1' => 'param1',
                 'method2' => 'param2'
             ]);
+
+        });
+
+        it("passes the finder instance to the query", function() {
+
+            $model = $this->model;
+            $schema = $model::schema();
+            $finders = $model::finders();
+
+            expect($schema)->toReceive('query')->with(['finders' => $finders]);
+            $model::find();
 
         });
 
@@ -192,6 +229,15 @@ describe("Model", function() {
             $schema = $model::schema();
             expect($schema)->toBeAnInstanceOf('chaos\model\Schema');
             expect($schema)->toBe($model::schema());
+
+        });
+
+        it("gets/sets a finders", function() {
+
+            $schema = Stub::create();
+            $model = $this->model;
+            $model::schema($schema);
+            expect($model::schema())->toBe($schema);
 
         });
 

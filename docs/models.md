@@ -283,11 +283,11 @@ $galleries = Gallery::find()->all([
 
 All different representations can be mixed with the `->with()` paremeter to get nested structures.
 
-#### <a name="scopes"></a>Scopes
+#### <a name="finders"></a>Finders
 
-At a model level you can define different custom finders (i.e. scopes). For example you could create a custom finder method that packages some specified conditions into a scope.
+At a model level you can define different custom finders. For example you could create a custom finder method that packages some specified conditions into a finder.
 
-You can for example set two scopes `->active()` and `->recent()` instead of repeatedly adding some often used conditions to your queries.
+You can for example set two finders `->active()` and `->recent()` instead of repeatedly adding some often used conditions to your queries.
 
 Scope are setted like the following in your model class:
 
@@ -298,16 +298,15 @@ class Gallery extends \chaos\model\Model
 {
     ...
 
-    protected static function _scopes()
+    protected static function _finders($finders)
     {
-        return [
-            'active' => function($query) {
-                $query->where(['active' => true]);
-            },
-            'published' => function($query) {
-                $query->where(['published' => true]);
-            }
-        ];
+        $finders->set('active', function($query) {
+            $query->where(['active' => true]);
+        });
+
+        $finders->set('published', function($query) {
+            $query->where(['published' => true]);
+        });
     }
 }
 ```
@@ -321,7 +320,7 @@ $galleries->active()->published();
 
 #### <a name="global_scope"></a>Global scope
 
-In cases where you always want finders results to be constrained to some conditions by default, some global query options can be setted at a model level. Default options can be defined by the `static $_query` property inside the model class or the `::query()` method like the following:
+In cases where you always want finders results to be constrained to some conditions by default, some global query options can be setted at a model level. Default options can be defined by the `static $_query` property inside the model class or by using the `::query()` method like the following:
 
 ```php
 Galleries::query([
@@ -329,6 +328,8 @@ Galleries::query([
     'limit' => 4
 ]);
 ```
+
+This way all finds will now be scoped to `static $_query` constraints.
 
 #### <a name="querying_shortcuts"></a>Querying shortcuts
 

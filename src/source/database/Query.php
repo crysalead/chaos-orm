@@ -35,6 +35,13 @@ class Query implements IteratorAggregate
     protected $_model = null;
 
     /**
+     * A finders instance.
+     *
+     * @var string
+     */
+    protected $_finders = null;
+
+    /**
      * The finder statement instance.
      *
      * @var string
@@ -88,10 +95,12 @@ class Query implements IteratorAggregate
     {
         $defaults = [
             'connection' => null,
-            'model'      => null
+            'model'      => null,
+            'finders'    => null
         ];
         $config = Set::merge($defaults, $config);
         $model = $this->_model = $config['model'];
+        $this->_finders = $config['finders'];
         $this->_connection = $config['connection'];
 
         $schema = $model::schema();
@@ -101,6 +110,23 @@ class Query implements IteratorAggregate
         if (isset($config['conditions'])) {
             $this->_statement->where($config['conditions']);
         }
+    }
+
+    /**
+     * When not supported, delegates the call to the finders instance.
+     *
+     * @param  string $name   The name of the finder to execute.
+     * @param  array  $params The parameters to pass to the finder.
+     * @return object         Returns `$this`.
+     */
+    public function __call($name, $params = [])
+    {
+        if (!$this->_finders) {
+            throw new SourceException("No finders instance has been defined.");
+        }
+        array_unshift($params, $this);
+        call_user_func_array([$this->_finders, $name], $params);
+        return $this;
     }
 
     /**
