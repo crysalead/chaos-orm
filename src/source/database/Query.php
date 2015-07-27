@@ -191,7 +191,7 @@ class Query implements IteratorAggregate
         $collection = [];
         $return = $options['return'];
 
-        $cursor = $this->_statement->execute([
+        $cursor = $this->connection()->query($this->_statement->toString(), [], [
             'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 

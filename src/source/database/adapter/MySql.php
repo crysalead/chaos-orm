@@ -10,46 +10,6 @@ use set\Set;
 class MySql extends \chaos\source\database\Database
 {
     /**
-     * MySQL types and their associatied internal types.
-     *
-     * @var array
-     */
-     protected $_defaults = [
-        'boolean'            => 'boolean',
-        'tinyint'            => 'integer',
-        'smallint'           => 'integer',
-        'mediumint'          => 'integer',
-        'int'                => 'integer',
-        'bigint'             => 'integer',
-        'float'              => 'float',
-        'double'             => 'float',
-        'decimal'            => 'decimal',
-        'tinytext'           => 'string',
-        'char'               => 'string',
-        'varchar'            => 'string',
-        'time'               => 'string',
-        'date'               => 'datetime',
-        'datetime'           => 'datetime',
-        'tinyblob'           => 'string',
-        'mediumblob'         => 'string',
-        'blob'               => 'string',
-        'longblob'           => 'string',
-        'text'               => 'string',
-        'mediumtext'         => 'string',
-        'longtext'           => 'string',
-        'year'               => 'string',
-        'bit'                => 'string',
-        'geometry'           => 'string',
-        'point'              => 'string',
-        'multipoint'         => 'string',
-        'linestring'         => 'string',
-        'multilinestring'    => 'string',
-        'polygon'            => 'string',
-        'multipolygon'       => 'string',
-        'geometrycollection' => 'string'
-    ];
-
-    /**
      * Check for required PHP extension, or supported database feature.
      *
      * @param  string  $feature Test for support for a specific feature, i.e. `"transactions"`
@@ -86,26 +46,12 @@ class MySql extends \chaos\source\database\Database
         $defaults = [
             'host' => 'localhost:3306',
             'classes' => [
-                'dialect' => 'chaos\source\database\sql\dialect\MySqlDialect'
+                'dialect' => 'sql\dialect\MySql'
             ],
             'handlers' => [],
         ];
         $config = Set::merge($defaults, $config);
         parent::__construct($config);
-
-        $this->type('id',       ['use' => 'int']);
-        $this->type('serial',   ['use' => 'int', 'serial' => true]);
-        $this->type('string',   ['use' => 'varchar', 'length' => 255]);
-        $this->type('text',     ['use' => 'text']);
-        $this->type('integer',  ['use' => 'int']);
-        $this->type('boolean',  ['use' => 'boolean']);
-        $this->type('float',    ['use' => 'float']);
-        $this->type('decimal',  ['use' => 'decimal', 'precision' => 2]);
-        $this->type('date',     ['use' => 'date']);
-        $this->type('time',     ['use' => 'time']);
-        $this->type('datetime', ['use' => 'datetime']);
-        $this->type('binary',   ['use' => 'blob']);
-        $this->type('uuid',     ['use' => 'char', 'length' => 36]);
     }
 
     /**
@@ -210,32 +156,7 @@ class MySql extends \chaos\source\database\Database
             $length[1] ? $column['precision'] = intval($length[1]) : null;
         }
 
-        switch (true) {
-            case in_array($column['type'], ['date', 'time', 'datetime', 'timestamp']):
-                return $column;
-            case ($column['type'] === 'tinyint' && $column['length'] == '1'):
-            case ($column['type'] === 'boolean'):
-                return ['type' => 'boolean'];
-            break;
-            case (strpos($column['type'], 'int') !== false):
-                $column['type'] = 'integer';
-            break;
-            case (strpos($column['type'], 'char') !== false || $column['type'] === 'tinytext'):
-                $column['type'] = 'string';
-            break;
-            case (strpos($column['type'], 'text') !== false):
-                $column['type'] = 'text';
-            break;
-            case (strpos($column['type'], 'blob') !== false || $column['type'] === 'binary'):
-                $column['type'] = 'binary';
-            break;
-            case preg_match('/float|double|decimal/', $column['type']):
-                $column['type'] = 'float';
-            break;
-            default:
-                $column['type'] = 'text';
-            break;
-        }
+        $column['type'] = $this->dialect()->typeMatch($column['type']);
         return $column;
     }
 

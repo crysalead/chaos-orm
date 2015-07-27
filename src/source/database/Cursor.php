@@ -10,7 +10,7 @@ use PDOException;
  *
  * @link http://php.net/manual/de/class.pdostatement.php The PDOStatement class.
  */
-class Cursor extends \chaos\source\Cursor
+class Cursor extends \chaos\model\Cursor
 {
     /**
      * The current position of the iterator.

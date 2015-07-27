@@ -13,47 +13,8 @@ use set\Set;
  * ) t
  *
  */
-class PostgreSql extends \chaos\source\database\Database {
-
-    /**
-     * PostgreSql types matching
-     *
-     * @var array
-     */
-    protected $_defaults = [
-        'bool'          => 'boolean',
-        'int2'          => 'integer',
-        'int4'          => 'integer',
-        'int8'          => 'integer',
-        'float4'        => 'float',
-        'float8'        => 'float',
-        'bytea'         => 'binary',
-        'text'          => 'string',
-        'macaddr'       => 'string',
-        'inet'          => 'string',
-        'cidr'          => 'string',
-        'string'        => 'string',
-        'date'          => 'date',
-        'time'          => 'time',
-        'timestamp'     => 'datetime',
-        'timestamptz'   => 'datetime',
-        'lseg'          => 'string',
-        'path'          => 'string',
-        'box'           => 'string',
-        'polygon'       => 'string',
-        'line'          => 'string',
-        'circle'        => 'string',
-        'bit'           => 'string',
-        'varbit'        => 'string',
-        'decimal'       => 'string',
-        'uuid'          => 'string',
-        'tsvector'      => 'string',
-        'tsquery'       => 'string',
-        'txid_snapshot' => 'string',
-        'json'          => 'string',
-        'xml'           => 'string'
-    ];
-
+class PostgreSql extends \chaos\source\database\Database
+{
     /**
      * Check for required PHP extension, or supported database feature.
      *
@@ -95,7 +56,7 @@ class PostgreSql extends \chaos\source\database\Database {
             'schema' => 'public',
             'timezone' => null,
             'classes' => [
-                'dialect' => 'chaos\source\database\sql\dialect\PostgreSqlDialect'
+                'dialect' => 'sql\dialect\PostgreSql'
             ],
             'handlers' => [
                 'cast' => [
@@ -129,21 +90,6 @@ class PostgreSql extends \chaos\source\database\Database {
 
         $config = Set::merge($defaults, $config);
         parent::__construct($config + $defaults);
-
-        $this->type('id',       ['use' => 'integer']);
-        $this->type('serial',   ['use' => 'serial', 'serial' => true]);
-        $this->type('string',   ['use' => 'varchar', 'length' => 255]);
-        $this->type('text',     ['use' => 'text']);
-        $this->type('integer',  ['use' => 'integer']);
-        $this->type('boolean',  ['use' => 'boolean']);
-        $this->type('float',    ['use' => 'real']);
-        $this->type('decimal',  ['use' => 'numeric', 'precision' => 2]);
-        $this->type('date',     ['use' => 'date']);
-        $this->type('time',     ['use' => 'time']);
-        $this->type('datetime', ['use' => 'timestamp']);
-        $this->type('binary',   ['use' => 'bytea']);
-        $this->type('uuid',     ['use' => 'uuid']);
-
         $this->formatter('datasource', 'array', $this->_handlers['datasource']['array']);
     }
 
@@ -275,35 +221,7 @@ class PostgreSql extends \chaos\source\database\Database {
             $length[1] ? $column['precision'] = intval($length[1]) : null;
         }
 
-        switch (true) {
-            case in_array($column['type'], ['date', 'time', 'datetime']):
-                return $column;
-            case ($column['type'] === 'timestamp'):
-                $column['type'] = 'datetime';
-            break;
-            case ($column['type'] === 'tinyint' && $column['length'] == '1'):
-            case ($column['type'] === 'boolean'):
-                return ['type' => 'boolean'];
-            break;
-            case (strpos($column['type'], 'int') !== false):
-                $column['type'] = 'integer';
-            break;
-            case (strpos($column['type'], 'char') !== false || $column['type'] === 'tinytext'):
-                $column['type'] = 'string';
-            break;
-            case (strpos($column['type'], 'text') !== false):
-                $column['type'] = 'text';
-            break;
-            case (strpos($column['type'], 'blob') !== false || $column['type'] === 'binary'):
-                $column['type'] = 'binary';
-            break;
-            case preg_match('/float|double|decimal/', $column['type']):
-                $column['type'] = 'float';
-            break;
-            default:
-                $column['type'] = 'text';
-            break;
-        }
+        $column['type'] = $this->dialect()->typeMatch($column['type']);
         return $column;
     }
 

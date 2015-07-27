@@ -35,13 +35,6 @@ abstract class Database
     protected $_pdo = null;
 
     /**
-     * Column type definitions.
-     *
-     * @var array
-     */
-    protected $_types = [];
-
-    /**
      * Specific value denoting whether or not table aliases should be used in DELETE and UPDATE queries.
      *
      * @var boolean
@@ -97,7 +90,7 @@ abstract class Database
             'classes' => [
                 'cursor'  => 'chaos\source\database\Cursor',
                 'schema'  => 'chaos\source\database\Schema',
-                'dialect' => 'chaos\source\database\sql\Dialect'
+                'dialect' => 'sql\Dialect'
             ],
             'pdo'        => null,
             'connect'    => true,
@@ -126,7 +119,21 @@ abstract class Database
 
         if ($this->_dialect === null) {
             $dialect = $this->_classes['dialect'];
-            $this->_dialect = new $dialect(['connection' => $this]);
+            $this->_dialect = new $dialect([
+                'quoter' => function($string) {
+                    return $this->quote($string);
+                },
+                'caster' => function($value, $states = []) {
+                    if (!empty($states['name']) && !empty($states['schema'])) {
+                        return $states['schema']->format('datasource', $states['name'], $value);
+                    }
+                    $type = isset($states['type']) ? $states['type'] : gettype($value);
+                    if (is_array($type)) {
+                        $type = call_user_func($type, $states['name']);
+                    }
+                    return $this->format('datasource', $type, $value);
+                }
+            ]);
         }
 
         if ($this->_config['connect']) {
@@ -349,24 +356,6 @@ abstract class Database
     }
 
     /**
-     * Get/set an internal type definition
-     *
-     * @param  string $type   The type name.
-     * @param  array  $config The type definition.
-     * @return array          Return the type definition.
-     */
-    public function type($type, $config = null)
-    {
-        if ($config) {
-            $this->_types[$type] = $config;
-        }
-        if (!isset($this->_types[$type])) {
-            throw new SourceException("Column type `'{$type}'` does not exist.");
-        }
-        return $this->_types[$type];
-    }
-
-    /**
      * Gets/sets a formatter handler.
      *
      * @param  string   $type          The type name.
@@ -426,7 +415,6 @@ abstract class Database
      */
     public function query($sql, $data = [], $options = [])
     {
-        //echo $sql."\n";
         $statement = $this->_pdo->prepare($sql);
 
         try {

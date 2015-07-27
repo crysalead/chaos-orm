@@ -1,8 +1,8 @@
 <?php
-namespace chaos\spec\suite\source;
+namespace chaos\spec\suite\model;
 
 use InvalidArgumentException;
-use chaos\source\Cursor;
+use chaos\model\Cursor;
 
 use kahlan\plugin\Stub;
 

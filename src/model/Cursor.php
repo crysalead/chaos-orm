@@ -1,5 +1,5 @@
 <?php
-namespace chaos\source;
+namespace chaos\model;
 
 use chaos\SourceException;
 
