@@ -26,14 +26,9 @@ So if the datasource you envisionned to use:
 
 You should be able to extends the `Schema` class to make Chaos to work with your datasource whatever is a NoSQL datasource, an API or a classic RDBMS database.
 
-## IRC
+## Community
 
-**chat.freenode.net** (server)
-**#chaos** (channel)
-
-## Documentation
-
-See the whole [documentation here](http://chaos.readthedocs.org/en/latest).
+To ask questions, provide feedback or otherwise communicate with the team, join us on `#chaos` on Freenode.
 
 ## Requirements
 
@@ -49,24 +44,13 @@ See the whole [documentation here](http://chaos.readthedocs.org/en/latest).
 * Support custom types & auto entity's field casting
 * Built-in MySQL & PostgreSQL database adapter
 
-## Installation
+## Documentation
 
-The recommended way to install this package is through [Composer](http://getcomposer.org/).
-Create a `composer.json` file and run `composer install` command to install it:
-
-```json
-{
-    "require":
-    {
-        "crysalead/chaos": "dev-master"
-    },
-    "minimum-stability": "dev"
-}
-```
+See the whole [documentation here](http://chaos.readthedocs.org/en/latest).
 
 ### Testing
 
-Updates `kahlan-config.php` to set some valid databases configuration (or remove them) to run only unit tests then run the specs with:
+The spec suite can be runned with:
 
 ```
 cd chaos

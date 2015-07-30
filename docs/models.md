@@ -16,14 +16,14 @@
 
 The main purpose of models is to abstract business logic and datasources operations from higher levels. The in-memory representation of data are represented by models instances (i.e entities). And the datasources operations are delegated to the `Schema` instance attached to a model.
 
-In Chaos the built-in `Schema` class for all PDO compatible databases is `chaos\source\database\Schema`. For example to create a `Gallery` model which uses the PDO related `Schema` class you can write:
+In Chaos the built-in `Schema` class for all PDO compatible databases is `chaos\database\Schema`. For example to create a `Gallery` model which uses the PDO related `Schema` class you can write:
 
 ```php
 namespace myproject\model;
 
-class Gallery extends \chaos\model\Model
+class Gallery extends \chaos\Model
 {
-    protected static $_schema = 'chaos\source\database\Schema';
+    protected static $_schema = 'chaos\database\Schema';
 
     ...
 }
@@ -34,10 +34,10 @@ And a complete model definition could be the following:
 ```php
 namespace myproject\model;
 
-class Gallery extends \chaos\model\Model
+class Gallery extends \chaos\Model
 {
 
-    protected static $_schema = 'chaos\source\database\Schema';
+    protected static $_schema = 'chaos\database\Schema';
 
     protected static function _schema($schema)
     {
@@ -112,7 +112,7 @@ Validation rules can be defined at the model level using the following syntax:
 ```php
 namespace myproject\model;
 
-class Gallery extends \chaos\model\Model
+class Gallery extends \chaos\Model
 {
     ...
 
@@ -141,7 +141,7 @@ Validation also work in a nested way. To illustrate this feature, let's take as 
 ```php
 namespace myproject\model;
 
-class Image extends \chaos\model\Model
+class Image extends \chaos\Model
 {
     protected static function _schema($schema)
     {
@@ -175,7 +175,7 @@ $gallery->errors(['with' => 'images']);   // ['images' => [ 1 => ['must not be a
 
 ### <a name="querying"></a>Querying
 
-The model `::find()` method is used to perform queries on a datasource. By using the `chaos\source\database\Schema` implementation, the `::find()` will return a `Query` instance to facilitate the querying.
+The model `::find()` method is used to perform queries on a datasource. By using the `chaos\database\Schema` implementation, the `::find()` will return a `Query` instance to facilitate the querying.
 
 > Note: Under the hood the `::find()` method call the `->query()` method of the `Schema` instance. So the querying behavior will depends on one implemented by the `Schema` class.
 
@@ -294,7 +294,7 @@ Scope are setted like the following in your model class:
 ```php
 namespace myproject\model;
 
-class Gallery extends \chaos\model\Model
+class Gallery extends \chaos\Model
 {
     ...
 

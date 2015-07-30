@@ -1,10 +1,8 @@
 <?php
 namespace chaos\spec\fixture\model;
 
-class Tag extends \chaos\model\Model
+class Tag extends \chaos\Model
 {
-    protected static $_schema = 'chaos\source\database\Schema';
-
     protected static function _schema($schema)
     {
         $schema->set('id', ['type' => 'serial']);

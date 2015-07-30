@@ -1,10 +1,8 @@
 <?php
 namespace chaos\spec\fixture\model;
 
-class Gallery extends \chaos\model\Model
+class Gallery extends \chaos\Model
 {
-    protected static $_schema = 'chaos\source\database\Schema';
-
     protected static function _schema($schema)
     {
         $schema->set('id', ['type' => 'serial']);

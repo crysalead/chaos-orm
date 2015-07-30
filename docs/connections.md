@@ -5,7 +5,7 @@ Connections need to be configured at a bootstrap level and will be used by the `
 First we need to create a connection, for example let's create a PostgreSql connection:
 
 ```php
-use chaos\source\database\adapter\PostgreSql;
+use chaos\database\adapter\PostgreSql;
 
 $connection = new PostgreSql([
     'database' => 'mydatabase',
@@ -17,12 +17,12 @@ $connection = new PostgreSql([
 Then the `::connection()` method of model class will be used on a base model to set the connection:
 
 ```php
-use chaos\model\Model;
+use chaos\Model;
 
 Model::connection($connection);
 ```
 
-In the example above all models extending from `chaos\model\Model` will now use the `PostgreSql` connection instance.
+In the example above all models extending from `chaos\Model` will now use the `PostgreSql` connection instance.
 
 > Note: this connection will be passed to `Schema` instances (at least when `::schema()` will be called on a specific model).
 
@@ -33,7 +33,7 @@ To illustrate this point, let's create a base class that allow to set a dedicate
 ```php
 namespace myproject\model;
 
-class ModelCustom extends \chaos\model\Model
+class ModelCustom extends \chaos\Model
 {
     /**
      * MUST BE re-defined to be able to attach a specific connection on it.
@@ -45,7 +45,7 @@ class ModelCustom extends \chaos\model\Model
 Now all models extending `ModelCustom` can be connected using the following syntax:
 
 ```php
-use chaos\model\Model;
+use chaos\Model;
 use myproject\http\MyApi; // A example of custom HTTP based connection
 
 $connection = new MyApi([

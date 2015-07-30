@@ -22,7 +22,7 @@ Schemas are like tables and contain typed fields (like `string`, `integer`, etc.
 Example:
 
 ```php
-use chaos\model\Schema;
+use chaos\Schema;
 
 $schema = new Schema();
 $schema->set('id',   ['type' => 'serial']);
@@ -54,7 +54,7 @@ However it's also possible to create you own types and also override the default
 With Chaos you are not limited to "scalar" types, you can also have objects and arrays. So with PostgreSQL you should be able to support schema like:
 
 ```php
-use chaos\model\Schema;
+use chaos\Schema;
 
 $schema = new Schema();
 $schema->set('id',             ['type' => 'serial']);
@@ -90,7 +90,7 @@ The first parameter of methods will be the name of the relation (which mean the 
 Example:
 
 ```php
-use chaos\model\Schema;
+use chaos\Schema;
 
 $schema = new Schema();
 
@@ -262,7 +262,7 @@ $schema->set('custom', ['type' => 'customtype']);
 
 One of the principal key point of Chaos is that a `Schema` can be easily adapted to take advantage of specific datasource features. So the additionnal methods can by anything you willing to implement.
 
-In the example bellow I will use `chaos\source\database\Schema` to show how the added methods of this specific implementation can be used in practice:
+In the example bellow I will use `chaos\database\Schema` to show how the added methods of this specific implementation can be used in practice:
 
 ```php
 $schema = Gallery::schema();

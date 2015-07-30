@@ -21,16 +21,31 @@ So if the datasource you envisionned to use:
 
 You should be able to extends the `Schema` class to make Chaos to work with your datasource.
 
-## IRC
+## Community
 
-**chat.freenode.net** (server)
-**#chaos** (channel)
+To ask questions, provide feedback or otherwise communicate with the team, join us on `#chaos` on Freenode.
+
+## Requirements
+
+ * PHP 5.5+
+
+## Main Features
+
+* Support eager/lazy loading
+* Support custom finders
+* Support nested saving
+* Support nested validations
+* Support external & embedded relationship
+* Support custom types & auto entity's field casting
+* Built-in MySQL & PostgreSQL database adapter
 
 ## Download
 
-[Download Kahlan on Github](https://github.com/crysalead/chaos)
+[Download Chaos on Github](https://github.com/crysalead/chaos)
 
 ## Documentation
+
+Important: in the following documentation the [chaos-database](https://github.com/crysalead/chaos-database) library will be used to illustrate examples with a concrete datasource driver implementation. So don't forget to run `composer require crysalead/chaos-database` before poking around.
 
 * [Connections](connections.md)
 * [Models](models.md)
