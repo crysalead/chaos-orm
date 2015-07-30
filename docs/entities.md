@@ -95,7 +95,7 @@ In a reciprocal manner using `->get()` will returns the whole entity's data arra
 
 Although it have a different purpose `->to()` is also a useful method to get entity's data. The main purpose of ->to()` is to export them into another format using some formatters.
 
-For example `->to('array')` (or `->data()` which is an alias to `->to('array')`) exports the entity's data using the schema `'array'` formatters. See the [schema documentation to learn more about formatters & custom types](schema.md).
+For example `->to('array')` (or `->data()` which is an alias to `->to('array')`) exports the entity's data using the schema `'array'` formatters. See the [schema documentation to learn more about formatters & custom types](schemas.md).
 
 ### <a name="crud"></a>CRUD Actions
 

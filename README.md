@@ -55,5 +55,5 @@ The spec suite can be runned with:
 ```
 cd chaos
 composer install
-./bin/chaos
+./bin/kahlan
 ```

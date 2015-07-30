@@ -1,0 +1,11 @@
+site_name: Chaos documentation
+site_description: Data Abstraction Layer
+repo_name: 'GitHub'
+repo_url: https://github.com/crysalead/chaos
+theme: readthedocs
+pages:
+- Index: 'index.md'
+- Connections: 'connections.md'
+- Models: 'models.md'
+- Entities: 'entities.md'
+- Schemas: 'schemas.md'
