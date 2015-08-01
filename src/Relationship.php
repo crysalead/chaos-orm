@@ -282,7 +282,7 @@ class Relationship
                 if ($relationship->type() === 'hasManyThrough') {
                     $collection = [$entity];
                     $this->embed($collection, $options);
-                    return $entity->{$relationship->name()};
+                    return $entity->__get($relationship->name()); // Too Many Magic Kill The Magic.
                 }
                 $collection = $this->_find($entity->{$relationship->keys('from')}, $options);
                 if ($relationship->hasMany()) {

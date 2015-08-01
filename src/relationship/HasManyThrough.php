@@ -87,18 +87,6 @@ class HasManyThrough extends \chaos\Relationship
         $relThrough = $this->_schema->relation($through);
         $middle = $relThrough->embed($collection, $options);
 
-        foreach ($middle as $key => $entity) {
-            if (is_object($entity)) {
-                if (!isset($entity->{$using})) {
-                    unset($middle[$key]);
-                }
-            } else {
-                if (!isset($entity[$using])) {
-                    unset($middle[$key]);
-                }
-            }
-        }
-
         $pivot = $relThrough->to();
         $relUsing = $pivot::schema()->relation($using);
         $related = $relUsing->embed($middle, $options);
@@ -108,7 +96,7 @@ class HasManyThrough extends \chaos\Relationship
         foreach ($collection as $index => $entity) {
             if (is_object($entity)) {
                 $entity->{$name} = [];
-            } if (is_array($entity)) {
+            } else {
                 $collection[$index][$name] = [];
             }
         }
@@ -118,7 +106,9 @@ class HasManyThrough extends \chaos\Relationship
                 foreach ($entity->{$through} as $key => $item) {
                     if (isset($item->{$using})) {
                         $value = $item->{$using};
-                        if (!$entity->{$name} instanceof Through) {
+                        if ($entity instanceof Model) {
+                            $entity->__get($name); // Too Many Magic Kill The Magic.
+                        } else {
                             $entity->{$name}[] = $value;
                         }
                     } else {
