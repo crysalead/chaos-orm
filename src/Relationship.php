@@ -267,7 +267,7 @@ class Relationship
                 return $entity->{$relationship->name()};
             },
             static::LINK_CONTAINED => function($entity, $relationship) {
-                return $relationship->hasMany() ? $entity->parent()->parent() : $entity->parent();
+                return $relationship->isMany() ? $entity->parent()->parent() : $entity->parent();
             },
             static::LINK_KEY => function($entity, $relationship, $options) {
                 if ($relationship->type() === 'hasManyThrough') {
@@ -276,7 +276,7 @@ class Relationship
                     return $entity->__get($relationship->name()); // Too Many Magic Kill The Magic.
                 }
                 $collection = $this->_find($entity->{$relationship->keys('from')}, $options);
-                if ($relationship->hasMany()) {
+                if ($relationship->isMany()) {
                     return $collection;
                 }
                 return $collection ? reset($collection) : null;
@@ -377,13 +377,9 @@ class Relationship
     {
         $fieldname = $this->name();
 
-        if (!$this->hasMany()) {
-            return !isset($entity->{$fieldname}) || $entity->{$fieldname}->validate($options);
+        if (!isset($entity->{$fieldname})) {
+            return true;
         }
-        $success = true;
-        foreach ($entity->{$fieldname} as $value) {
-            $success = $success && $value->validate($options);
-        }
-        return $success;
+        return $entity->{$fieldname}->validate($options);
     }
 }
