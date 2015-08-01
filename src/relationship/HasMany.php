@@ -74,8 +74,7 @@ class HasMany extends \chaos\Relationship
         $to = $this->to();
         $previous = $to::all(['conditions' => $conditions]);
 
-        $indexes = $this->_index($previous, $this->keys('to'));
-
+        $indexes = $this->_index($previous, $this->keys('from'));
         $result = true;
 
         foreach ($entity->{$name} as $item) {
