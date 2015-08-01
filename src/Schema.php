@@ -889,8 +889,7 @@ class Schema
      */
     public function lastInsertId()
     {
-        $sequence = $this->source(). '_' . $this->primaryKey() . '_seq';
-        return $this->connection()->lastInsertId($sequence);
+        throw new ChaosException("Missing `lastInsertId()` implementation for this schema.");
     }
 
     /**
