@@ -87,6 +87,18 @@ class HasManyThrough extends \chaos\Relationship
         $relThrough = $this->_schema->relation($through);
         $middle = $relThrough->embed($collection, $options);
 
+        foreach ($middle as $key => $entity) {
+            if (is_object($entity)) {
+                if (!isset($entity->{$using})) {
+                    unset($middle[$key]);
+                }
+            } else {
+                if (!isset($entity[$using])) {
+                    unset($middle[$key]);
+                }
+            }
+        }
+
         $pivot = $relThrough->to();
         $relUsing = $pivot::schema()->relation($using);
         $related = $relUsing->embed($middle, $options);
@@ -101,17 +113,25 @@ class HasManyThrough extends \chaos\Relationship
             }
         }
 
-        foreach ($collection as $index => $source) {
-            if (is_object($source)) {
-                foreach ($source->{$through} as $item) {
-                    $value = $item->{$using};
-                    if (!$source->{$name} instanceof Through) {
-                        $source->{$name}[] = $value;
+        foreach ($collection as $index => $entity) {
+            if (is_object($entity)) {
+                foreach ($entity->{$through} as $key => $item) {
+                    if (isset($item->{$using})) {
+                        $value = $item->{$using};
+                        if (!$entity->{$name} instanceof Through) {
+                            $entity->{$name}[] = $value;
+                        }
+                    } else {
+                        unset($entity->{$through}[$key]);
                     }
                 }
             } else {
-                foreach ($source[$through] as $item) {
-                    $collection[$index][$name][] = $item[$using];
+                foreach ($entity[$through] as $key => $item) {
+                    if (isset($item[$using])) {
+                        $collection[$index][$name][] = $item[$using];
+                    } else {
+                        unset($entity[$through][$key]);
+                    }
                 }
             }
         }
