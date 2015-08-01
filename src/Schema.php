@@ -602,12 +602,18 @@ class Schema
             }
 
             $to = $rel->to();
+            $query = empty($relations[$name]) ? [] : $relations[$name];
+            if (is_callable($query)) {
+                $options['handler'] = $query;
+            } else {
+                $options['query'] = $query;
+            }
             $related = $rel->embed($collection, $options);
 
             $subrelations = [];
             foreach ($relations as $path => $value) {
                 if (preg_match('~^'.$name.'\.(.*)$~', $path, $matches)) {
-                    $subrelations[] = $matches[1];
+                    $subrelations[$matches[1]] = $value;
                 }
             }
             if ($subrelations) {

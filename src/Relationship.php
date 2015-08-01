@@ -315,15 +315,22 @@ class Relationship
      */
     protected function _find($id, $options = [])
     {
+        $defaults = ['handler' => null];
+        $options += $defaults;
+
         if ($this->link() !== static::LINK_KEY) {
             throw new ChaosException("This relation is not based on a foreign key.");
         }
         if (!$id) {
             return [];
         }
-        $query = $this->schema()->query(['model' => $this->to(), 'conditions' => [
-            $this->keys('to') => $id
-        ]]);
+        $options = Set::merge([
+            'model' => $this->to(),
+            'query' => ['conditions' => [
+                $this->keys('to') => $id
+            ]]
+        ], $options);
+        $query = $this->schema()->query($options);
         return $query->all($options);
     }
 
