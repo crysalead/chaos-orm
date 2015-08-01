@@ -542,7 +542,6 @@ class Schema
 
         $relation = $this->_classes[$relationship];
         return $this->_relationships[$name] = new $relation($config + [
-            'schema'      => $this,
             'name'        => $name,
             'conventions' => $this->_conventions
         ]);
@@ -585,9 +584,9 @@ class Schema
      */
     public function embed(&$collection, $relations, $options = [])
     {
-        if (!isset($options['collector'])) {
+        if (!isset($options['fetchOptions']['collector'])) {
             $collector = $this->_classes['collector'];
-            $options['collector'] = new $collector();
+            $options['fetchOptions']['collector'] = new $collector();
         }
 
         $expanded = [];
@@ -625,7 +624,7 @@ class Schema
             $rel = $this->relation($name);
             $related = $rel->embed($collection, $options);
         }
-        return $options['collector'];
+        return $options['fetchOptions']['collector'];
     }
 
     /**

@@ -243,8 +243,12 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function find($options = [])
     {
+        $defaults = ['query' => []];
+        $options += $defaults;
+        $options['query'] = Set::merge(static::$_query, $options['query']);
+
         $schema = static::schema();
-        $query = $schema->query(['finders' => static::finders()]);
+        $query = $schema->query($options + ['finders' => static::finders()]);
 
         $options = Set::merge(static::$_query, $options);
 
@@ -289,7 +293,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function id($id, $options = [], $fetchOptions = [])
     {
-        $options['conditions'] = [static::schema()->primaryKey() => $id];
+        $options['query'] = ['conditions' => [static::schema()->primaryKey() => $id]];
         return static::find($options)->first($fetchOptions);
     }
 

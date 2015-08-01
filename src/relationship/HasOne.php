@@ -16,10 +16,6 @@ class HasOne extends \chaos\Relationship
      */
     public function embed(&$collection, $options = [])
     {
-        if (!$schema = $this->schema()) {
-            throw new ChaosException("The `{$class}` relation is missing a `'schema'` dependency.");
-        }
-
         $indexes = $this->_index($collection, $this->keys('from'));
         $related = $this->_find(array_keys($indexes), $options);
 

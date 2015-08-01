@@ -52,8 +52,9 @@ describe("Model", function() {
 
             $connection = Stub::create();
             $model = $this->model;
-            $model::query(['query' => 'options']);
-            expect($model::query())->toBe(['query' => 'options']);
+            $model::query(['field' => 'value']);
+            expect($model::query())->toBe(['field' => 'value']);
+            $model::query([]);
 
         });
 
@@ -123,7 +124,10 @@ describe("Model", function() {
             $schema = $model::schema();
             $finders = $model::finders();
 
-            expect($schema)->toReceive('query')->with(['finders' => $finders]);
+            expect($schema)->toReceive('query')->with([
+                'query'   => [],
+                'finders' => $finders
+            ]);
             $model::find();
 
         });
@@ -160,10 +164,10 @@ describe("Model", function() {
 
             $model = $this->model;
 
-            expect($model)->toReceive('::find')->with(['query' => 'options']);
+            expect($model)->toReceive('::find')->with(['query' => ['field' => 'value']]);
             expect($this->query)->toReceive('first')->with(['fetch' => 'options']);
 
-            $model::first(['query' => 'options'], ['fetch' => 'options']);
+            $model::first(['query' => ['field' => 'value']], ['fetch' => 'options']);
 
         });
 
@@ -185,8 +189,9 @@ describe("Model", function() {
             $model = $this->model;
 
             expect($model)->toReceive('::find')->with([
-                'query' => 'options',
-                'conditions' => ['id' => 1]
+                'query' => [
+                    'conditions' => ['id' => 1]
+                ]
             ]);
             expect($this->query)->toReceive('first')->with(['fetch' => 'options']);
 
@@ -211,10 +216,10 @@ describe("Model", function() {
 
             $model = $this->model;
 
-            expect($model)->toReceive('::find')->with(['query' => 'options']);
+            expect($model)->toReceive('::find')->with(['query' => ['field' => 'value']]);
             expect($this->query)->toReceive('all')->with(['fetch' => 'options']);
 
-            $model::all(['query' => 'options'], ['fetch' => 'options']);
+            $model::all(['query' => ['field' => 'value']], ['fetch' => 'options']);
 
         });
 

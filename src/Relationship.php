@@ -98,13 +98,6 @@ class Relationship
     protected $_conventions = null;
 
     /**
-     * The attached schema instance.
-     *
-     * @var object
-     */
-    protected $_schema = null;
-
-    /**
      * Constructs an object that represents a relationship between two model classes.
      *
      * @param array $config The relationship's configuration, which defines how the two models in
@@ -145,7 +138,6 @@ class Relationship
             'link'        => static::LINK_KEY,
             'fields'      => true,
             'constraints' => [],
-            'schema'      => null,
             'conventions' => null
         ];
 
@@ -157,7 +149,6 @@ class Relationship
             }
         }
 
-        $this->_schema = $config['schema'];
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
         if (!$config['keys']) {
@@ -315,7 +306,11 @@ class Relationship
      */
     protected function _find($id, $options = [])
     {
-        $defaults = ['handler' => null];
+        $defaults = [
+            'handler'      => null,
+            'query'        => [],
+            'fetchOptions' => []
+        ];
         $options += $defaults;
 
         if ($this->link() !== static::LINK_KEY) {
@@ -324,14 +319,9 @@ class Relationship
         if (!$id) {
             return [];
         }
-        $options = Set::merge([
-            'model' => $this->to(),
-            'query' => ['conditions' => [
-                $this->keys('to') => $id
-            ]]
-        ], $options);
-        $query = $this->schema()->query($options);
-        return $query->all($options);
+        $to = $this->to();
+        $options['query'] = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $id]]);
+        return $to::all($options, $options['fetchOptions']);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace chaos\relationship;
 use chaos\ChaosException;
 use chaos\Model;
 use chaos\collection\Through;
+use chaos\Conventions;
 
 /**
  * The `HasManyThrough` relationship.
@@ -25,13 +26,6 @@ class HasManyThrough extends \chaos\Relationship
     protected $_using = null;
 
     /**
-     * The saving mode strategy.
-     *
-     * @var string
-     */
-    protected $_mode = null;
-
-    /**
      * Constructs an object that represents a relationship between two model classes.
      *
      * @see chaos\Relationship
@@ -44,32 +38,51 @@ class HasManyThrough extends \chaos\Relationship
     public function __construct($config = [])
     {
         $defaults = [
-            'through'  => null,
-            'using'    => null,
-            'mode'     => 'diff'
+            'name'        => null,
+            'correlate'   => null,
+            'from'        => null,
+            'through'     => null,
+            'using'       => null,
+            'link'        => static::LINK_KEY,
+            'fields'      => true,
+            'constraints' => [],
+            'conventions' => null
         ];
+
         $config += $defaults;
 
-        if (!$config['through']) {
-            throw new ChaosException("Error, `'through'` option can't be empty for a has many through relation.");
+        foreach (['from', 'through', 'using'] as $value) {
+            if (!$config[$value]) {
+                throw new ChaosException("`'{$value}'` option can't be empty for a has many through relation.");
+            }
         }
 
-        parent::__construct(['to' => Model::class] + $config);
+        $this->_conventions = $config['conventions'] ?: new Conventions();
 
+        if (!$config['correlate']) {
+            $config['correlate'] = $this->_conventions->apply('fieldName', $config['from']);
+        }
+
+        $this->_correlate = $config['correlate'];
+        $this->_from = $config['from'];
         $this->_through = $config['through'];
+        $this->_link = $config['link'];
+        $this->_fields = $config['fields'];
+        $this->_constraints = $config['constraints'];
         $this->_using = $config['using'];
-        $this->_mode = $config['mode'];
 
-        if (!$config['using']) {
-            $this->_using = $this->_conventions->apply('usingName', $this->name());
-        }
-
-        $relThrough = $this->_schema->relation($this->through());
+        $from = $this->from();
+        $relThrough = $from::relation($this->through());
         $pivot = $relThrough->to();
         $relUsing = $pivot::relation($this->using());
 
         $this->_to = $relUsing->to();
         $this->_keys = $relUsing->keys();
+
+        $this->_name = $config['name'] ?: $this->_conventions->apply('fieldName', $this->to());
+
+        $pos = strrpos(static::class, '\\');
+        $this->_type = lcfirst(substr(static::class, $pos !== false ? $pos + 1 : 0));
     }
 
     /**
@@ -84,7 +97,8 @@ class HasManyThrough extends \chaos\Relationship
         $through = $this->through();
         $using = $this->using();
 
-        $relThrough = $this->_schema->relation($through);
+        $from = $this->from();
+        $relThrough = $from::relation($through);
         $middle = $relThrough->embed($collection, $options);
 
         $pivot = $relThrough->to();
@@ -93,12 +107,20 @@ class HasManyThrough extends \chaos\Relationship
 
         $this->_cleanup($collection);
 
+        $arrayHydration = false;
+
         foreach ($collection as $index => $entity) {
             if (is_object($entity)) {
                 $entity->{$name} = [];
             } else {
                 $collection[$index][$name] = [];
+                $arrayHydration = true;
             }
+        }
+
+        if ($arrayHydration) {
+            $fromKey = $this->keys('from');
+            $indexes = $this->_index($related, $this->keys('to'));
         }
 
         foreach ($collection as $index => $entity) {
@@ -111,16 +133,13 @@ class HasManyThrough extends \chaos\Relationship
                         } else {
                             $entity->{$name}[] = $value;
                         }
-                    } else {
-                        unset($entity->{$through}[$key]);
                     }
                 }
             } else {
                 foreach ($entity[$through] as $key => $item) {
-                    if (isset($item[$using])) {
-                        $collection[$index][$name][] = $item[$using];
-                    } else {
-                        unset($entity[$through][$key]);
+                    if (isset($indexes[$item[$fromKey]])) {
+                        $collection[$index][$name][] = $related[$indexes[$item[$fromKey]]];
+                        $collection[$index][$through][$key][$using] = $related[$indexes[$item[$fromKey]]];
                     }
                 }
             }
