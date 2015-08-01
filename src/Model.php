@@ -1055,7 +1055,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             if ($id === null) {
                 throw new ChaosException("Can't update an entity missing ID data.");
             }
-            $cursor = $schema->update($values, [$id => $schema->primaryKey()]);
+            $cursor = $schema->update($values, [$schema->primaryKey() => $id]);
         }
 
         $success = !$cursor->error();
