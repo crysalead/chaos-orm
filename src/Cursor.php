@@ -149,7 +149,7 @@ class Cursor implements \Iterator
     public function valid()
     {
         if (!$this->_init) {
-            $this->_valid = $this->fetch();
+            $this->_valid = $this->_fetch();
         }
         return $this->_valid;
     }
@@ -174,7 +174,7 @@ class Cursor implements \Iterator
     public function current()
     {
         if (!$this->_init) {
-            $this->fetch();
+            $this->_fetch();
         }
         $this->_started = true;
         return $this->_current;
@@ -188,7 +188,7 @@ class Cursor implements \Iterator
     public function key()
     {
         if (!$this->_init) {
-            $this->fetch();
+            $this->_fetch();
         }
         $this->_started = true;
         return $this->_key;
@@ -204,7 +204,7 @@ class Cursor implements \Iterator
         if ($this->_started === false) {
             return $this->current();
         }
-        $this->_valid = $this->fetch();
+        $this->_valid = $this->_fetch();
         if (!$this->_valid) {
             $this->_key = null;
             $this->_current = false;
@@ -217,7 +217,7 @@ class Cursor implements \Iterator
      *
      * @return boolean Return `true` on success or `false` otherwise.
      */
-    protected function fetch()
+    protected function _fetch()
     {
         $this->_init = true;
         if ($this->_data) {
