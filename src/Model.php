@@ -768,7 +768,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
                 continue;
             }
             if (!array_key_exists($key, $this->_persisted)) {
-                $result[$key] = null;
+                if (!$schema->hasRelation($key)) {
+                    $result[$key] = null;
+                }
                 continue;
             }
             $modified = false;
@@ -784,7 +786,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
                 $result[$key] = $this->_persisted[$key];
             }
         }
-        if ($field && $field !== true) {
+        if ($field) {
             return !empty($result);
         }
         $result = array_keys($result);
