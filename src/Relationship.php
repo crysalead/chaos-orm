@@ -344,9 +344,21 @@ class Relationship
      *
      * @param  mixed  $collection An collection to "clean up".
      */
-    public function _cleanup($collection)
+    public function _cleanup(&$collection)
     {
         $name = $this->name();
+
+        if ($this->isMany()) {
+            foreach ($collection as $index => $entity) {
+                if (is_object($entity)) {
+                    $entity->{$name} = [];
+                } else {
+                    $collection[$index][$name] = [];
+                }
+            }
+            return;
+        }
+
         foreach ($collection as $index => $entity) {
             if (is_object($entity)) {
                 unset($entity->{$name});

@@ -94,33 +94,16 @@ class HasManyThrough extends \chaos\Relationship
 
         $from = $this->from();
         $relThrough = $from::relation($through);
-        $middle = $relThrough->embed($collection, Set::merge(['fetchOptions' => [
-            'collector' => $this->_collector($collection)
-        ]], $options));
+        $middle = $relThrough->embed($collection, $options);
 
         $pivot = $relThrough->to();
         $relUsing = $pivot::schema()->relation($using);
-        $related = $relUsing->embed($middle, Set::merge(['fetchOptions' => [
-            'collector' => $this->_collector($collection)
-        ]], $options));
+        $related = $relUsing->embed($middle, $options);
 
         $this->_cleanup($collection);
 
-        $arrayHydration = false;
-
-        foreach ($collection as $index => $entity) {
-            if (is_object($entity)) {
-                $entity->{$name} = [];
-            } else {
-                $collection[$index][$name] = [];
-                $arrayHydration = true;
-            }
-        }
-
-        if ($arrayHydration) {
-            $fromKey = $this->keys('from');
-            $indexes = $this->_index($related, $this->keys('to'));
-        }
+        $fromKey = $this->keys('from');
+        $indexes = $this->_index($related, $this->keys('to'));
 
         foreach ($collection as $index => $entity) {
             if (is_object($entity)) {

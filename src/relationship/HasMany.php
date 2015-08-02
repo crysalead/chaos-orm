@@ -27,14 +27,6 @@ class HasMany extends \chaos\Relationship
 
         $this->_cleanup($collection);
 
-        foreach ($collection as $index => $entity) {
-            if (is_object($entity)) {
-                $entity->{$name} = [];
-            } else {
-                $collection[$index][$name] = [];
-            }
-        }
-
         foreach ($related as $index => $entity) {
             if (is_object($entity)) {
                 $value = $entity->{$this->keys('to')};
