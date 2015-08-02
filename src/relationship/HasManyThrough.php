@@ -1,6 +1,7 @@
 <?php
 namespace chaos\relationship;
 
+use set\Set;
 use chaos\ChaosException;
 use chaos\Model;
 use chaos\collection\Through;
@@ -39,7 +40,6 @@ class HasManyThrough extends \chaos\Relationship
     {
         $defaults = [
             'name'        => null,
-            'correlate'   => null,
             'from'        => null,
             'through'     => null,
             'using'       => null,
@@ -59,11 +59,6 @@ class HasManyThrough extends \chaos\Relationship
 
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
-        if (!$config['correlate']) {
-            $config['correlate'] = $this->_conventions->apply('fieldName', $config['from']);
-        }
-
-        $this->_correlate = $config['correlate'];
         $this->_from = $config['from'];
         $this->_through = $config['through'];
         $this->_link = $config['link'];
@@ -99,11 +94,15 @@ class HasManyThrough extends \chaos\Relationship
 
         $from = $this->from();
         $relThrough = $from::relation($through);
-        $middle = $relThrough->embed($collection, $options);
+        $middle = $relThrough->embed($collection, Set::merge(['fetchOptions' => [
+            'collector' => $this->_collector($collection)
+        ]], $options));
 
         $pivot = $relThrough->to();
         $relUsing = $pivot::schema()->relation($using);
-        $related = $relUsing->embed($middle, $options);
+        $related = $relUsing->embed($middle, Set::merge(['fetchOptions' => [
+            'collector' => $this->_collector($collection)
+        ]], $options));
 
         $this->_cleanup($collection);
 
@@ -148,9 +147,9 @@ class HasManyThrough extends \chaos\Relationship
     }
 
     /**
-     * Saving an entity relation.
+     * Saves a relation.
      *
-     * @param  object  $entity The relation's entity
+     * @param  object  $entity  The relation's entity
      * @param  array   $options Saving options.
      * @return boolean
      */

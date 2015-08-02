@@ -27,7 +27,6 @@ describe("BelongsTo", function() {
             ]);
 
             expect($relation->name())->toBe($this->conventions->apply('fieldName', Gallery::class));
-            expect($relation->correlate())->toBe($this->conventions->apply('fieldName', Image::class));
 
             $foreignKey = $this->conventions->apply('foreignKey', Image::class);
             expect($relation->keys())->toBe([$foreignKey => $this->primaryKey]);
@@ -36,7 +35,6 @@ describe("BelongsTo", function() {
             expect($relation->to())->toBe(Gallery::class);
             expect($relation->link())->toBe(Relationship::LINK_KEY);
             expect($relation->fields())->toBe(true);
-            expect($relation->constraints())->toBe([]);
             expect($relation->conventions())->toBeAnInstanceOf('chaos\Conventions');
 
         });

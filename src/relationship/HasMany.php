@@ -1,6 +1,7 @@
 <?php
 namespace chaos\relationship;
 
+use set\Set;
 use chaos\ChaosException;
 
 /**
@@ -12,12 +13,15 @@ class HasMany extends \chaos\Relationship
      * Expands a collection of entities by adding their related data.
      *
      * @param  mixed $collection The collection to expand.
+     * @param  array $options    The embedging options.
      * @return array             The collection of related entities.
      */
     public function embed(&$collection, $options = [])
     {
         $indexes = $this->_index($collection, $this->keys('from'));
-        $related = $this->_find(array_keys($indexes), $options);
+        $related = $this->_find(array_keys($indexes), Set::merge(['fetchOptions' => [
+            'collector' => $this->_collector($collection)
+        ]], $options));
 
         $name = $this->name();
 
@@ -49,9 +53,9 @@ class HasMany extends \chaos\Relationship
     }
 
     /**
-     * Saving a related entity.
+     * Saves a relation.
      *
-     * @param  object  $entity The relation's entity
+     * @param  object  $entity  The relation's entity
      * @param  array   $options Saving options.
      * @return boolean
      */

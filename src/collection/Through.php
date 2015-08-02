@@ -38,6 +38,16 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     protected $_using = null;
 
+    /**
+     * Creates an alias on an other collection.
+     *
+     * @param array $config Possible options are:
+     *                      - `'parent'`    _object_ : The parent instance.
+     *                      - `'model'`     _string_ : The attached model class name.
+     *                      - `'through'`   _object_ : A collection instance.
+     *                      - `'using'`     _string_ : The field name to extract from collection's entities.
+     *                      - `'data'`      _array_  : Some data to set on the collection.
+     */
     public function __construct($config = [])
     {
         $defaults = [
@@ -67,7 +77,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets/sets the parent.
+     * Gets/sets the parent instance.
      *
      * @param  object $parent The parent instance to set or `null` to get the current one.
      * @return object
@@ -82,7 +92,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Get the base rootPath.
+     * Gets the base rootPath.
      *
      * @return string
      */
@@ -92,7 +102,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the model which this particular collection is based off of.
+     * Returns the model on which this particular collection is based.
      *
      * @return string The fully qualified model class name.
      */
@@ -192,7 +202,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Merge another collection to this collection.
+     * Merges another collection to this collection.
      *
      * @param  mixed   $collection   A collection.
      * @param  boolean $preserveKeys If `true` use the key value as a hash to avoid duplicates.
@@ -314,11 +324,10 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     /**
      * Filters a copy of the items in the collection.
      *
-     * @param  mixed $closure The closure to use for filtering, or an array of key/value pairs to match.
-     *
-     * @return mixed          Returns a collection of the filtered items.
+     * @param  Closure $closure The closure to use for filtering, or an array of key/value pairs to match.
+     * @return object           Returns a collection of the filtered items.
      */
-    public function find($closure, $options = [])
+    public function find($closure)
     {
         $data = [];
         foreach ($this as $val) {
@@ -333,7 +342,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      * Applies a closure to all items in the collection.
      *
      * @param  Closure $closure The closure to apply.
-     *
      * @return object           This collection instance.
      */
     public function each($closure)
@@ -349,7 +357,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      * and returns the result.
      *
      * @param  Closure $closure The closure to apply.
-     *
      * @return mixed            Returns the set of filtered values inside a `Collection`.
      */
     public function map($closure, $options = [])
@@ -362,12 +369,11 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Reduce, or fold, a collection down to a single value
+     * Reduces, or folds, a collection down to a single value
      *
-     * @param  closure $closure The filter to apply.
+     * @param  Closure $closure The filter to apply.
      * @param  mixed   $initial Initial value.
-     *
-     * @return mixed            A single reduced value.
+     * @return mixed            The reduced value.
      */
     public function reduce($closure, $initial = false)
     {
@@ -379,16 +385,16 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Extract a slice of $length items starting at position $offset from the Collection.
+     * Extracts a slice of $length items starting at position $offset from the Collection.
      *
      * If $length is null it returns all elements from $offset to the end of the Collection.
      * Keys have to be preserved by this method. Calling this method will only return the
      * selected slice and NOT change the elements contained in the collection slice is called on.
      *
-     * @param  integer $offset The offset value.
-     * @param  integer $length The number of element to extract
-     *
-     * @return array
+     * @param  integer $offset       The offset value.
+     * @param  integer $length       The number of element to extract.
+     * @param  boolean $preserveKeys Boolean indicating if keys must be preserved.
+     * @return object                Returns a collection instance.
      */
     public function slice($offset, $length = null, $preserveKeys = true)
     {
@@ -415,7 +421,8 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     /**
      * Converts the current state of the data structure to an array.
      *
-     * @return array Returns the array value of the data in this `Collection`.
+     * @param  array $options The options array.
+     * @return array          Returns the array value of the data in this `Collection`.
      */
     public function data($options = [])
     {

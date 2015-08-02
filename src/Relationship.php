@@ -5,8 +5,7 @@ use set\Set;
 use chaos\ChaosException;
 
 /**
- * The `Relationship` class encapsulates the data and functionality necessary to link two model
- * classes together.
+ * The `Relationship` class encapsulates the data and functionality necessary to link two model together.
  */
 class Relationship
 {
@@ -40,13 +39,6 @@ class Relationship
      * @var string
      */
     protected $_name = null;
-
-    /**
-     * The correlated name of the field name in the related entity.
-     *
-     * @var string
-     */
-    protected $_correlate = null;
 
     /**
      * Mathing keys definition.
@@ -84,13 +76,6 @@ class Relationship
     protected $_fields = true;
 
     /**
-     * The conditions to filter on.
-     *
-     * @var array
-     */
-    protected $_constraints = [];
-
-    /**
      * The naming conventions instance to use.
      *
      * @var object
@@ -104,8 +89,6 @@ class Relationship
      *                      question are bound. The available options are:
      *                      - `'name'`        _string_ : The field name used for accessing the related data.
      *                                                   For example, in the case of `Post` hasMany `Comment`, the name defaults to `'comments'`.
-     *                      - `'correlate'`   _string_ : The correlated name of the field name in the related entity.
-     *                                                   For example, in the case of `Post` hasMany `Comment`, the name defaults to `'post'`.
      *                      - `'keys'`        _mixed_  : Mathing keys definition, where the key is the key in the originating model,
      *                                                   and the value is the key in the target model (i.e. `['fromId' => 'toId']`).
      *                      - `'from'`        _string_ : The fully namespaced class name this relationship originates.
@@ -119,11 +102,6 @@ class Relationship
      *                      - `'fields'`      _mixed_  : An array of the subset of fields that should be selected
      *                                                   from the related object(s) by default. If set to `true` (the default), all
      *                                                   fields are selected.
-     *                      - `'constraints'` _mixed_  : A string or array containing additional constraints
-     *                                                   on the relationship association. If a string, can contain a literal SQL fragment or
-     *                                                   other database-native value. If an array, maps fields from the related object
-     *                                                   either to fields elsewhere, or to arbitrary expressions. In either case, _the
-     *                                                   values specified here will be literally interpreted by the database_.
      *                      - `'schema'`      _object_ : A schema instance.
      *                      - `'conventions'` _object_ : The naming conventions instance to use.
      */
@@ -131,13 +109,11 @@ class Relationship
     {
         $defaults = [
             'name'        => null,
-            'correlate'   => null,
             'keys'        => null,
             'from'        => null,
             'to'          => null,
             'link'        => static::LINK_KEY,
             'fields'      => true,
-            'constraints' => [],
             'conventions' => null
         ];
 
@@ -156,22 +132,16 @@ class Relationship
             $config['keys'] = [$primaryKey => $this->_conventions->apply('foreignKey', $config['from'])];
         }
 
-        if (!$config['correlate']) {
-            $config['correlate'] = $this->_conventions->apply('fieldName', $config['from']);
-        }
-
         if (!$config['name']) {
             $config['name'] = $this->_conventions->apply('fieldName', $config['to']);
         }
 
         $this->_name = $config['name'];
-        $this->_correlate = $config['correlate'];
         $this->_keys = $config['keys'];
         $this->_from = $config['from'];
         $this->_to = $config['to'];
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
-        $this->_constraints = $config['constraints'];
 
         $pos = strrpos(static::class, '\\');
         $this->_type = lcfirst(substr(static::class, $pos !== false ? $pos + 1 : 0));
@@ -258,7 +228,7 @@ class Relationship
     }
 
     /**
-     * Strategies used to query related objects, indexed by key.
+     * Strategies used to query related objects.
      */
     public function strategies()
     {
@@ -270,6 +240,10 @@ class Relationship
                 return $relationship->isMany() ? $entity->parent()->parent() : $entity->parent();
             },
             static::LINK_KEY => function($entity, $relationship, $options) {
+                $options = Set::merge(['fetchOptions' => [
+                    'collector' => $this->_collector($entity)
+                ]], $options);
+
                 if ($relationship->type() === 'hasManyThrough') {
                     $collection = [$entity];
                     $this->embed($collection, $options);
@@ -279,10 +253,12 @@ class Relationship
                 if ($relationship->isMany()) {
                     return $collection;
                 }
-                return $collection ? reset($collection) : null;
+                return $collection ? $collection->rewind() : null;
             },
             static::LINK_KEY_LIST  => function($object, $relationship, $options) {
-                return $this->_find($entity->{$relationship->keys('from')}, $options);
+                return $this->_find($entity->{$relationship->keys('from')}, Set::merge(['fetchOptions' => [
+                    'collector' => $this->_collector($entity)
+                ]], $options));
             }
         ];
     }
@@ -317,11 +293,25 @@ class Relationship
             throw new ChaosException("This relation is not based on a foreign key.");
         }
         if (!$id) {
-            return [];
+            $collector = isset($options['fetchOptions']['collector']) ? $options['fetchOptions']['collector'] : null;
+            return $to::create([], ['type' => 'set', 'collector' => $collector]);
         }
         $to = $this->to();
         $options['query'] = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $id]]);
         return $to::all($options, $options['fetchOptions']);
+    }
+
+    /**
+     * Extracts the collector from an object
+     *
+     * @param  mixed       $object An instance.
+     * @return object|null         The collector instance or `null` if unavailable.
+     */
+    protected function _collector($object)
+    {
+        if (method_exists($object, 'collector')) {
+            return $object->collector();
+        }
     }
 
     /**
@@ -369,8 +359,8 @@ class Relationship
     /**
      * Validating an entity relation.
      *
-     * @param  object  $entity The relation's entity
-     * @param  array   $options Saving options.
+     * @param  object  $entity  The relation's entity.
+     * @param  array   $options The validation options.
      * @return boolean
      */
     public function validate($entity, $options = [])

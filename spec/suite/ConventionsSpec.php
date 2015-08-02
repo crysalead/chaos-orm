@@ -46,7 +46,7 @@ describe("Conventions", function() {
         it("adds a convention", function() {
 
             $conventions = new Conventions();
-            $conventions->add('helloWorld', function($name) {
+            $conventions->set('helloWorld', function($name) {
                 return $name === 'hello' ? 'world' : null;
             });
             expect($conventions->apply('helloWorld', 'hello'))->toBe('world');

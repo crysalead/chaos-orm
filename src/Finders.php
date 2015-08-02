@@ -3,10 +3,13 @@ namespace chaos;
 
 use chaos\ChaosException;
 
+/**
+ * `Finders` can stores closures for configuring queries.
+ */
 class Finders
 {
     /**
-     * Stores the finder closures
+     * Stores the closures.
      *
      * @var array
      */
@@ -16,7 +19,7 @@ class Finders
      * Sets a finder.
      *
      * @param  string  $name    The finder name.
-     * @param  Closure $closure The finder closure.
+     * @param  Closure $closure The finder.
      */
     public function set($name, $closure)
     {
@@ -24,10 +27,10 @@ class Finders
     }
 
     /**
-     * Gets a finder
+     * Gets a finder.
      *
      * @param  string $name The finder name.
-     * @return mixed        The finder closure or `null` if not found.
+     * @return mixed        The finder or `null` if not found.
      */
     public function get($name)
     {
@@ -68,7 +71,7 @@ class Finders
     }
 
     /**
-     * Magic method to execute a finder.
+     * Invokes a finder through the magic `__call` method.
      *
      * @param  string $name   The name of the finder to execute.
      * @param  array  $params The parameters to pass to the finder.

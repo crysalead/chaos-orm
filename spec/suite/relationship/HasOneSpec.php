@@ -27,7 +27,6 @@ describe("HasOne", function() {
             ]);
 
             expect($relation->name())->toBe($this->conventions->apply('fieldName', GalleryDetail::class));
-            expect($relation->correlate())->toBe($this->conventions->apply('fieldName', Gallery::class));
 
             $foreignKey = $this->conventions->apply('foreignKey', Gallery::class);
             expect($relation->keys())->toBe([$this->primaryKey => $foreignKey]);
@@ -36,7 +35,6 @@ describe("HasOne", function() {
             expect($relation->to())->toBe(GalleryDetail::class);
             expect($relation->link())->toBe(Relationship::LINK_KEY);
             expect($relation->fields())->toBe(true);
-            expect($relation->constraints())->toBe([]);
             expect($relation->conventions())->toBeAnInstanceOf('chaos\Conventions');
 
         });

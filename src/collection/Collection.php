@@ -11,27 +11,27 @@ use chaos\Model;
 class Collection implements \ArrayAccess, \Iterator, \Countable
 {
     /**
+     * Class dependencies.
+     *
+     * @var array
+     */
+    protected $_classes = [
+        'collector' => 'chaos\Collector'
+    ];
+
+    /**
+     * The collector instance.
+     *
+     * @var object
+     */
+    protected $_collector = null;
+
+    /**
      * A reference to this object's parent `Document` object.
      *
      * @var object
      */
     protected $_parent = null;
-
-    /**
-     * The field name of the parent object.
-     *
-     * @var object
-     */
-    protected $_from = null;
-
-    /**
-     * A boolean indicating if this collection is a partial representation
-     * of the database or not. If `false` the database will be syncronized with the content of
-     * this collection.
-     *
-     * @var boolean
-     */
-    protected $_partial = true;
 
     /**
      * If this `Collection` instance has a parent document (see `$_parent`), this value indicates
@@ -74,41 +74,43 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     /**
      * Workaround to allow consistent `unset()` in `foreach`.
      *
-     * Note: the edge effet of this behavior is the following:
+     * However it'll lead to the following behavior:
      * {{{
      *   $collection = new Collection(['data' => ['1', '2', '3']]);
      *   unset($collection[0]);
-     *   $collection->next();   // returns 2 instead of 3 when no `skipNext`
+     *   $collection->next();   // will returns 2 instead of 3
      * }}}
      */
     protected $_skipNext = false;
 
     /**
-     * Creates a new record object with default values.
+     * Creates a collection.
      *
      * @param array $config Possible options are:
-     *                      - `'data'`   _array_  : The entiy class.
-     *                      - `'parent'` _object_ : The parent instance.
-     *
+     *                      - `'collector'` _object_ : A collector instance.
+     *                      - `'parent'`    _object_ : The parent instance.
+     *                      - `'rootPath'`  _string_ : A dotted string field path.
+     *                      - `'model'`     _string_ : The attached model class name.
+     *                      - `'meta'`      _array_  : Some meta data.
+     *                      - `'data'`      _array_  : The collection data.
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'parent'   => null,
-            'from'     => null,
-            'rootPath' => null,
-            'model'    => null,
-            'meta'     => [],
-            'data'     => [],
-            'partial'  => true
+            'collector' => null,
+            'parent'    => null,
+            'rootPath'  => null,
+            'model'     => null,
+            'meta'      => [],
+            'data'      => []
         ];
         $config += $defaults;
+
+        $this->_collector = $config['collector'];
         $this->_parent = $config['parent'];
-        $this->_from = $config['from'];
         $this->_rootPath = $config['rootPath'];
         $this->_model = $config['model'];
         $this->_meta = $config['meta'];
-        $this->_partial = $config['partial'];
 
         $this->_loaded = $config['data'];
         foreach ($this->_loaded as $key => $value) {
@@ -118,9 +120,28 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets/sets the parent.
+     * Gets/sets the collector.
      *
-     * @param  object $parent The parent instance to set or `null` to get the current one.
+     * @param  object $collector The collector instance to set or none to get the current one.
+     * @return object            A collector instance.
+     */
+    public function collector($collector = null)
+    {
+        if (func_num_args()) {
+            $this->_collector = $collector;
+            return $this;
+        }
+        if (!$this->_collector) {
+            $collector = $this->_classes['collector'];
+            $this->_collector = new $collector();
+        }
+        return $this->_collector;
+    }
+
+    /**
+     * Gets/sets the parent instance.
+     *
+     * @param  object $parent The parent instance to set or none to get the current one.
      * @return object
      */
     public function parent($parent = null)
@@ -133,7 +154,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Get the base rootPath.
+     * Gets the rootPath.
      *
      * @return string
      */
@@ -143,7 +164,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the model which this particular collection is based off of.
+     * Returns the model on which this particular collection is based.
      *
      * @return string The fully qualified model class name.
      */
@@ -153,7 +174,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets the meta datas.
+     * Gets the meta data.
      *
      * @return array .
      */
@@ -185,11 +206,9 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns a boolean indicating whether an offset exists for the
-     * current `Collection`.
+     * Returns a boolean indicating whether an offset exists for the current `Collection`.
      *
-     * @param  string $offset String or integer indicating the offset or
-     *                        index of an entity in the set.
+     * @param  string $offset String or integer indicating the offset or index of an entity in the set.
      * @return boolean        Result.
      */
     public function offsetExists($offset)
@@ -236,7 +255,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Merge another collection to this collection.
+     * Merges another collection to this collection.
      *
      * @param  mixed   $collection   A collection.
      * @param  boolean $preserveKeys If `true` use the key value as a hash to avoid duplicates.
@@ -351,11 +370,10 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     /**
      * Filters a copy of the items in the collection.
      *
-     * @param  mixed $closure The closure to use for filtering, or an array of key/value pairs to match.
-     *
-     * @return mixed          Returns a collection of the filtered items.
+     * @param  Closure $closure The closure to use for filtering, or an array of key/value pairs to match.
+     * @return object           Returns a collection of the filtered items.
      */
-    public function find($closure, $options = [])
+    public function find($closure)
     {
         $data = array_filter($this->_data, $closure);
         return new static(compact('data'));
@@ -365,7 +383,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * Applies a closure to all items in the collection.
      *
      * @param  Closure $closure The closure to apply.
-     *
      * @return object           This collection instance.
      */
     public function each($closure)
@@ -381,7 +398,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * and returns the result.
      *
      * @param  Closure $closure The closure to apply.
-     *
      * @return mixed            Returns the set of filtered values inside a `Collection`.
      */
     public function map($closure, $options = [])
@@ -391,12 +407,11 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Reduce, or fold, a collection down to a single value
+     * Reduces, or folds, a collection down to a single value
      *
-     * @param  closure $closure The filter to apply.
+     * @param  Closure $closure The filter to apply.
      * @param  mixed   $initial Initial value.
-     *
-     * @return mixed            A single reduced value.
+     * @return mixed            The reduced value.
      */
     public function reduce($closure, $initial = false)
     {
@@ -404,16 +419,16 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Extract a slice of $length items starting at position $offset from the Collection.
+     * Extracts a slice of $length items starting at position $offset from the Collection.
      *
      * If $length is null it returns all elements from $offset to the end of the Collection.
      * Keys have to be preserved by this method. Calling this method will only return the
      * selected slice and NOT change the elements contained in the collection slice is called on.
      *
-     * @param  integer $offset The offset value.
-     * @param  integer $length The number of element to extract
-     *
-     * @return array
+     * @param  integer $offset       The offset value.
+     * @param  integer $length       The number of element to extract.
+     * @param  boolean $preserveKeys Boolean indicating if keys must be preserved.
+     * @return object                Returns a collection instance.
      */
     public function slice($offset, $length = null, $preserveKeys = true)
     {
@@ -430,8 +445,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      *                          less than, equal to, or greater than the second.
      * @param string   $sorter  The type of sorting, can be any sort function like `asort`,
      *                          'uksort', or `natsort`.
-     *
-     * @return object           Return the new sorted collection.
+     * @return object           Returns the new sorted collection.
      */
     public function sort($closure = null, $sorter = null)
     {
@@ -460,9 +474,10 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         $rootPath = $this->_rootPath;
         $model = $this->_model;
         $parent = $this;
-        $options = compact('model', 'rootPath', 'parent') + $options + $defaults;
+        $collector = $this->collector();
+        $options = compact('collector', 'model', 'rootPath', 'parent') + $options + $defaults;
 
-        if ($model && !$data instanceof $model) {
+        if ($model) {
             $data = $model::schema()->cast(null, $data, $options);
         }
 
@@ -493,7 +508,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
     /**
      * Converts the current state of the data structure to an array.
      *
-     * @return array Returns the array value of the data in this `Collection`.
+     * @param  array $options The options array.
+     * @return array          Returns the array value of the data in this `Collection`.
      */
     public function data($options = [])
     {

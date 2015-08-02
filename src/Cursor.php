@@ -7,28 +7,29 @@ class Cursor implements \Iterator
 {
     /**
      * The optionnal bound data.
+     *
+     * @var array
      */
     protected $_data = [];
 
     /**
      * The bound resource.
+     *
+     * @var resource
      */
     protected $_resource = null;
 
     /**
-     * Contains the current element of the result set.
-     */
-    protected $_current = false;
-
-    /**
-     * Setted to `true` when the collection has begun iterating.
+     * Indicates whether the fetching has been started.
      *
-     * @var integer
+     * @var boolean
      */
     protected $_started = false;
 
     /**
-     * If the result resource has been initialized
+     * Indicates whether the resource has been initialized.
+     *
+     * @var boolean
      */
     protected $_init = false;
 
@@ -49,26 +50,40 @@ class Cursor implements \Iterator
     /**
      * Stores the error number.
      *
-     * @var mixed
+     * @var integer
      */
     protected $_errno = 0;
 
     /**
      * Stores the error message.
      *
-     * @var mixed
+     * @var string
      */
     protected $_errmsg = '';
 
     /**
-     * If the result resource has been initialized
+     * Contains the current key of the cursor.
+     *
+     * @var mixed
      */
     protected $_key = null;
 
     /**
-     * The constructor
+     * Contains the current value of the cursor.
      *
-     * @param array $config
+     * @var mixed
+     */
+    protected $_current = false;
+
+    /**
+     * `Cursor` constructor.
+     *
+     * @param array $config Possible values are:
+     *                      - `'data'`     _array_   : A data array.
+     *                      - `'resource'` _resource_: The resource to fetch on.
+     *                      - `'error'`    _boolean_ : A error boolean flag.
+     *                      - `'errno'`    _mixed_   : An error code number.
+     *                      - `'errmsg'`   _string_  : A full string error message.
      */
     public function __construct($config = [])
     {
@@ -85,10 +100,6 @@ class Cursor implements \Iterator
         $this->_error = $config['error'];
         $this->_errno = $config['errno'];
         $this->_errmsg = $config['errmsg'];
-
-        if (!$this->_resource && !$this->_data) {
-            throw new ChaosException("Invalid data or ressource");
-        }
     }
 
     /**
@@ -155,7 +166,7 @@ class Cursor implements \Iterator
     }
 
     /**
-     * Rewinds the result set to the first position.
+     * Rewinds the cursor to its first position.
      */
     public function rewind()
     {
@@ -167,9 +178,9 @@ class Cursor implements \Iterator
     }
 
     /**
-     * Contains the current result.
+     * Returns the current value.
      *
-     * @return array The current result (or `null` if there is none).
+     * @return mixed The current value (or `null` if there is none).
      */
     public function current()
     {
@@ -181,9 +192,9 @@ class Cursor implements \Iterator
     }
 
     /**
-     * Returns the current key position on the result.
+     * Returns the current key value.
      *
-     * @return integer The current key.
+     * @return integer The current key value.
      */
     public function key()
     {
@@ -220,11 +231,10 @@ class Cursor implements \Iterator
     protected function _fetch()
     {
         $this->_init = true;
-        if ($this->_data) {
-            return $this->_fetchArray();
-        }
         if($this->_resource) {
             return $this->_fetchResource();
+        } else {
+            return $this->_fetchArray();
         }
         return false;
     }
@@ -246,7 +256,7 @@ class Cursor implements \Iterator
     }
 
     /**
-     * Close the resource.
+     * Closes the resource.
      */
     public function close()
     {
@@ -263,6 +273,9 @@ class Cursor implements \Iterator
         $this->close();
     }
 
+    /**
+     * The fetching method for resource based cursor.
+     */
     protected function _fetchResource()
     {
         throw new ChaosException("This cursor doesn't support ressource");

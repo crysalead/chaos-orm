@@ -15,7 +15,6 @@ class Schema
      * @var array
      */
     protected $_classes = [
-        'collector'      => 'chaos\Collector',
         'relationship'   => 'chaos\Relationship',
         'belongsTo'      => 'chaos\relationship\BelongsTo',
         'hasOne'         => 'chaos\relationship\HasOne',
@@ -24,7 +23,7 @@ class Schema
     ];
 
     /**
-     * The connection to the datasource.
+     * The connection instance.
      *
      * @var object
      */
@@ -45,21 +44,21 @@ class Schema
     protected $_model = null;
 
     /**
-     * Is the schema is locked.
+     * Indicates whether the schema is locked or not.
      *
      * @var boolean
      */
     protected $_locked = true;
 
     /**
-     * The primary key.
+     * The primary key field name.
      *
      * @var string
      */
     protected $_primaryKey = null;
 
     /**
-     * The meta.
+     * The schema meta data.
      *
      * @var array
      */
@@ -248,8 +247,8 @@ class Schema
      *
      * @param  string $name The field name. If `null` returns all meta. If it's an array,
      *                      set it as the meta datas.
-     * @return array        If `$name` is a string, it returns the correcponding value
-     *                      otherwise it returns meta datas array or `null` if not found.
+     * @return mixed        If `$name` is a string, it returns the corresponding value
+     *                      otherwise it returns a meta data array or `null` if not found.
      */
     public function meta($name = null, $value = null)
     {
@@ -269,9 +268,9 @@ class Schema
     }
 
     /**
-     * Gets/sets the primary key of this schema
+     * Gets/sets the primary key field name of the schema.
      *
-     * @param  string $primaryKey The name or the primary key or `null` to get the defined one.
+     * @param  string $primaryKey The name or the primary key field name or none to get the defined one.
      * @return string
      */
     public function primaryKey($primaryKey = null)
@@ -282,7 +281,6 @@ class Schema
         $this->_primaryKey = $primaryKey;
         return $this;
     }
-
 
     /**
      * Returns all schema field names.
@@ -339,7 +337,7 @@ class Schema
     }
 
     /**
-     * Returns default values.
+     * Returns the schema default values.
      *
      * @param  array $name An optionnal field name.
      * @return mixed       Returns all default values or a specific one if `$name` is set.
@@ -362,7 +360,7 @@ class Schema
      * Returns the type value of a field name.
      *
      * @param  string $name The field name.
-     * @return array  The type value or `null` if not found.
+     * @return array        The type value or `null` if not found.
      */
     public function type($name)
     {
@@ -370,7 +368,7 @@ class Schema
     }
 
     /**
-     * Set a field.
+     * Sets a field.
      *
      * @param  string $name The field name.
      * @return object       Returns `$this`.
@@ -396,7 +394,7 @@ class Schema
     }
 
     /**
-     * Normalize a field.
+     * Normalizes a field.
      *
      * @param  array $field A field array.
      * @return array        A normalized field array.
@@ -467,7 +465,7 @@ class Schema
     }
 
     /**
-     * Lazy bind a relation
+     * Lazy bind a relation.
      *
      * @param  string    $name   The name of the relation (i.e. field name where it will be binded).
      * @param  array     $config The configuration that should be specified in the relationship.
@@ -509,7 +507,7 @@ class Schema
     }
 
     /**
-     * Unbind a relation
+     * Unbinds a relation.
      *
      * @param string $name The name of the relation to unbind.
      */
@@ -584,11 +582,6 @@ class Schema
      */
     public function embed(&$collection, $relations, $options = [])
     {
-        if (!isset($options['fetchOptions']['collector'])) {
-            $collector = $this->_classes['collector'];
-            $options['fetchOptions']['collector'] = new $collector();
-        }
-
         $expanded = [];
         $relations = $this->_expandHasManyThrough(Set::normalize($relations), $expanded);
 
@@ -624,7 +617,6 @@ class Schema
             $rel = $this->relation($name);
             $related = $rel->embed($collection, $options);
         }
-        return $options['fetchOptions']['collector'];
     }
 
     /**
@@ -664,6 +656,7 @@ class Schema
     public function cast($name, $data, $options = [])
     {
         $defaults = [
+            'collector' => null,
             'parent'    => null,
             'type'      => 'entity',
             'model'     => Model::class,
@@ -704,8 +697,9 @@ class Schema
     }
 
     /**
-     * Casting helper
+     * Casting helper.
      *
+     * @param  string $name       The field name to cast.
      * @param  array  $properties The field properties which define the casting.
      * @param  array  $data       Some data to cast.
      * @param  array  $options    Options for the casting.
@@ -729,6 +723,15 @@ class Schema
         return $this->format('cast', $name, $data);
     }
 
+    /**
+     * Casting helper for arrays.
+     *
+     * @param  string $name       The field name to cast.
+     * @param  array  $properties The field properties which define the casting.
+     * @param  array  $data       Some data to cast.
+     * @param  array  $options    Options for the casting.
+     * @return mixed              The casted data.
+     */
     public function _castArray($name, $properties, $data, $options)
     {
         if ($properties['relation'] === 'hasManyThrough') {
@@ -769,7 +772,7 @@ class Schema
     }
 
     /**
-     * Return default cast handlers
+     * Return default casting handlers.
      *
      * @return array
      */
@@ -807,10 +810,11 @@ class Schema
     /**
      * Formats a value according to a field definition.
      *
-     * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $name  The field name.
-     * @param   mixed  $value The value to format.
-     * @return  mixed         The formated value.
+     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param   string $name    The field name.
+     * @param   mixed  $value   The value to format.
+     * @param   mixed  $options The options array to pass the the formatter handler.
+     * @return  mixed           The formated value.
      */
     public function format($mode, $name, $value, $options = [])
     {
@@ -829,9 +833,10 @@ class Schema
     /**
      * Gets/sets a formatter handler.
      *
-     * @param  string   $type          The type name.
-     * @param  callable $importHandler The callable import handler.
-     * @param  callable $exportHandler The callable export handler. If not set use `$importHandler`.
+     * @param  string   $mode          The formatting mode.
+     * @param  string   $type          The field type name.
+     * @param  callable $handler       The formatter handler to set or none to get it.
+     * @return object                  Returns `$this` on set and the formatter handler on get.
      */
     public function formatter($mode, $type, $handler = null)
     {
@@ -845,6 +850,8 @@ class Schema
     /**
      * Gets/sets all formatters.
      *
+     * @param  array $formatters The formatters to set or none to get them.
+     * @return mixed             Returns `$this` on set and the formatters array on get.
      */
     public function formatters($formatters = null)
     {
@@ -856,10 +863,10 @@ class Schema
     }
 
     /**
-     * Gets/sets the connection object to which this schema is bound.
+     * Gets/sets the conventions object to which this schema is bound.
      *
-     * @return object    Returns a connection instance.
-     * @throws Exception Throws a `ChaosException` if a connection isn't set.
+     * @param  object    $conventions The conventions instance to set.
+     * @return object                 The conventions instance.
      */
     public function conventions($conventions = null)
     {
@@ -892,9 +899,9 @@ class Schema
     }
 
     /**
-     * The `'with'` option formatter function
+     * The `'with'` option normalizer function.
      *
-     * @return array The formatter with array
+     * @return array The normalized with array.
      */
     public function with($with)
     {

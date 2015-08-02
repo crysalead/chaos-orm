@@ -6,6 +6,9 @@ use set\Set;
 use inflector\Inflector;
 use chaos\ChaosException;
 
+/**
+ * The `Conventions` allows to define some conveniences naming conventions.
+ */
 class Conventions
 {
     /**
@@ -60,7 +63,7 @@ class Conventions
      * @param  Closure $closure The convention closure.
      * @return Closure          The passed convention closure.
      */
-    public function add($name, $closure)
+    public function set($name, $closure)
     {
         return $this->_conventions[$name] = $closure;
     }
@@ -81,7 +84,7 @@ class Conventions
             return $this->_conventions;
         }
         if (!isset($this->_conventions[$name])) {
-            throw new ChaosException("Error, convention for `'{$name}'` doesn't exists.");
+            throw new ChaosException("Convention for `'{$name}'` doesn't exists.");
         }
         return $this->_conventions[$name];
     }

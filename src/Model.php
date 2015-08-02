@@ -14,6 +14,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var array
      */
     protected static $_classes = [
+        'collector'   => 'chaos\Collector',
         'set'         => 'chaos\collection\Collection',
         'through'     => 'chaos\collection\Through',
         'conventions' => 'chaos\Conventions',
@@ -69,6 +70,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var object A naming conventions.
      */
     protected static $_conventions = null;
+
+    /**
+     * The collector instance.
+     *
+     * @var object
+     */
+    protected $_collector = null;
 
     /**
      * If this record is chained off of another, contains the origin object.
@@ -138,7 +146,12 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Configures the Model.
      *
      * @param array $config Possible options are:
-     *                      - `'classes'` _array_: Dependencies array.
+     *                      - `'classes'`     _array_ : The classes dependency array.
+     *                      - `'schema'`      _object_: The schema instance to use.
+     *                      - `'validator'`   _object_: The validator instance to use.
+     *                      - `'finders'`     _object_: The finders instance to use.
+     *                      - `'connection'`  _object_: The connection instance to use.
+     *                      - `'conventions'` _object_: The conventions instance to use.
      */
     public static function config($config = [])
     {
@@ -195,16 +208,14 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * $schema->bind('tags', [
      *     'relation'    => 'hasManyThrough',
-     *     'through'     => 'post_tag'
+     *     'through'     => 'post_tag',
      *     'using'       => 'tag'
-     *     'constraints' => ['{:to}.enabled' => true]
      * ]);
      *
      * $schema->bind('post_tag', [
      *     'relation'    => 'hasMany',
      *     'to'          => 'name\space\model\PostTag',
-     *     'key'         => ['id' => 'post_id'],
-     *     'constraints' => ['{:to}.enabled' => true]
+     *     'key'         => ['id' => 'post_id']
      * ]);
      * ```
      *
@@ -235,11 +246,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     /**
      * Finds a record by its primary key.
      *
-     * @param array  $options Options for the query.
-     *                        -`'conditions'` : The conditions array.
-     *                        - other options depend on the ones supported by the query instance.
+     * @param  array  $options Options for the query.
+     *                         -`'conditions'` : The conditions array.
+     *                         - other options depend on the ones supported by the query instance.
      *
-     * @return mixed          An instance of `Query`.
+     * @return object          An instance of `Query`.
      */
     public static function find($options = [])
     {
@@ -285,7 +296,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Finds by id.
+     * Finds a record by its ID.
      *
      * @param  mixed $id           The id to retreive.
      * @param  array $fetchOptions The fecthing options.
@@ -386,9 +397,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the schema instance of this model.
+     * Gets/sets the validator instance.
      *
-     * @return object
+     * @param  object $schema The schema instance to set or none to get it.
+     * @return object         The schema instance.
      */
     public static function schema($schema = null)
     {
@@ -415,9 +427,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the validator instance of this model.
+     * Gets/sets the validator instance.
      *
-     * @return object
+     * @param  object $validator The validator instance to set or none to get it.
+     * @return object            The validator instance.
      */
     public static function validator($validator = null)
     {
@@ -435,9 +448,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the finders instance of this model.
+     * Gets/sets the finders instance.
      *
-     * @return object
+     * @param  object $finders The finders instance to set or none to get it.
+     * @return object          The finders instance.
      */
     public static function finders($finders = null)
     {
@@ -490,8 +504,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     /**
      * Gets/sets the conventions object to which this model is bound.
      *
-     * @param  object $conventions The conventions instance to set or `null` to get the current one.
-     * @return object              Returns a connection instance.
+     * @param  object $conventions The conventions instance to set or none to get it.
+     * @return object              The conventions instance.
      */
     public static function conventions($conventions = null)
     {
@@ -514,58 +528,84 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     /**
      * Creates a new record object with default values.
      *
-     * @param array $options Possible options are:
-     *                      - `'data'`       _array_  : The entiy data.
+     * @param array $config Possible options are:
+     *                      - `'collector'`  _object_ : A collector instance.
      *                      - `'parent'`     _object_ : The parent instance.
-     *                      - `'rootPath'`   _string_ : The base rootPath (for embedded entities).
+     *                      - `'rootPath'`   _string_ : A dotted field names path (for embedded entities).
      *                      - `'exists'`     _boolean_: A boolean or `null` indicating if the entity exists.
      *                      - `'autoreload'` _boolean_: If `true` and exists is `null`, autoreload the entity
      *                                                  from the datasource
+     *                      - `'data'`       _array_  : The entity's data.
      *
      */
-    public function __construct($options = [])
+    public function __construct($config = [])
     {
         $defaults = [
-            'data'       => [],
+            'collector'  => null,
             'parent'     => null,
             'rootPath'   => null,
             'exists'     => false,
-            'autoreload' => true
+            'autoreload' => true,
+            'data'       => []
         ];
-        $options += $defaults;
-        $this->_exists = $options['exists'];
-        $this->_parent = $options['parent'];
-        $this->_rootPath = $options['rootPath'];
-        $this->set($options['data']);
+        $config += $defaults;
+        $this->_collector = $config['collector'];
+        $this->_parent = $config['parent'];
+        $this->_exists = $config['exists'];
+        $this->_rootPath = $config['rootPath'];
+        $this->set($config['data']);
 
-        if ($this->exists()) {
-            $this->_persisted = $this->_data;
-            return;
-        }
         if ($this->exists() === false) {
             return;
         }
-        if ($options['autoreload']) {
-            $this->reload();
+
+        if ($this->exists() !== true) {
+            if ($config['autoreload']) {
+                $this->reload();
+            }
+            $this->set($config['data']);
         }
-        $this->set($options['data']);
+
+        if ($this->exists() !== true) {
+            return;
+        }
+
+        $this->_persisted = $this->_data;
+        if (!$id = $this->primaryKey()) {
+            return; // TODO: would probaly better to throw an exception here.
+        }
+        $schema = static::schema();
+        $source = $schema->source();
+        $collector = $this->collector();
+        if (!$collector->exists($source, $id)) {
+            $collector->set($source, $id, $this);
+        }
     }
 
     /**
-     * Indicating whether or not this instance has been persisted somehow.
+     * Gets/sets the collector instance.
      *
-     * @return boolean `True` if the record was read from or saved to the data-source, Otherwise `false`.
+     * @param  object $collector The collector instance to set or none to get it.
+     * @return object            The collector instance.
      */
-    public function exists()
+    public function collector($collector = null)
     {
-        return $this->_exists;
+        if (func_num_args()) {
+            $this->_collector = $collector;
+            return $this;
+        }
+        if (!$this->_collector) {
+            $collector = static::$_classes['collector'];
+            $this->_collector = new $collector();
+        }
+        return $this->_collector;
     }
 
     /**
      * Gets/sets the parent.
      *
-     * @param  object $parent The parent instance to set or `null` to get the current one.
-     * @return object
+     * @param  object $parent The parent instance to set or `null` to get it.
+     * @return object         The parent instance.
      */
     public function parent($parent = null)
     {
@@ -576,7 +616,17 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Get the base rootPath for embedded entities. Otherwise the rootPath will be `''`.
+     * Indicating whether or not this instance has been persisted somehow.
+     *
+     * @return boolean Retruns `true` if the record was read from or saved to the data-source, `false` otherwise.
+     */
+    public function exists()
+    {
+        return $this->_exists;
+    }
+
+    /**
+     * Gets the rootPath (embedded entities).
      *
      * @return string
      */
@@ -586,7 +636,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * If returns the key value.
+     * Returns the primary key value.
      *
      * @return array     the primary key value.
      * @throws Exception Throws a `ChaosException` if no primary key has been defined.
@@ -667,7 +717,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * ```
      *
      * @param string $offset  The field name.
-     * @param mixed  $data    The value.
+     * @param mixed  $data    The value to set.
      * @param array  $options An options array.
      */
     protected function _set($name, $data, $options = [])
@@ -695,6 +745,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     /**
      * Returns the current data.
      *
+     * @param  string $name If name is defined, it'll only return the field value.
      * @return array.
      */
     public function get($name = null)
@@ -710,7 +761,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             return $this->_data[$name];
         }
         if (static::hasRelation($name)) {
-            return static::relation($name)->get($this);
+            return $this->_data[$name] = static::relation($name)->get($this);
         }
     }
 
@@ -725,10 +776,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Access the data fields of the record.
+     * Exports the entity into an array based representation.
      *
-     * @param  string $options Options.
-     * @return mixed Entire data array.
+     * @param  array $options Some exporting options. Possibles values are:
+     *                        - `'with'` _array_: Indicates the relations to embed for the export.
+     * @return mixed          The exported result.
      */
     public function data($options = [])
     {
@@ -736,9 +788,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Returns the persisted data (i.e the data in the datastore).
+     * Returns the persisted data (i.e the data in the datastore) of the entity.
      *
-     * @param  string $field A field name or `null` to retreive all data.
+     * @param  string $field A field name or `null` to get all persisted data.
      * @return mixed
      */
     public function persisted($field = null)
@@ -965,7 +1017,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Unset a property.
+     * Unsets a property.
      *
      * @param string $name The name of the field to remove.
      */
@@ -1015,7 +1067,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *                                                  be immediately saved. Defaults to `true`.
      *                       - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
      *                       - `'locked'`    _boolean_: Lock data to the schema fields.
-     *                       - `'with'`      _boolean_: List of relations to save.
+     *                       - `'with'`      _array_  : List of relations to save.
      * @return boolean       Returns `true` on a successful save operation, `false` on failure.
      */
     public function save($options = [])
@@ -1075,17 +1127,6 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Similar to `->save()` except the direct relationship has not been saved by default.
-     *
-     * @param  array   $options Same options as `->save()`.
-     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
-     */
-    public function persist($options = [])
-    {
-        return $this->save($options + ['with' => false]);
-    }
-
-    /**
      * Save relations helper.
      *
      * @param array $types Type of relations to save.
@@ -1109,8 +1150,20 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         return $success;
     }
 
+
     /**
-     * Reloads the entity from the datasource
+     * Similar to `->save()` except the direct relationship has not been saved by default.
+     *
+     * @param  array   $options Same options as `->save()`.
+     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
+     */
+    public function persist($options = [])
+    {
+        return $this->save($options + ['with' => false]);
+    }
+
+    /**
+     * Reloads the entity from the datasource.
      */
     public function reload()
     {
@@ -1149,7 +1202,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Validates the entity data.
      *
      * @param  array  $options Available options:
-     *                         - `'events'` _mixed_: A string or array defining one or more validation
+     *                         - `'events'` _mixed_    : A string or array defining one or more validation
      *                           events. Events are different contexts in which data events can occur, and
      *                           correspond to the optional `'on'` key in validation rules. For example, by
      *                           default, `'events'` is set to either `'create'` or `'update'`, depending on
@@ -1158,9 +1211,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *                           You can also set up custom events in your rules as well, such as `'on' => 'login'`.
      *                           Note that when defining validation rules, the `'on'` key can also be an array of
      *                           multiple events.
-     * @return boolean           Returns `true` if all validation rules on all fields succeed, otherwise
-     *                           `false`. After validation, the messages for any validation failures are assigned
-     *                           to the entity, and accessible through the `errors()` method of the entity object.
+     *                         - `'required'` _boolean_ : Sets the validation rules `'required'` default value.
+     *                         - `'with'`     _array_   : List of relations to validate.
+     * @return boolean         Returns `true` if all validation rules on all fields succeed, otherwise
+     *                         `false`. After validation, the messages for any validation failures are assigned
+     *                         to the entity, and accessible through the `errors()` method of the entity object.
      */
     public function validate($options = [])
     {
@@ -1180,9 +1235,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Validates relationships.
+     * Validates a relation.
      *
      * @param  array   $options Available options:
+     *                          - `'with'` _array_ : List of relations to validate.
      * @return boolean          Returns `true` if all validation rules on all fields succeed, otherwise `false`.
      */
     protected function _validate($options)
