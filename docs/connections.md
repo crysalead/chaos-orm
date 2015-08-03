@@ -1,8 +1,8 @@
 ## Connections
 
-Connections need to be configured at a bootstrap level and will be used by the `Schema` instances to communicate with the datasource.
+Connections comes from a datasource library. It need to be configured at a bootstrap level and will be used by the `Schema` instances to communicate with the datasource.
 
-First we need to create a connection, for example let's create a PostgreSql connection:
+Let's create a PostgreSql connection:
 
 ```php
 use chaos\database\adapter\PostgreSql;
@@ -14,7 +14,7 @@ $connection = new PostgreSql([
 ]);
 ```
 
-Then the `::connection()` method of model class will be used on a base model to set the connection:
+The we need to attach it to our models using `::connection()`:
 
 ```php
 use chaos\Model;
@@ -24,11 +24,11 @@ Model::connection($connection);
 
 In the example above all models extending from `chaos\Model` will now use the `PostgreSql` connection instance.
 
-> Note: this connection will be passed to `Schema` instances (at least when `::schema()` will be called on a specific model).
+> Note: under the hood this connection will be injected to models' schema instances, so when `::schema()` will be called on a specific model, the returned schema will be correctly configured with the connection.
 
-Sometimes you will probably need many datasources for your models. So to be able to attach different connections on your models, you will need to create as many base model as you need different connections.
+Sometimes you will probably need different datasources for your Persistence Model. To be able to use different connections, you will need to create as many base model as you need different connections.
 
-To illustrate this point, let's create a base class that allow to set a dedicated connection:
+Let's illustrate this point with an example:
 
 ```php
 namespace myproject\model;
@@ -36,17 +36,18 @@ namespace myproject\model;
 class ModelCustom extends \chaos\Model
 {
     /**
-     * MUST BE re-defined to be able to attach a specific connection on it.
+     * Re-defining the `_connection` attribute in a base model class will
+     * allow to attach a specific connection to it and all its subclasses.
      */
     protected static $_connection = null;
 }
 ```
 
-Now all models extending `ModelCustom` can be connected using the following syntax:
+So now all models extending `ModelCustom` can be connected that way:
 
 ```php
 use chaos\Model;
-use myproject\http\MyApi; // A example of custom HTTP based connection
+use myproject\http\MyApi; // Example of a custom HTTP based connection
 
 $connection = new MyApi([
     'scheme' => 'http',
@@ -55,5 +56,6 @@ $connection = new MyApi([
     'username' => 'mylogin',
     'password' => 'mypassword'
 ]);
+
 ModelCustom::connection($connection);
 ```

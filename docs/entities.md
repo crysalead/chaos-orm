@@ -2,22 +2,23 @@
 
 * [Creation](#creation)
 * [CRUD Actions](#crud)
+* [non-CRUD Actions](#non-crud)
 * [Additional Methods](#methods)
 
 ### <a name="creation"></a>Creation
 
-Once a model has been defined it's possible to create entity instances using the `::create()` method.
+Once a model has been defined it's possible to create entity instances using its `::create()` method.
 
 ```php
 $gallery = Gallery::create(['name' => 'MyGallery']);
 $gallery->name = 'MyGallery';
 ```
 
-The first parameter is the entity's data to set. And the second parameter takes an array of options. Principal options are:
+The first parameter is the entity's data to set. And the second parameter takes an array of options. Main options are:
 
 * `'type'`: can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection of entities. Default to `'entity'`.
 * `'exists'`: corresponds whether the entity is present in the datastore or not.
-* `'autoreload'`: sets the specific behavior when exists is `null`. A '`true`' value will perform a reload of the entity from the datasource. Default to `'true'`.
+* `'autoreload'`: sets the specific behavior when exists is `null`. A `'true'` value will perform a reload of the entity from the datasource. Default to `'true'`.
 * `'defaults'`: indicates whether the entity needs to be populated with their defaults values on creation.
 * `'model'`: the model to use for instantiating the entity. Can be useful for implementing [Single Table Inheritance](http://martinfowler.com/eaaCatalog/singleTableInheritance.html)
 
@@ -32,32 +33,32 @@ $gallery->name = 'MyAwesomeGallery';
 $success = $gallery->save();
 ```
 
-The example above generates an update query of the record having the ID equal to`123`.
+So the above example will generate **an update query** instead of an insert one.
 
-However the `'exists'` can have three different states:
+The `'exists'` attribute can have three different states:
 
 * `true`: means you provided the whole data of an pre-existing entity.
 * `false`: means you provided the whole data of a new entity. It's the default state.
 * `null`: on the contrary `null` is a kind of "undefined state" where two different scenarios can occurs:
-  * coupled with `'autoreload' => true`, an attempt to reload the whole entity data from the datasource is done to be able to switch the exists attribute to `true`.
-  * coupled with `'autoreload' => false`, is doesn't do nothing, and it assumes you know what you are doing.
+  * coupled with `'autoreload' => true`, will attempt to reload the whole entity data from the datasource.
+  * coupled with `'autoreload' => false`, it doesn't do nothing, and assumes you know what you are doing.
 
-`'exists' => null` is the common scenario when you get entity's data from `$_POST`. Indeed `$_POST` generally contain only a subset of the entity data. Using `'exists' => null` will have the entity to be reloaded from the datasource to make sure `->modified()` && `->persisted()` (i.e the "old" data stored the datasource) will be accurate.
+`'exists' => null` is the common scenario when you get partial entity's data from a `<form>` for example. When `$_POST` contains only a subset of the entity's data, using `'exists' => null` will reload the entity from the datasource to make sure `->modified()` && `->persisted()` to be accurate.
 
-`'exists' => null` with `'autoreload' => false` is the state you get when you try to filter out some fields from your queries. This point is really important to get. The Data Abstraction Layer purpose is to provide an accurate object oriented representation of stored data. But the accuracy is impossible if the entity's data are not complete (especially when the ID hasn't been filetered out from data). Long story short, `'exists' => null` indicates something is wrong with your datas and you can't reliably consider it as some valid representation of the datasource data.
+`'exists' => null` with `'autoreload' => false` is the state you get when you try to filter out some fields from your queries. This point is really important to get. To make accurate object oriented representation of stored data filtering out some fields can be an issue (especially when the ID has been filetered out from data). Long story short, `'exists' => null` indicates something is wrong with your entity and you should question on its reliability.
 
-Note: if you want to be able to think at a higher level of abstraction, I would recommand to not filter out fields on find queries. Let have them filtered out in your views only. Early optimizations are an anti-pattern.
+Note: if you want to be able to think at a higher level of abstraction, I would recommand to not filter out fields on find queries. Let have them filtered out in your views only. Early optimizations generally acts as an anti-pattern.
 
 #### Getters/Setters
 
-There's many way to get or set a value. The simplest one is using the following syntax:
+There's several way to get or set an entity's value. The simplest one is using the "magic" syntax:
 
 ```php
-$entity->name = "A name"; // Set
-$entity->name;            // Get
+$entity->name = "A name"; // Sets a value
+$entity->name;            // Gets a value
 ```
 
-But it's also possible to override the default behavior by adding some specific getter & setter function in the model class. It can be useful to make some pre/post processing or to manage virtual fields.
+But it's also possible to override the default behavior by adding some specific getters & setters function in the model. It can be useful for some pre/post processing or to manage virtual fields.
 
 Let's take the following example:
 
@@ -91,21 +92,23 @@ $gallery->set([
 ])
 ```
 
-In a reciprocal manner using `->get()` will returns the whole entity's data array.
+In a reciprocal manner using `->get()` will returns the whole entity's data.
 
-Although it have a different purpose `->to()` is also a useful method to get entity's data. The main purpose of ->to()` is to export them into another format using some formatters.
+Although it have a different purpose `->to()` is also a useful method to get entity's data. The main purpose of `->to()` is to exports entity's data into a different format.
 
-For example `->to('array')` (or `->data()` which is an alias to `->to('array')`) exports the entity's data using the schema `'array'` formatters. See the [schema documentation to learn more about formatters & custom types](schemas.md).
+For example `->to('array')` (or the alias `->data()`) exports the entity's data using the schema `'array'` formatters. See the [schema documentation to learn more about formatters & custom types](schemas.md).
 
 ### <a name="crud"></a>CRUD Actions
 
-If Chaos has been designed to easily support non-CRUD actions, CRUD ones are supported through the `::find()`, `->save()` and `->delete()` methods.
+CRUD actions are the only built-in actions in Chaos. They are supported through the `::find()`, `->save()` and `->delete()` API methods.
 
-The `::find()` method which stand for the read action belongs to the model. And the create, update and delete actions all belongs to the entity level through the `->save()` and `->delete()` method.
+The `::find()` method stands for the READ action and it belongs to the model. And the CREATE, UPDATE and DELETE actions belong to the entity level through the `->save()` and `->delete()` method.
 
 #### Saving an entity
 
-The `->save()` method perform an insert or an update query depending the entity exists state. It returns either `true` or `false` depending on the success of the save operation. Example of usage:
+The `->save()` method performs an `INSERT` or an `UPDATE` query depending the entity's exists value. It returns either `true` or `false` depending on the success of the save operation.
+
+Example of usage:
 
 ```php
 $gallery = Gallery::create();
@@ -120,13 +123,13 @@ if ($gallery->save()) {
 
 Note: the `->save()` method method also validates entity's data by default if you have any validation rules defined at the model level. More information on [validation & errors here](models.md#validations).
 
-The `->save()` method take as first argument an array of options. Possible values are:
+The `->save()` method takes as first argument an array of options. Possible values are:
 
-* `'validate'`: If false, validation will be skipped, and the record will be immediately saved. Defaults to true.
-* `'events'`: A string or array defining one or more validation events. Events are different contexts in which data events can occur, and correspond to the optional 'on' key in validation rules. They will be passed to the `->validate()` method if 'validate' is not false.
+* `'validate'`: If `false`, validation will be skipped, and the record will be immediately saved. Defaults to `true`.
+* `'events'`: A string or array defining one or more validation events. Events are different contexts in which data events can occur, and correspond to the optional 'on' key in validation rules. They will be passed to the `->validate()` method if 'validate' is not `false`.
 * `'whitelist'`: An array of fields that are allowed to be saved. Defaults to the schema fields.
 
-Once an entity has been saved its exists state has been set to `true` which will lead to do update queries the next `->save()` calls.
+Once an entity has been saved its exists value has been set to `true` which will lead to do `UPDATE` queries the next `->save()` calls.
 
 Example:
 
@@ -143,11 +146,11 @@ $gallery->save()              // update query
 $gallery->exists()            // true
 ```
 
-Note: when the exists state of an entity is `null` something probably gone wrong somewhere and you should reconsider the way you are creating/loading your entities. And the main drawback will be that `->modified()` && `->persisted()` won't be accurate will exists in a `null` state.
+Note: when the exists value of an entity is `null` something probably gone wrong somewhere and you should reconsider the way you are creating/loading your entities. The main drawback will be that `->modified()` && `->persisted()` won't be accurate.
 
 #### Modified and persisted data
 
-When the exists state is not `null` you can reliably use `modified()` to check whether a field has been updated or not.
+When the exists value is not `null` you can reliably use `modified()` to check whether a field has been updated or not.
 
 `->modified()` with a field name as argument returns `true` if the field has been modified. If no argument is given, `->modified()` retruns `true` if one of the entity's field has been modified:
 
@@ -182,6 +185,10 @@ $gallery->delete();
 $gallery->exists(); // false
 ```
 
+### <a name="non-crud"></a>non-CRUD Actions
+
+To support non-CRUD actions. The first step is to make sure that the `Schema` class of your datasource library can support the feature. Then the next step will be to extend your base model and delegates the processing of your non-CRUD actions to the `Schema` class.
+
 ### <a name="methods"></a>Additional Methods
 
 There's a couple of useful method which gives additionnal information about entites.
@@ -198,4 +205,4 @@ Most of the time, entites will be connected together through relations and the `
 
 This method is related to embedded entities. The root path indicates at which position an "embedded entity" is located in its entity. The position is represented by a dotted field name string.
 
-This root path is requires for embedded entities to make schema casting to work. All field names will be prefixed by the entity root path to be able to match its definition in the entity's schema.
+This root path is required for embedded entities to make schema casting to work. All field names will be prefixed by the entity root path to be able to match its definition in the entity's schema.

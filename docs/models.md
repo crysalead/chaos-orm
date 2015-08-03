@@ -53,9 +53,9 @@ class Gallery extends \chaos\Model
 }
 ```
 
-The model definition is pretty straightforward. The schema is configured through `::_schema()` and validation rules through the `::_rules()` method.
+The model definition is pretty straightforward. A "blank" schema instance is injected to the `::_schema()` method and can be configured right there to fit the Domain Model.
 
-By default a `Conventions` class is used to extract the table name from a model class name. In Chaos you can either set your own conventions or manually set specific values:
+By default the injected schema instance is pre-configured with a source name and a primary key field name through a `Conventions` instance used to extract correct values. However in Chaos you can either set your own `Conventions` instance or manually set specific values like the following:
 
 ```php
 // Sets a custom prefixed table name
@@ -65,11 +65,12 @@ $schema->source('prefixed_gallery');
 $schema->primaryKey('uuid');
 ```
 
-> Note: Composite primary keys have not been implemented in Chaos out of the box for many reasons. Composite primary keys are a controversial feature and moreover doesn't fit well with REST which require to deal with unique ids to be able identify a resource. Since I probably never used this feature, I prefered to move the model layer ahead to the next generation databases instead of supporting composite primary keys. Anyway it can also be easily fixable by switching to a unique primary key.
+> Note: Composite primary keys have not been implemented in Chaos to minimize the [object-relational impedance mismatch](https://en.wikipedia.org/wiki/Object-relational_impedance_mismatch). It would add a extra overhead with non negligible performance impact otherwise.
+
 
 ### <a name="schema"></a>Schema
 
-In the previous example you can notice that fields and relations are defined using the `::_schema()` method. More informations on [how to define a schema can by found here](schemas.md)
+In the previous example you noticed that fields and relations have been defined using the `::_schema()` method. More informations on [how to define a schema can by found here](schemas.md)
 
 Once done, you can retrieve the model's schema using `::schema()` or defined relations using `::relations()`:
 
@@ -88,8 +89,6 @@ It's also possible to check the availability of a specific relation using `::has
 ```php
 $relation = Gallery::hasRelation('images'); // A boolean
 ```
-
-> Note: relations are loaded lazily on `::relation()` calls. So you can use `::relations()/hasRelations()` without any impact on perfomances to check the availability of a relation.
 
 > Note: under the hood, `::relations()`, `::relation()` and `::hasRelation()` are simple shorcuts on `::schema()->relations()`, `::schema()->relation()` and `::schema()->hasRelation()`.
 
@@ -177,7 +176,7 @@ $gallery->errors(['with' => 'images']);   // ['images' => [ 1 => ['must not be a
 
 The model `::find()` method is used to perform queries on a datasource. By using the `chaos\database\Schema` implementation, the `::find()` will return a `Query` instance to facilitate the querying.
 
-> Note: Under the hood the `::find()` method call the `->query()` method of the `Schema` instance. So the querying behavior will depends on one implemented by the `Schema` class.
+> Note: Under the hood the `::find()` method call the `->query()` method of the schema's instance. So the querying instance will depends on one implemented by the `Schema` class.
 
 Let's start with a simple query for finding all entities:
 
@@ -199,7 +198,7 @@ foreach($galleries->all() as $gallery) {
 
 #### <a name="querying_methods"></a>Querying methods
 
-On the `Query` instance it's possible to use the following methods to configure your query:
+With the database schema, it's possible to use the following methods to configure your query on the `Query` instance:
 
 * `where()` or `conditions()` : the `WHERE` conditions
 * `group()`  : the `GROUP BY` parameter
@@ -227,11 +226,9 @@ foreach($galleries as $gallery) {
 
 The `with()` method allows to eager load relations to minimize the number of queries. In the example above for example, only two queries are executed.
 
-So what about `JOIN` isn't `->with()` supposed to take care of all the joins automatically ? I followed this approach in [li3](http://li3.me/). If I was able to achieve something decent, it has been a painful experience because relationnal databases fetching results are difficult to parse. You need to deal with table aliases, redundant data and the column references disambiguation which at least was time consuming. That's why I prefered to follow a more straightforward approach in Chaos and doing multiple queries instead of trying to deal with a massive and inadapted `JOIN` result set. By the way it's the approch choosen by most popular ORM around.
+Isn't `->with()` supposed to take care of all the joins automatically ? I followed this approach in [li3](http://li3.me/). If I was able to achieve something decent, it leads to a lot of problems to solve like table aliases, redundant data, column references disambiguation, raw references disambiguation. Chaos follows a more straightforward approach and performes multiple queries instead of trying to deal with a massive and inadapted `JOIN` result set. It's also the approch choosen by most popular ORM around.
 
-**But `JOIN` is not an options with relationnal databases, what if I want to get only galleries which has an image with a specific tags ?**
-
-This specific case can be resolved using the `->has()` method of the `Query` instance to set some conditions on a relation.
+To deal with JOINs, the `->has()` method is available to RDBMS compatible `Query` instance.
 
 Example:
 
@@ -239,9 +236,9 @@ Example:
 $galleries = Gallery::find();
 $galleries->where(['name' => 'MyGallery'])
           ->with(['images.tags']);   // Eager load related images and tags
-          ->has(['images.tags' => [  // Sets a conditions on 'images.tags'
+          ->has('images.tags', [     // Sets a conditions on the 'images.tags' relation
               'name' => 'computer'
-          ]]);
+          ]);
 
 foreach($galleries as $gallery) {
     echo $gallery->name;
@@ -253,7 +250,7 @@ foreach($galleries as $gallery) {
 
 In the example above three queries are executed. The first one is a `SELECT` on the gallery table with the necessary `JOIN`s to fit the `->has()` condition and return galleries which contain at least an image having the computer tag. The images and the tags will then be embedded using two extra queries.
 
-> Note: the framework protects against injection attacks by quoting condition values by default.
+> Note: In the example above, all images' tags will be loaded (i.e not only the `'computer'` tag). The `->has()` method added the constraint at the gallery level only.
 
 #### <a name="fetching_methods"></a>Fetching methods
 
@@ -264,7 +261,7 @@ On the `Query` instance it's also possible to use some different getter to retre
 * `->count()` : to get the count value.
 * `->get()`   : to get the full collection (it's an alias to `->all()`)
 
-The response from a query is an entity or a collection of entities by default. However you can switch to a different representation:
+The response of above methods will depends on the `'return'` option value. By default the fething method will return an entity or a collection of entities. However you can switch to a different representation like in the following:
 
 ```php
 // A collection of entities
@@ -272,12 +269,12 @@ $galleries = Gallery::find()->all();
 
 // A array of stdClass
 $galleries = Gallery::find()->all([
-    return' => 'object'
+    'return' => 'object'
 ]);
 
 // A array of array
 $galleries = Gallery::find()->all([
-    return' => 'array'
+    'return' => 'array'
 ]);
 ```
 
@@ -370,16 +367,16 @@ $gallery = $galleries::find()->where(['id' => 123])->first();
 
 #### ::connection()
 
-This method allows you gets/sets the connection instance used by a base model.
+This method allows you to get/set the model's connection.
 
 #### ::conventions()
 
-This method allows you gets/sets the conventions instance used by a base model.
+This method allows you to get/set the model's conventions.
 
 #### ::schema()
 
-This method allows you gets/sets the schema instance used by a model.
+This method allows you to get/set the model's schema.
 
 #### ::validator()
 
-This method allows you gets/sets the validator instance used by a model to validate entities.
+This method allows you to get/set the model's validator instance used to validate entities.

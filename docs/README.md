@@ -1,25 +1,16 @@
 # Chaos
-— A Data Abstraction Layer Implementation In PHP 5.5+ —
+— A Domain Modeling Library —
 
-Chaos is a rewrite of the [li3](http://li3.me/) model layer in PHP. If the syntax is not fully compatible with its predecessor, some effort has been made to keep the same beautiful and clean syntax.
+Chaos is an independent, persistence-agnostic layer responsible for defining entities' business logic and relationships. It allows to describe a [Domain Model](https://en.wikipedia.org/wiki/Domain_model) without any assumption about the persitence layer.
 
-Contrary to classic ORM approaches (i.e where the model layer is pilled up on top of a datasource/database abstraction layer), the root level of abstraction in Chaos is the model layer.
+Already available datasources libraries:
+  * [chaos-database](https://github.com/crysalead/chaos-database): supports MySQL and PostgreSQL.
 
-The model layer in Chaos has been built around the 3 following concepts:
+Since Chaos already contains all persistence-agnostic logic like relationships, eager/lazy loading, validations, etc. it dramatically simplify the developpment of a datasources libraries.
 
- * The **model** which define a schema and the logic around entities.
- * The **entity** which is an instance of `Model`.
- * The **schema** which contains fields and relations to others models.
+If the datasource you envisionned to use is able to fetch a record/document thanks to a unique identifier (i.e no composite primary key), developping a comptatible datasources library for Chaos would be trivial.
 
-Chaos doesn't aim to provide an API compatible with all datasources (which is not realistic), it just make easier to take benefits of any kind of datasources by simply extending the `Schema` class to have it supported. All the lazy loading, eager loading or embbeding will work out of the box because implemented at the model layer.
-
-And the fact that the models are directly connected to their schema make it easier to build a base model class which support some non-CRUD actions (e.g. the `findAndModify` in Mongo, or a Github starring action through your Github Schema class).
-
-So if the datasource you envisionned to use:
-
- * is able to fetch a record/document thanks to an identifier.
-
-You should be able to extends the `Schema` class to make Chaos to work with your datasource.
+> Note: The Chaos syntax is derived from [li3](http://li3.me/). If the syntax is not fully compatible with its predecessor, some effort has been made to keep the same clean and beautiful syntax.
 
 ## Community
 
@@ -36,8 +27,22 @@ To ask questions, provide feedback or otherwise communicate with the team, join 
 * Support nested saving
 * Support nested validations
 * Support external & embedded relationship
-* Support custom types & auto entity's field casting
-* Built-in MySQL & PostgreSQL database adapter
+* Support custom types & entities' field casting
+
+## Example of syntax:
+
+```php
+use myproject\model\Images;
+
+// Adding a many-to-many relation
+$image = Image::id(123);
+$image->tags[] = ['name'  =>  'Landscape'];
+$image->save();
+
+foreach($image->tags as $tag) { // Echoes: 'Montain', 'Black&White', 'Landscape'
+    echo $tag->name;
+}
+```
 
 ## Download
 
@@ -45,7 +50,7 @@ To ask questions, provide feedback or otherwise communicate with the team, join 
 
 ## Documentation
 
-Important: in the following documentation the [chaos-database](https://github.com/crysalead/chaos-database) library will be used to illustrate examples with a concrete datasource driver implementation. So don't forget to run `composer require crysalead/chaos-database` before poking around.
+Important: in the following documentation [chaos-database](https://github.com/crysalead/chaos-database) is used to illustrate examples. So don't forget to run `composer require crysalead/chaos-database` in your project before poking around examples.
 
 * [Connections](connections.md)
 * [Models](models.md)
