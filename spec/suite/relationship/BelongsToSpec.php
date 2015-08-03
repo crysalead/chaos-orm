@@ -71,7 +71,7 @@ describe("BelongsTo", function() {
                 $galleries =  Gallery::create([
                     ['id' => 1, 'name' => 'Foo Gallery'],
                     ['id' => 2, 'name' => 'Bar Gallery']
-                ], ['type' => 'set']);
+                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
                 if (!empty($fetchOptions['return']) && $fetchOptions['return'] === 'array') {
                     return $galleries->data();
                 }
@@ -84,11 +84,11 @@ describe("BelongsTo", function() {
             $belongsTo = Image::relation('gallery');
 
             $images = Image::create([
-                ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
-                ['id' => 2, 'gallery_id' => 1, 'title' => 'Srinivasa Ramanujan'],
-                ['id' => 3, 'gallery_id' => 1, 'title' => 'Las Vegas'],
-                ['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley'],
-                ['id' => 5, 'gallery_id' => 2, 'title' => 'Unknown']
+                ['gallery_id' => 1, 'title' => 'Amiga 1200'],
+                ['gallery_id' => 1, 'title' => 'Srinivasa Ramanujan'],
+                ['gallery_id' => 1, 'title' => 'Las Vegas'],
+                ['gallery_id' => 2, 'title' => 'Silicon Valley'],
+                ['gallery_id' => 2, 'title' => 'Unknown']
             ], ['type' => 'set']);
 
             expect(Gallery::class)->toReceive('::all')->with([
@@ -99,7 +99,8 @@ describe("BelongsTo", function() {
             $images->embed(['gallery']);
 
             foreach ($images as $image) {
-                expect($image->gallery_id)->toBe($image->gallery->id);
+                expect($image->gallery->id)->toBe($image->gallery_id);
+                expect($image->gallery->collector())->toBe($image->collector());
             }
 
         });
@@ -109,11 +110,11 @@ describe("BelongsTo", function() {
             $belongsTo = Image::relation('gallery');
 
             $images = Image::create([
-                ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
-                ['id' => 2, 'gallery_id' => 1, 'title' => 'Srinivasa Ramanujan'],
-                ['id' => 3, 'gallery_id' => 1, 'title' => 'Las Vegas'],
-                ['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley'],
-                ['id' => 5, 'gallery_id' => 2, 'title' => 'Unknown']
+                ['gallery_id' => 1, 'title' => 'Amiga 1200'],
+                ['gallery_id' => 1, 'title' => 'Srinivasa Ramanujan'],
+                ['gallery_id' => 1, 'title' => 'Las Vegas'],
+                ['gallery_id' => 2, 'title' => 'Silicon Valley'],
+                ['gallery_id' => 2, 'title' => 'Unknown']
             ], ['type' => 'set']);
 
             $images = $images->data();
@@ -126,7 +127,7 @@ describe("BelongsTo", function() {
             $belongsTo->embed($images, ['fetchOptions' => ['return' => 'array']]);
 
             foreach ($images as $image) {
-                expect($image['gallery_id'])->toBe($image['gallery']['id']);
+                expect($image['gallery']['id'])->toBe($image['gallery_id']);
                 expect($image['gallery'])->toBeAn('array');
             }
 
@@ -136,12 +137,19 @@ describe("BelongsTo", function() {
 
     describe("->get()", function() {
 
+        it("returns `null` for unexisting foreign key", function() {
+
+            $image = Image::create(['id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
+            expect($image->gallery)->toBe(null);
+
+        });
+
         it("lazy loads a belongsTo relation", function() {
 
             Stub::on(Gallery::class)->method('::all', function($options = [], $fetchOptions = []) {
                 $galleries =  Gallery::create([
                     ['id' => 1, 'name' => 'Foo Gallery']
-                ], ['type' => 'set']);
+                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
                 return $galleries;
             });
 
@@ -152,8 +160,8 @@ describe("BelongsTo", function() {
                 'query'   => ['conditions' => ['id' => 1]]
             ], ['collector' => $image->collector()]);
 
-            expect($image->gallery_id)->toBe($image->gallery->id);
-
+            expect($image->gallery->id)->toBe($image->gallery_id);
+            expect($image->gallery->collector())->toBe($image->collector());
         });
 
     });
@@ -181,9 +189,7 @@ describe("BelongsTo", function() {
             });
 
             expect($image->gallery)->toReceive('save');
-
             expect($belongsTo->save($image))->toBe(true);
-
             expect($image->gallery_id)->toBe($image->gallery->id);
 
         });

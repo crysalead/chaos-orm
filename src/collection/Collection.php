@@ -102,7 +102,8 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
             'rootPath'  => null,
             'model'     => null,
             'meta'      => [],
-            'data'      => []
+            'data'      => [],
+            'exists'    => false
         ];
         $config += $defaults;
 
@@ -114,7 +115,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
 
         $this->_loaded = $config['data'];
         foreach ($this->_loaded as $key => $value) {
-            $this[$key] = $value;
+            $this->_set($value, $key, ['exists' => $config['exists']]);
         }
         $this->_loaded = $this->_data;
     }

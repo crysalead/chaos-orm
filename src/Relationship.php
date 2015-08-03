@@ -252,7 +252,7 @@ class Relationship
                 if ($relationship->isMany()) {
                     return $collection;
                 }
-                return $collection ? $collection->rewind() : null;
+                return count($collection) ? $collection->rewind() : null;
             },
             static::LINK_KEY_LIST  => function($object, $relationship, $options) {
                 return $this->_find($entity->{$relationship->keys('from')}, Set::merge(['fetchOptions' => [
@@ -294,11 +294,12 @@ class Relationship
         if ($this->link() !== static::LINK_KEY) {
             throw new ChaosException("This relation is not based on a foreign key.");
         }
+        $to = $this->to();
+
         if (!$id) {
             $collector = isset($fetchOptions['collector']) ? $fetchOptions['collector'] : null;
             return $to::create([], ['type' => 'set', 'collector' => $collector]);
         }
-        $to = $this->to();
         if (is_array($id) && count($id) === 1) {
             $id = reset($id);
         }

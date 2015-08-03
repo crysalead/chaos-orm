@@ -6,6 +6,7 @@ use DateTime;
 use InvalidArgumentException;
 use chaos\Model;
 use chaos\Schema;
+use chaos\collection\Collection;
 
 use kahlan\plugin\Stub;
 
@@ -46,11 +47,76 @@ describe("Model", function() {
 
     });
 
+    describe("::create()", function() {
+
+        it("creates an entity", function() {
+
+            $model = $this->model;
+            $data = ['title' => 'Amiga 1200'];
+            $entity = $model::create($data);
+
+            expect($entity)->toBeAnInstanceOf($model);
+            expect($entity->data())->toBe($data);
+            expect($entity->exists())->toBe(false);
+
+        });
+
+        it("creates an existing entity", function() {
+
+            $model = $this->model;
+            $data = ['id' => '1', 'title' => 'Amiga 1200'];
+            $entity = $model::create($data, ['exists' => true]);
+
+            expect($entity)->toBeAnInstanceOf($model);
+            expect($entity->data())->toBe($data);
+            expect($entity->exists())->toBe(true);
+
+        });
+
+        it("creates a collection of entities", function() {
+
+            $model = $this->model;
+            $data = [
+                ['title' => 'Amiga 1200'],
+                ['title' => 'Las Vegas']
+            ];
+            $collection = $model::create($data, ['type' => 'set']);
+
+            expect($collection)->toBeAnInstanceOf(Collection::class);
+            expect($collection->data())->toBe($data);
+
+            foreach ($collection as $entity) {
+                expect($entity)->toBeAnInstanceOf($model);
+                expect($entity->exists())->toBe(false);
+            }
+
+        });
+
+        it("creates a collection of existing entities", function() {
+
+            $model = $this->model;
+            $data = [
+                ['id' => '1', 'title' => 'Amiga 1200'],
+                ['id' => '2', 'title' => 'Las Vegas']
+            ];
+            $collection = $model::create($data, ['type' => 'set', 'exists' => true]);
+
+            expect($collection)->toBeAnInstanceOf(Collection::class);
+            expect($collection->data())->toBe($data);
+
+            foreach ($collection as $entity) {
+                expect($entity)->toBeAnInstanceOf($model);
+                expect($entity->exists())->toBe(true);
+            }
+
+        });
+
+    });
+
     describe("::query()", function() {
 
         it("gets/sets the default query parameters", function() {
 
-            $connection = Stub::create();
             $model = $this->model;
             $model::query(['field' => 'value']);
             expect($model::query())->toBe(['field' => 'value']);

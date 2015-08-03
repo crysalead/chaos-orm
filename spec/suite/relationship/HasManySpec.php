@@ -75,7 +75,7 @@ describe("HasMany", function() {
                     ['id' => 3, 'gallery_id' => 1, 'title' => 'Las Vegas'],
                     ['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley'],
                     ['id' => 5, 'gallery_id' => 2, 'title' => 'Unknown']
-                ], ['type' => 'set']);
+                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
                 if (!empty($fetchOptions['return']) && $fetchOptions['return'] === 'array') {
                     return $images->data();
                 }
@@ -90,7 +90,7 @@ describe("HasMany", function() {
             $galleries = Gallery::create([
                 ['id' => 1, 'name' => 'Foo Gallery'],
                 ['id' => 2, 'name' => 'Bar Gallery']
-            ], ['type' => 'set']);
+            ], ['type' => 'set', 'exists' => true]);
 
             expect(Image::class)->toReceive('::all')->with([
                 'query'   => ['conditions' => ['gallery_id' => [1, 2]]],
@@ -101,7 +101,9 @@ describe("HasMany", function() {
 
             foreach ($galleries as $gallery) {
                 foreach ($gallery->images as $image) {
-                    expect($gallery->id)->toBe($image->gallery_id);
+                    expect($image->gallery_id)->toBe($gallery->id);
+                    expect($gallery->collector())->toBe($galleries->collector());
+                    expect($image->collector())->toBe($galleries->collector());
                 }
             }
 
@@ -114,7 +116,7 @@ describe("HasMany", function() {
             $galleries = Gallery::create([
                 ['id' => 1, 'name' => 'Foo Gallery'],
                 ['id' => 2, 'name' => 'Bar Gallery']
-            ], ['type' => 'set']);
+            ], ['type' => 'set', 'exists' => true]);
 
             $galleries = $galleries->data();
 
@@ -138,6 +140,25 @@ describe("HasMany", function() {
 
     describe("->get()", function() {
 
+        it("returns an empty collection when no hasMany relation exists", function() {
+
+            Stub::on(Image::class)->method('::all', function($options = [], $fetchOptions = []) {
+                $images =  Image::create([], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                return $images;
+            });
+
+            $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
+
+            expect(Image::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['gallery_id' => 1]]
+            ], ['collector' => $gallery->collector()]);
+
+            expect($gallery->images->count())->toBe(0);
+            expect($gallery->images->collector())->toBe($gallery->collector());
+
+        });
+
         it("lazy loads a hasMany relation", function() {
 
             Stub::on(Image::class)->method('::all', function($options = [], $fetchOptions = []) {
@@ -145,7 +166,7 @@ describe("HasMany", function() {
                     ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
                     ['id' => 2, 'gallery_id' => 1, 'title' => 'Srinivasa Ramanujan'],
                     ['id' => 3, 'gallery_id' => 1, 'title' => 'Las Vegas']
-                ], ['type' => 'set']);
+                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
                 return $images;
             });
 
@@ -157,7 +178,8 @@ describe("HasMany", function() {
             ], ['collector' => $gallery->collector()]);
 
             foreach ($gallery->images as $image) {
-                expect($gallery->id)->toBe($image->gallery_id);
+                expect($image->gallery_id)->toBe($gallery->id);
+                expect($image->collector())->toBe($gallery->collector());
             }
 
         });
