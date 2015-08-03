@@ -102,7 +102,6 @@ class Relationship
      *                      - `'fields'`      _mixed_  : An array of the subset of fields that should be selected
      *                                                   from the related object(s) by default. If set to `true` (the default), all
      *                                                   fields are selected.
-     *                      - `'schema'`      _object_ : A schema instance.
      *                      - `'conventions'` _object_ : The naming conventions instance to use.
      */
     public function __construct($config = [])

@@ -32,9 +32,21 @@ class HasManyThrough extends \chaos\Relationship
      * @see chaos\Relationship
      * @param array $config The relationship's configuration, which defines how the two models in
      *                      question are bound. The available options are:
-     *                      - `'through'` _string_ : The relation name of the pivot.
-     *                      - `'using'`   _string_ : The relation name to use in combinaison with through option.
-     *                      - `'mode'`    _string_ : The saving mode strategy.
+     *                      - `'name'`        _string_ : The field name used for accessing the related data.
+     *                                                   For example, in the case of `Post` hasMany `Comment`, the name defaults to `'comments'`.
+     *                      - `'from'`        _string_ : The fully namespaced class name this relationship originates.
+     *                      - `'through'`     _string_ : The relation name of the pivot.
+     *                      - `'using'`       _string_ : The relation name to use in combinaison with through option.
+     *                      - `'link'`        _string_ : A constant specifying how the object bound to the originating
+     *                                                   model is linked to the object bound to the target model. For relational
+     *                                                   databases, the only valid value is `LINK_KEY`, which means a foreign
+     *                                                   key in one object matches another key (usually the primary key) in the other.
+     *                                                   For document-oriented and other non-relational databases, different types of
+     *                                                   linking, including key lists or even embedding.
+     *                      - `'fields'`      _mixed_  : An array of the subset of fields that should be selected
+     *                                                   from the related object(s) by default. If set to `true` (the default), all
+     *                                                   fields are selected.
+     *                      - `'conventions'` _object_ : The naming conventions instance to use.
      */
     public function __construct($config = [])
     {
@@ -45,7 +57,6 @@ class HasManyThrough extends \chaos\Relationship
             'using'       => null,
             'link'        => static::LINK_KEY,
             'fields'      => true,
-            'constraints' => [],
             'conventions' => null
         ];
 
@@ -63,11 +74,11 @@ class HasManyThrough extends \chaos\Relationship
         $this->_through = $config['through'];
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
-        $this->_constraints = $config['constraints'];
         $this->_using = $config['using'];
 
         $from = $this->from();
         $relThrough = $from::relation($this->through());
+        $relThrough->junction(true);
         $pivot = $relThrough->to();
         $relUsing = $pivot::relation($this->using());
 

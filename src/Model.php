@@ -170,15 +170,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         static::conventions($config['conventions']);
         static::connection($config['connection']);
 
-        if ($config['schema']) {
-            static::schema($config['schema']);
-        }
-        if ($config['validator']) {
-            static::validator($config['validator']);
-        }
-        if ($config['finders']) {
-            static::finders($config['finders']);
-        }
+        static::schema($config['schema']);
+        static::validator($config['validator']);
+        static::finders($config['finders']);
     }
 
     /**
@@ -817,10 +811,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $schema = static::schema();
 
         $result = [];
-        $fields = $field ? [$field] : array_keys($this->_data);
+        $fields = $field ? [$field] : array_keys($this->_data + $this->_persisted);
 
         foreach ($fields as $key) {
             if (!array_key_exists($key, $this->_data)) {
+                if (array_key_exists($key, $this->_persisted)) {
+                    $result[$key] = $this->_persisted[$key];
+                }
                 continue;
             }
             if (!array_key_exists($key, $this->_persisted)) {

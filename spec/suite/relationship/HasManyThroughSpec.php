@@ -279,4 +279,15 @@ describe("HasManyThrough", function() {
 
     });
 
+    describe("->save()", function() {
+
+        it("bails out on save since it's just an alias", function() {
+
+            $hasManyThrough = Image::relation('tags');
+            expect($hasManyThrough->save(null))->toBe(true);
+
+        });
+
+    });
+
 });

@@ -865,8 +865,8 @@ class Schema
     /**
      * Gets/sets the conventions object to which this schema is bound.
      *
-     * @param  object    $conventions The conventions instance to set.
-     * @return object                 The conventions instance.
+     * @param  object $conventions The conventions instance to set or none to get it.
+     * @return object              Returns `$this` on set and the conventions instance on get.
      */
     public function conventions($conventions = null)
     {

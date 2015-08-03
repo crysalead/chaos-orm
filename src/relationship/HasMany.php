@@ -10,6 +10,47 @@ use chaos\ChaosException;
 class HasMany extends \chaos\Relationship
 {
     /**
+     * Constructs an object that represents a relationship between two model classes.
+     *
+     * @see chaos\Relationship
+     * @param array $config The relationship's configuration, which defines how the two models in
+     *                      question are bound. The available options are:
+     *                      - `'junction'` _boolean_ : Indicates whether the relation is a junction table or not.
+     *                                                 If `true`, associative entities are removed when unsetted.
+     *                                                 All `hasMany` relations used aby an `hasManyThrough` relation will
+     *                                                 have their junction attribute set to `true`. Default to `false`.
+     */
+    public function __construct($config = [])
+    {
+        $defaults = [
+            'junction' => false
+        ];
+
+        $config += $defaults;
+
+        parent::__construct($config);
+
+        $this->_junction = $config['junction'];
+    }
+
+    /**
+     * Sets the behavior of associative entities. If a hasMany relation is marked as a "junction table",
+     * associative entities will be removed once a foreign key is unsetted. When a hasMany relation is
+     * not marked as a "junction table", associative entities will simply have their foreign key unsetted.
+     *
+     * @param  boolean $boolean The junction value to set or none to get it.
+     * @return object           Returns `$this` on set and the junction value on get.
+     */
+    public function junction($boolean = null)
+    {
+        if (func_num_args()) {
+            $this->_junction = $boolean;
+            return $this;
+        }
+        return $this->_junction;
+    }
+
+    /**
      * Expands a collection of entities by adding their related data.
      *
      * @param  mixed $collection The collection to expand.
@@ -77,8 +118,18 @@ class HasMany extends \chaos\Relationship
             $result = $result && $item->save($options);
         }
 
-        foreach ($previous as $deprecated) {
-            $deprecated->delete(); // TODO: needs to implement 2 modes !
+        $junction = $this->junction();
+
+        if ($junction) {
+            foreach ($previous as $deprecated) {
+                $deprecated->delete();
+            }
+        } else {
+            $toKey = $this->keys('to');
+            foreach ($previous as $deprecated) {
+                unset($deprecated->{$toKey});
+                $deprecated->save();
+            }
         }
 
         return $result;

@@ -464,6 +464,18 @@ describe("Entity", function() {
 
         });
 
+        it("returns `true` when a field is removed", function() {
+
+            $model = $this->model;
+            $entity = $model::create(['title' => 'original'], ['exists' => true]);
+
+            expect($entity->modified('title'))->toBe(false);
+
+            unset($entity->title);
+            expect($entity->modified('title'))->toBe(true);
+
+        });
+
         it("returns `false` when an unexisting field is checked", function() {
 
             $model = $this->model;

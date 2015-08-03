@@ -9,6 +9,7 @@ use chaos\Conventions;
 
 use kahlan\plugin\Stub;
 use chaos\spec\fixture\model\Image;
+use chaos\spec\fixture\model\ImageTag;
 use chaos\spec\fixture\model\Gallery;
 
 describe("HasMany", function() {
@@ -196,34 +197,78 @@ describe("HasMany", function() {
 
         });
 
-        it("assures old hasMany relations are removed", function() {
+        it("assures removed association to be unsetted", function() {
 
-            $toDelete = Image::create(['id' => 2, 'gallery_id' => 1, 'title' => 'Srinivasa Ramanujan'], ['exists' => true]);
+            $toUnset = Image::create(['id' => 2, 'gallery_id' => 1, 'title' => 'Srinivasa Ramanujan'], ['exists' => true]);
+            $toKeep = Image::create(['id' => 3, 'gallery_id' => 1, 'title' => 'Las Vegas'], ['exists' => true]);
 
-            Stub::on(Image::class)->method('::all', function($options = [], $fetchOptions = []) use ($toDelete){
-                $images =  Image::create([$toDelete], ['type' => 'set']);
+            Stub::on(Image::class)->method('::all', function($options = [], $fetchOptions = []) use ($toUnset, $toKeep){
+                $images =  Image::create([
+                    $toUnset,
+                    $toKeep
+                ], ['type' => 'set']);
                 return $images;
             });
 
             $hasMany = Gallery::relation('images');
 
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
-            $gallery->images = [['title' => 'Amiga 1200']];
+            $gallery->images = [['title' => 'Amiga 1200'], $toKeep];
 
             Stub::on($gallery->images[0])->method('save', function() use ($gallery) {
                 $gallery->images[0]->id = 1;
                 return true;
             });
 
-            $schema = Image::schema();
-            Stub::on($schema)->method('delete', function() {
+            Stub::on($toUnset)->method('save', function() use ($toUnset) {
                 return true;
             });
 
             expect($gallery->images[0])->toReceive('save');
-            expect($schema)->toReceive('delete')->with(['id' => 2]);
+            expect($toKeep)->toReceive('save');
+            expect($toUnset)->toReceive('save');
             expect($hasMany->save($gallery))->toBe(true);
+            expect($toUnset->exists())->toBe(true);
+            expect($toUnset->gallery_id)->toBe(null);
             expect($gallery->images[0]->gallery_id)->toBe($gallery->id);
+
+        });
+
+        it("assures removed associative entity to be deleted", function() {
+
+            $toDelete = ImageTag::create(['id' => 5, 'image_id' => 4, 'tag_id' => 6], ['exists' => true]);
+            $toKeep = ImageTag::create(['id' => 6, 'image_id' => 4, 'tag_id' => 3], ['exists' => true]);
+
+            Stub::on(ImageTag::class)->method('::all', function($options = [], $fetchOptions = []) use ($toDelete, $toKeep){
+                $images =  ImageTag::create([
+                    $toDelete,
+                    $toKeep
+                ], ['type' => 'set']);
+                return $images;
+            });
+
+            $hasMany = Image::relation('images_tags');
+
+            $image = Image::create(['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley'], ['exists' => true]);
+            $image->images_tags = [['tag_id' => 1], $toKeep];
+
+            Stub::on($image->images_tags[0])->method('save', function() use ($image) {
+                $image->images_tags[0]->id = 7;
+                return true;
+            });
+
+            $schema = ImageTag::schema();
+
+            Stub::on($schema)->method('delete', function() {
+                return true;
+            });
+
+            expect($image->images_tags[0])->toReceive('save');
+            expect($toKeep)->toReceive('save');
+            expect($schema)->toReceive('delete')->with(['id' => 5]);
+            expect($hasMany->save($image))->toBe(true);
+            expect($toDelete->exists())->toBe(false);
+            expect($image->images_tags[0]->image_id)->toBe($image->id);
 
         });
 
