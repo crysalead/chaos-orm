@@ -53,7 +53,7 @@ class HasManyThrough extends \chaos\Relationship
 
         foreach (['from', 'through', 'using'] as $value) {
             if (!$config[$value]) {
-                throw new ChaosException("`'{$value}'` option can't be empty for a has many through relation.");
+                throw new ChaosException("The relationship `'{$value}'` option can't be empty.");
             }
         }
 
@@ -88,6 +88,10 @@ class HasManyThrough extends \chaos\Relationship
      */
     public function embed(&$collection, $options = [])
     {
+        $options = Set::merge(['fetchOptions' => [
+            'collector' => $this->_collector($collection)
+        ]], $options);
+
         $name = $this->name();
         $through = $this->through();
         $using = $this->using();

@@ -1,6 +1,7 @@
 <?php
 namespace chaos\spec\suite\relationship;
 
+use chaos\ChaosException;
 use chaos\Model;
 use chaos\Relationship;
 use chaos\relationship\HasOne;
@@ -39,6 +40,28 @@ describe("HasOne", function() {
 
         });
 
+        it("throws an exception if `'from'` is missing", function() {
+
+            $closure = function() {
+                $relation = new HasOne([
+                    'to'   => GalleryDetail::class
+                ]);
+            };
+            expect($closure)->toThrow(new ChaosException("The relationship `'from'` option can't be empty."));
+
+        });
+
+        it("throws an exception if `'to'` is missing", function() {
+
+            $closure = function() {
+                $relation = new HasOne([
+                    'from' => Gallery::class
+                ]);
+            };
+            expect($closure)->toThrow(new ChaosException("The relationship `'to'` option can't be empty."));
+
+        });
+
     });
 
     describe("->embed()", function() {
@@ -65,7 +88,12 @@ describe("HasOne", function() {
                 ['id' => 2, 'name' => 'Bar Gallery']
             ], ['type' => 'set']);
 
-            $hasOne->embed($galleries);
+            expect(GalleryDetail::class)->toReceive('::all')->with([
+                'query'   => ['conditions' => ['gallery_id' => [1, 2]]],
+                'handler' => null
+            ], ['collector' => $galleries->collector()]);
+
+            $galleries->embed(['detail']);
 
             foreach ($galleries as $gallery) {
                 expect($gallery->detail->gallery_id)->toBe($gallery->id);
@@ -84,12 +112,71 @@ describe("HasOne", function() {
 
             $galleries = $galleries->data();
 
+            expect(GalleryDetail::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['gallery_id' => [1, 2]]]
+            ], ['collector' => null, 'return' => 'array']);
+
             $hasOne->embed($galleries, ['fetchOptions' => ['return' => 'array']]);
 
             foreach ($galleries as $gallery) {
                 expect($gallery['detail']['gallery_id'])->toBe($gallery['id']);
                 expect($gallery['detail'])->toBeAn('array');
             }
+
+        });
+
+    });
+
+    describe("->get()", function() {
+
+        it("lazy loads a hasOne relation", function() {
+
+            Stub::on(GalleryDetail::class)->method('::all', function($options = [], $fetchOptions = []) {
+                $details =  GalleryDetail::create([
+                    ['id' => 1, 'description' => 'Foo Gallery Description', 'gallery_id' => 1]
+                ], ['type' => 'set']);
+                return $details;
+            });
+
+            $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
+
+            expect(GalleryDetail::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['gallery_id' => 1]]
+            ], ['collector' => $gallery->collector()]);
+
+            expect($gallery->id)->toBe($gallery->detail->gallery_id);
+
+        });
+
+    });
+
+    describe("->save()", function() {
+
+        it("bails out if no relation data hasn't been setted", function() {
+
+            $hasOne = Gallery::relation('detail');
+            $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
+            expect($hasOne->save($gallery))->toBe(true);
+
+        });
+
+        it("saves a hasMany relationship", function() {
+
+            $hasOne = Gallery::relation('detail');
+
+            $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
+            $gallery->detail = ['description' => 'Foo Gallery Description'];
+
+            Stub::on($gallery->detail)->method('save', function() use ($gallery) {
+                $gallery->detail->id = 1;
+                return true;
+            });
+
+            expect($gallery->detail)->toReceive('save');
+            expect($hasOne->save($gallery))->toBe(true);
+            expect($gallery->detail->gallery_id)->toBe($gallery->id);
 
         });
 

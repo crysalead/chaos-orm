@@ -72,8 +72,8 @@ describe("Cursor", function() {
             expect($cursor->next())->toBe(5);
             expect($cursor->current())->toBe(5);
 
-            expect($cursor->next())->toBe(false); // Just to follow a weird PHP convention
-
+            expect($cursor->next())->toBe(false); // returns `false` just to follow a weird PHP convention
+            expect($cursor->valid())->toBe(false);
         });
 
     });

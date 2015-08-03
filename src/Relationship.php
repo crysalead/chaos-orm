@@ -121,7 +121,7 @@ class Relationship
 
         foreach (['from', 'to'] as $value) {
             if (!$config[$value]) {
-                throw new ChaosException("Error, `'{$value}'` option can't be empty.");
+                throw new ChaosException("The relationship `'{$value}'` option can't be empty.");
             }
         }
 
@@ -289,16 +289,22 @@ class Relationship
         ];
         $options += $defaults;
 
+        $fetchOptions = $options['fetchOptions'];
+        unset($options['fetchOptions']);
+
         if ($this->link() !== static::LINK_KEY) {
             throw new ChaosException("This relation is not based on a foreign key.");
         }
         if (!$id) {
-            $collector = isset($options['fetchOptions']['collector']) ? $options['fetchOptions']['collector'] : null;
+            $collector = isset($fetchOptions['collector']) ? $fetchOptions['collector'] : null;
             return $to::create([], ['type' => 'set', 'collector' => $collector]);
         }
         $to = $this->to();
+        if (is_array($id) && count($id) === 1) {
+            $id = reset($id);
+        }
         $options['query'] = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $id]]);
-        return $to::all($options, $options['fetchOptions']);
+        return $to::all($options, $fetchOptions);
     }
 
     /**

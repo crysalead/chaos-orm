@@ -1190,7 +1190,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if ((!$id = $schema->primaryKey()) || $this->exists() === false) {
             return false;
         }
-        if($schema->remove([$id => $this->primaryKey()])) {
+        if($schema->delete([$id => $this->primaryKey()])) {
             $this->_exists = false;
             $this->_persisted = [];
             return true;

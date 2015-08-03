@@ -78,7 +78,7 @@ class HasMany extends \chaos\Relationship
         }
 
         foreach ($previous as $deprecated) {
-            $deprecated->delete();
+            $deprecated->delete(); // TODO: needs to implement 2 modes !
         }
 
         return $result;

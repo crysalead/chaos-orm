@@ -49,18 +49,44 @@ describe("HasManyThrough", function() {
 
         });
 
+        it("throws an exception if `'from'` is missing", function() {
+
+            $closure = function() {
+                $relation = new HasManyThrough([
+                    'through' => 'images_tags',
+                    'using'   => 'tag'
+                ]);
+            };
+            expect($closure)->toThrow(new ChaosException("The relationship `'from'` option can't be empty."));
+
+        });
+
         it("throws an exception is `'through'` is not set", function() {
 
             $closure = function() {
                 $relation = new HasManyThrough([
-                    'from' => Image::class,
-                    'to'   => Tag::class
+                    'from'    => Image::class,
+                    'using'   => 'tag'
                 ]);
             };
 
-            expect($closure)->toThrow(new ChaosException("`'through'` option can't be empty for a has many through relation."));
+            expect($closure)->toThrow(new ChaosException("The relationship `'through'` option can't be empty."));
 
         });
+
+        it("throws an exception if `'using'` is missing", function() {
+
+            $closure = function() {
+                $relation = new HasManyThrough([
+                    'from'    => Image::class,
+                    'through' => 'images_tags'
+                ]);
+            };
+            expect($closure)->toThrow(new ChaosException("The relationship `'using'` option can't be empty."));
+
+        });
+
+
 
     });
 
@@ -121,7 +147,17 @@ describe("HasManyThrough", function() {
                 ['id' => 5, 'gallery_id' => 2, 'title' => 'Unknown']
             ], ['type' => 'set']);
 
-            $hasManyThrough->embed($images);
+            expect(ImageTag::class)->toReceive('::all')->with([
+                'query'   => ['conditions' => ['image_id' => [1, 2, 3, 4, 5]]],
+                'handler' => null
+            ], ['collector' => $images->collector()]);
+
+            expect(Tag::class)->toReceive('::all')->with([
+                'query'   => ['conditions' => ['id' => [1, 3, 5, 6]]],
+                'handler' => null
+            ], ['collector' => $images->collector()]);
+
+            $images->embed(['tags']);
 
             foreach ($images as $image) {
                 foreach ($image->images_tags as $index => $image_tag) {
@@ -144,6 +180,16 @@ describe("HasManyThrough", function() {
             ], ['type' => 'set']);
 
             $images = json_decode(json_encode($images->data()));
+
+            expect(ImageTag::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['image_id' => [1, 2, 3, 4, 5]]]
+            ], ['collector' => null, 'return' => 'object']);
+
+            expect(Tag::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['id' => [1, 3, 5, 6]]]
+            ], ['collector' => null, 'return' => 'object']);
 
             $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'object']]);
 
@@ -170,6 +216,16 @@ describe("HasManyThrough", function() {
 
             $images = $images->data();
 
+            expect(ImageTag::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['image_id' => [1, 2, 3, 4, 5]]]
+            ], ['collector' => null, 'return' => 'array']);
+
+            expect(Tag::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['id' => [1, 3, 5, 6]]]
+            ], ['collector' => null, 'return' => 'array']);
+
             $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'array']]);
 
             foreach ($images as $image) {
@@ -178,6 +234,46 @@ describe("HasManyThrough", function() {
                     expect($image['tags'][$index])->toBeAn('array');
                 }
             }
+
+        });
+
+    });
+
+    describe("->get()", function() {
+
+        it("lazy loads a belongsTo relation", function() {
+
+            Stub::on(ImageTag::class)->method('::all', function($options = [], $fetchOptions = []) {
+                $imagesTags =  ImageTag::create([
+                    ['id' => 1, 'image_id' => 1, 'tag_id' => 1],
+                    ['id' => 2, 'image_id' => 1, 'tag_id' => 3]
+                ], ['type' => 'set']);
+                return $imagesTags;
+            });
+
+            Stub::on(Tag::class)->method('::all', function($options = [], $fetchOptions = []) {
+                $tags =  Tag::create([
+                    ['id' => 1, 'name' => 'High Tech'],
+                    ['id' => 3, 'name' => 'Computer']
+                ], ['type' => 'set']);
+                return $tags;
+            });
+
+            $image = Image::create(['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
+
+            expect(ImageTag::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['image_id' => 1]]
+            ], ['collector' => $image->collector()]);
+
+            expect(Tag::class)->toReceive('::all')->with([
+                'handler' => null,
+                'query'   => ['conditions' => ['id' => [1, 3]]]
+            ], ['collector' => $image->collector()]);
+
+            expect(count($image->tags))->toBe(2);
+            expect($image->tags[0]->data())->toBe(['id' => 1, 'name' => 'High Tech']);
+            expect($image->tags[1]->data())->toBe(['id' => 3, 'name' => 'Computer']);
 
         });
 

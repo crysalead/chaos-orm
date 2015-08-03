@@ -20,10 +20,12 @@ class Finders
      *
      * @param  string  $name    The finder name.
      * @param  Closure $closure The finder.
+     * @return object           Returns `$this`.
      */
     public function set($name, $closure)
     {
         $this->_finders[$name] = $closure;
+        return $this;
     }
 
     /**
