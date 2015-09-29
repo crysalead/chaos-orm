@@ -170,20 +170,6 @@ describe("Model", function() {
 
         });
 
-        it("delegates passed options", function() {
-
-            $model = $this->model;
-
-            expect($this->query)->toReceive('method1')->with('param1');
-            expect($this->query)->toReceive('method2')->with('param2');
-
-            $model::find([
-                'method1' => 'param1',
-                'method2' => 'param2'
-            ]);
-
-        });
-
         it("passes the finder instance to the query", function() {
 
             $model = $this->model;
@@ -201,11 +187,18 @@ describe("Model", function() {
         it("merges default query parameters on find", function() {
 
             $model = $this->model;
+            $schema = $model::schema();
+            $finders = $model::finders();
 
             $model::query(['method1' => 'param1']);
 
-            expect($this->query)->toReceive('method1')->with('param1');
-            expect($this->query)->toReceive('method2')->with('param2');
+            expect($schema)->toReceive('query')->with([
+                'query'   => [
+                    'method1' => 'param1',
+                    'method2' => 'param2'
+                ],
+                'finders' => $finders
+            ]);
 
             $model::find([
                 'method2' => 'param2'
@@ -255,13 +248,12 @@ describe("Model", function() {
             $model = $this->model;
 
             expect($model)->toReceive('::find')->with([
-                'query' => [
-                    'conditions' => ['id' => 1]
-                ]
+                'conditions' => ['id' => 1],
+                'option' => 'value'
             ]);
             expect($this->query)->toReceive('first')->with(['fetch' => 'options']);
 
-            $model::id(1, ['query' => 'options'], ['fetch' => 'options']);
+            $model::id(1, ['option' => 'value'], ['fetch' => 'options']);
 
         });
 

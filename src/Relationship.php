@@ -282,7 +282,6 @@ class Relationship
     protected function _find($id, $options = [])
     {
         $defaults = [
-            'handler'      => null,
             'query'        => [],
             'fetchOptions' => []
         ];
@@ -303,8 +302,8 @@ class Relationship
         if (is_array($id) && count($id) === 1) {
             $id = reset($id);
         }
-        $options['query'] = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $id]]);
-        return $to::all($options, $fetchOptions);
+        $query = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $id]]);
+        return $to::all($query, $fetchOptions);
     }
 
     /**

@@ -89,8 +89,7 @@ describe("HasOne", function() {
             ], ['type' => 'set', 'exists' => true]);
 
             expect(GalleryDetail::class)->toReceive('::all')->with([
-                'query'   => ['conditions' => ['gallery_id' => [1, 2]]],
-                'handler' => null
+                'conditions' => ['gallery_id' => [1, 2]]
             ], ['collector' => $galleries->collector()]);
 
             $galleries->embed(['detail']);
@@ -115,8 +114,7 @@ describe("HasOne", function() {
             $galleries = $galleries->data();
 
             expect(GalleryDetail::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['gallery_id' => [1, 2]]]
+                'conditions' => ['gallery_id' => [1, 2]]
             ], ['collector' => null, 'return' => 'array']);
 
             $hasOne->embed($galleries, ['fetchOptions' => ['return' => 'array']]);
@@ -155,8 +153,7 @@ describe("HasOne", function() {
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
 
             expect(GalleryDetail::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['gallery_id' => 1]]
+                'conditions' => ['gallery_id' => 1]
             ], ['collector' => $gallery->collector()]);
 
             expect($gallery->detail->gallery_id)->toBe($gallery->id);

@@ -93,8 +93,7 @@ describe("HasMany", function() {
             ], ['type' => 'set', 'exists' => true]);
 
             expect(Image::class)->toReceive('::all')->with([
-                'query'   => ['conditions' => ['gallery_id' => [1, 2]]],
-                'handler' => null
+                'conditions' => ['gallery_id' => [1, 2]]
             ], ['collector' => $galleries->collector()]);
 
             $galleries->embed(['images']);
@@ -121,8 +120,7 @@ describe("HasMany", function() {
             $galleries = $galleries->data();
 
             expect(Image::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['gallery_id' => [1, 2]]]
+                'conditions' => ['gallery_id' => [1, 2]]
             ], ['collector' => null, 'return' => 'array']);
 
             $hasMany->embed($galleries, ['fetchOptions' => ['return' => 'array']]);
@@ -150,8 +148,7 @@ describe("HasMany", function() {
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
 
             expect(Image::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['gallery_id' => 1]]
+                'conditions' => ['gallery_id' => 1]
             ], ['collector' => $gallery->collector()]);
 
             expect($gallery->images->count())->toBe(0);
@@ -173,8 +170,7 @@ describe("HasMany", function() {
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
 
             expect(Image::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['gallery_id' => 1]]
+                'conditions' => ['gallery_id' => 1]
             ], ['collector' => $gallery->collector()]);
 
             foreach ($gallery->images as $image) {

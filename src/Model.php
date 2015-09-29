@@ -51,18 +51,18 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     protected static $_finders = [];
 
     /**
-     * MUST BE re-defined in sub-classes which require a different connection.
-     *
-     * @var object The connection instance.
-     */
-    protected static $_connection = null;
-
-    /**
      * Default query parameters for the model finders.
      *
      * @var array
      */
     protected static $_query = [];
+
+    /**
+     * MUST BE re-defined in sub-classes which require a different connection.
+     *
+     * @var object The connection instance.
+     */
+    protected static $_connection = null;
 
     /**
      * MUST BE re-defined in sub-classes which require some different conventions.
@@ -248,21 +248,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function find($options = [])
     {
-        $defaults = ['query' => []];
-        $options += $defaults;
-        $options['query'] = Set::merge(static::$_query, $options['query']);
-
+        $options = Set::merge(static::query(), $options);
         $schema = static::schema();
-        $query = $schema->query($options + ['finders' => static::finders()]);
-
-        $options = Set::merge(static::$_query, $options);
-
-        foreach ($options as $name => $value) {
-            if (method_exists($query, $name)) {
-                $query->{$name}($value);
-            }
-        }
-        return $query;
+        return $schema->query(['query' => $options] + ['finders' => static::finders()]);
     }
 
     /**
@@ -298,7 +286,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public static function id($id, $options = [], $fetchOptions = [])
     {
-        $options['query'] = ['conditions' => [static::schema()->primaryKey() => $id]];
+        $options = ['conditions' => [static::schema()->primaryKey() => $id]] + $options;
         return static::find($options)->first($fetchOptions);
     }
 
@@ -385,9 +373,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public static function query($query = [])
     {
         if (func_num_args()) {
-            static::$_query = is_array($query) ? $query : [];
+            static::$_query[static::class] = is_array($query) ? $query : [];
         }
-        return static::$_query;
+        return isset(static::$_query[static::class]) ? static::$_query[static::class] : [];
     }
 
     /**

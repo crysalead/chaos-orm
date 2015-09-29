@@ -596,7 +596,7 @@ class Schema
             $to = $rel->to();
             $query = empty($relations[$name]) ? [] : $relations[$name];
             if (is_callable($query)) {
-                $options['handler'] = $query;
+                $options['query']['handler'] = $query;
             } else {
                 $options['query'] = $query;
             }

@@ -92,8 +92,7 @@ describe("BelongsTo", function() {
             ], ['type' => 'set']);
 
             expect(Gallery::class)->toReceive('::all')->with([
-                'query'   => ['conditions' => ['id' => [1, 2]]],
-                'handler' => null
+                'conditions' => ['id' => [1, 2]]
             ], ['collector' => $images->collector()]);
 
             $images->embed(['gallery']);
@@ -120,8 +119,7 @@ describe("BelongsTo", function() {
             $images = $images->data();
 
             expect(Gallery::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['id' => [1, 2]]]
+                'conditions' => ['id' => [1, 2]]
             ], ['collector' => null, 'return' => 'array']);
 
             $belongsTo->embed($images, ['fetchOptions' => ['return' => 'array']]);
@@ -156,8 +154,7 @@ describe("BelongsTo", function() {
             $image = Image::create(['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
 
             expect(Gallery::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['id' => 1]]
+                'conditions' => ['id' => 1]
             ], ['collector' => $image->collector()]);
 
             expect($image->gallery->id)->toBe($image->gallery_id);

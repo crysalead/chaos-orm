@@ -146,13 +146,11 @@ describe("HasManyThrough", function() {
             ], ['type' => 'set', 'exists' => true]);
 
             expect(ImageTag::class)->toReceive('::all')->with([
-                'query'   => ['conditions' => ['image_id' => [1, 2, 3, 4, 5]]],
-                'handler' => null
+                'conditions' => ['image_id' => [1, 2, 3, 4, 5]]
             ], ['collector' => $images->collector()]);
 
             expect(Tag::class)->toReceive('::all')->with([
-                'query'   => ['conditions' => ['id' => [1, 3, 5, 6]]],
-                'handler' => null
+                'conditions' => ['id' => [1, 3, 5, 6]]
             ], ['collector' => $images->collector()]);
 
             $images->embed(['tags']);
@@ -184,13 +182,11 @@ describe("HasManyThrough", function() {
             $images = json_decode(json_encode($images->data()));
 
             expect(ImageTag::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['image_id' => [1, 2, 3, 4, 5]]]
+                'conditions' => ['image_id' => [1, 2, 3, 4, 5]]
             ], ['collector' => null, 'return' => 'object']);
 
             expect(Tag::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['id' => [1, 3, 5, 6]]]
+                'conditions' => ['id' => [1, 3, 5, 6]]
             ], ['collector' => null, 'return' => 'object']);
 
             $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'object']]);
@@ -219,13 +215,11 @@ describe("HasManyThrough", function() {
             $images = $images->data();
 
             expect(ImageTag::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['image_id' => [1, 2, 3, 4, 5]]]
+                'conditions' => ['image_id' => [1, 2, 3, 4, 5]]
             ], ['collector' => null, 'return' => 'array']);
 
             expect(Tag::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['id' => [1, 3, 5, 6]]]
+                'conditions' => ['id' => [1, 3, 5, 6]]
             ], ['collector' => null, 'return' => 'array']);
 
             $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'array']]);
@@ -264,13 +258,11 @@ describe("HasManyThrough", function() {
             $image = Image::create(['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
 
             expect(ImageTag::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['image_id' => 1]]
+                'conditions' => ['image_id' => 1]
             ], ['collector' => $image->collector()]);
 
             expect(Tag::class)->toReceive('::all')->with([
-                'handler' => null,
-                'query'   => ['conditions' => ['id' => [1, 3]]]
+                'conditions' => ['id' => [1, 3]]
             ], ['collector' => $image->collector()]);
 
             expect(count($image->tags))->toBe(2);
