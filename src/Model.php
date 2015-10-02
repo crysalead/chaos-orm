@@ -353,13 +353,14 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Gets/sets the connection object to which this model is bound.
      *
      * @param  object $connection The connection instance to set or `null` to get the current one.
-     * @return object             Returns a connection instance.
+     * @return mixed              Returns a connection instance on get.
      */
     public static function connection($connection = null)
     {
         if (func_num_args()) {
             static::$_connection = $connection;
             unset(static::$_schemas[static::class]);
+            return;
         }
         return static::$_connection;
     }
@@ -379,15 +380,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets/sets the validator instance.
+     * Gets/sets the schema instance.
      *
      * @param  object $schema The schema instance to set or none to get it.
-     * @return object         The schema instance.
+     * @return mixed          The schema instance on get.
      */
     public static function schema($schema = null)
     {
         if (func_num_args()) {
-            return static::$_schemas[static::class] = $schema;
+            static::$_schemas[static::class] = $schema;
+            return;
         }
         $self = static::class;
         if (isset(static::$_schemas[$self])) {
@@ -412,12 +414,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Gets/sets the validator instance.
      *
      * @param  object $validator The validator instance to set or none to get it.
-     * @return object            The validator instance.
+     * @return mixed             The validator instance on get.
      */
     public static function validator($validator = null)
     {
         if (func_num_args()) {
-            return static::$_validators[static::class] = $validator;
+            static::$_validators[static::class] = $validator;
+            return;
         }
         $self = static::class;
         if (isset(static::$_validators[$self])) {
@@ -433,12 +436,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Gets/sets the finders instance.
      *
      * @param  object $finders The finders instance to set or none to get it.
-     * @return object          The finders instance.
+     * @return mixed           The finders instance on get.
      */
     public static function finders($finders = null)
     {
         if (func_num_args()) {
-            return static::$_finders[static::class] = $finders;
+            static::$_finders[static::class] = $finders;
+            return;
         }
         $self = static::class;
         if (isset(static::$_finders[$self])) {
@@ -487,12 +491,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Gets/sets the conventions object to which this model is bound.
      *
      * @param  object $conventions The conventions instance to set or none to get it.
-     * @return object              The conventions instance.
+     * @return mixed               The conventions instance on get.
      */
     public static function conventions($conventions = null)
     {
         if (func_num_args()) {
             static::$_conventions = $conventions;
+            return;
         }
         if (!static::$_conventions) {
             $conventions = static::$_classes['conventions'];
