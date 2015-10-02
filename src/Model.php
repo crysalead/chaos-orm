@@ -721,7 +721,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         ];
         $options += $defaults;
 
-        $method = 'set' . ucwords(str_replace('_', ' ', $name));
+        $conventions = static::conventions();
+        $method = $conventions->apply('setter', $name);
         if (method_exists($this, $method)) {
             $data = $this->$method($data);
         }
@@ -740,7 +741,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if (!$name) {
             return $this->_data;
         }
-        $method = 'get' . ucwords(str_replace('_', ' ', $name));
+        $conventions = static::conventions();
+        $method = $conventions->apply('getter', $name);
         if (method_exists($this, $method)) {
             return $this->$method(array_key_exists($name, $this->_data) ? $this->_data[$name] : null);
         }

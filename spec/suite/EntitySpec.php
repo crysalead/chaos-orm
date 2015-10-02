@@ -235,14 +235,14 @@ describe("Entity", function() {
 
             $entity = Stub::create([
                 'extends' => $this->model,
-                'methods' => ['setHello']
+                'methods' => ['setHelloBoy']
             ]);
-            Stub::on($entity)->method('setHello', function($data) {
+            Stub::on($entity)->method('setHelloBoy', function($data) {
                 return 'Hi ' . $data;
             });
 
-            $entity->hello = 'boy';
-            expect($entity->hello)->toBe('Hi boy');
+            $entity->hello_boy = 'boy';
+            expect($entity->hello_boy)->toBe('Hi boy');
 
         });
 
@@ -279,15 +279,15 @@ describe("Entity", function() {
 
             $entity = Stub::create([
                 'extends' => $this->model,
-                'methods' => ['getHello']
+                'methods' => ['setHelloBoy']
             ]);
 
-            Stub::on($entity)->method('getHello', function($data) {
+            Stub::on($entity)->method('setHelloBoy', function($data) {
                 return 'Hi ' . $data;
             });
 
-            $entity->hello = 'boy';
-            expect($entity->hello)->toBe('Hi boy');
+            $entity->hello_boy = 'boy';
+            expect($entity->hello_boy)->toBe('Hi boy');
 
         });
 

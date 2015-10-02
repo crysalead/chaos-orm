@@ -25,6 +25,8 @@ describe("Conventions", function() {
             expect($conventions->apply('foreignKey', $model))->toBe('my_post_id');
             expect($conventions->apply('fieldName', $model))->toBe('my_post');
             expect($conventions->apply('usingName', 'tag'))->toBe('tag');
+            expect($conventions->apply('getter', 'hello_world'))->toBe('getHelloWorld');
+            expect($conventions->apply('setter', 'hello_world'))->toBe('setHelloWorld');
 
         });
 
@@ -65,7 +67,9 @@ describe("Conventions", function() {
             expect(array_keys($closures))->toBe([
                 'fieldName',
                 'foreignKey',
+                'getter',
                 'primaryKey',
+                'setter',
                 'source',
                 'usingName'
             ]);
@@ -80,7 +84,9 @@ describe("Conventions", function() {
             expect(array_keys($closures))->toBe([
                 'fieldName',
                 'foreignKey',
+                'getter',
                 'primaryKey',
+                'setter',
                 'source',
                 'usingName'
             ]);
