@@ -330,8 +330,6 @@ class Schema
 
         if ($attribute) {
             return isset($field[$attribute]) ? $field[$attribute] : null;
-        } else {
-            $type = $field['type'];
         }
         return $field;
     }
