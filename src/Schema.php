@@ -230,8 +230,8 @@ class Schema
      * Gets/sets the schema lock type. When Locked all extra fields which
      * are not part of the schema should be filtered out before saving.
      *
-     * @param  mixed $locked The locked value to set to none to get the current lock value.
-     * @return mixed         A boolean value or `$this`.
+     * @param  boolean $locked The locked value to set to none to get the current lock value.
+     * @return mixed           A boolean value or `$this`.
      */
     public function locked($locked = null)
     {
@@ -317,8 +317,8 @@ class Schema
     /**
      * Returns a schema field attribute.
      *
-     * @param  array $name       A field name.
-     * @param  array $attribute  An attribute name. If `null` returns all attributes.
+     * @param  string $name      A field name.
+     * @param  mixed  $attribute An attribute name. If `null` returns all attributes.
      * @return mixed
      */
     public function field($name, $attribute = null)
