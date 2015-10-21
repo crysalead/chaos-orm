@@ -13,7 +13,7 @@
     },
     "require-dev": {
         "php": ">=5.4",
-        "crysalead/kahlan": "~1.1"
+        "crysalead/kahlan": "~1.2"
     },
     "autoload": {
         "psr-4": {
