@@ -506,6 +506,14 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         return static::$_conventions;
     }
 
+    /**
+     * Resets the Model.
+     */
+    public static function reset()
+    {
+        static::config();
+    }
+
     /***************************
      *
      *  Entity related methods

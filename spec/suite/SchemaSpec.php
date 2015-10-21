@@ -7,7 +7,10 @@ use InvalidArgumentException;
 use chaos\Schema;
 
 use kahlan\plugin\Stub;
+use chaos\spec\fixture\model\Gallery;
 use chaos\spec\fixture\model\Image;
+use chaos\spec\fixture\model\ImageTag;
+use chaos\spec\fixture\model\Tag;
 
 describe("Schema", function() {
 
@@ -28,6 +31,8 @@ describe("Schema", function() {
 
             $connection = Stub::create();
             $conventions = Stub::create();
+
+            Stub::on($connection)->method('formatters')->andReturn([]);
 
             $schema = new Schema([
                 'connection'   => $connection,
@@ -496,6 +501,125 @@ describe("Schema", function() {
 
             expect($schema->conventions($conventions))->toBe($schema);
             expect($schema->conventions())->toBe($conventions);
+
+        });
+
+    });
+
+    describe("->cast()", function() {
+
+        beforeEach(function() {
+
+            $handlers = [
+                'string' => function($value, $options = []) {
+                    return (string) $value;
+                },
+                'integer' => function($value, $options = []) {
+                    return (integer) $value;
+                },
+                'float'   => function($value, $options = []) {
+                    return (float) $value;
+                },
+                'decimal' => function($value, $options = []) {
+                    $options += ['precision' => 2];
+                    return (float) number_format($value, $options['precision']);
+                },
+                'boolean' => function($value, $options = []) {
+                    return !!$value;
+                },
+                'date'    => function($value, $options = []) {
+                    return $this->format('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                },
+                'datetime'    => function($value, $options = []) {
+                    $options += ['format' => 'Y-m-d H:i:s'];
+                    if (is_numeric($value)) {
+                        return new DateTime('@' . $value);
+                    }
+                    if ($value instanceof DateTime) {
+                        return $value;
+                    }
+                    return DateTime::createFromFormat($options['format'], date($options['format'], strtotime($value)));
+                },
+                'null'    => function($value, $options = []) {
+                    return null;
+                }
+            ];
+
+            $this->schema = Image::schema();
+
+            $this->schema->set('id', ['type' => 'serial']);
+            $this->schema->set('gallery_id', ['type' => 'integer']);
+            $this->schema->set('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
+            $this->schema->set('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
+            $this->schema->set('score', ['type' => 'float']);
+
+            $this->schema->formatter('cast', 'id',        $handlers['integer']);
+            $this->schema->formatter('cast', 'serial',    $handlers['integer']);
+            $this->schema->formatter('cast', 'integer',   $handlers['integer']);
+            $this->schema->formatter('cast', 'float',     $handlers['float']);
+            $this->schema->formatter('cast', 'decimal',   $handlers['decimal']);
+            $this->schema->formatter('cast', 'date',      $handlers['date']);
+            $this->schema->formatter('cast', 'datetime',  $handlers['datetime']);
+            $this->schema->formatter('cast', 'boolean',   $handlers['boolean']);
+            $this->schema->formatter('cast', 'null',      $handlers['null']);
+            $this->schema->formatter('cast', 'string',    $handlers['string']);
+            $this->schema->formatter('cast', '_default_', $handlers['string']);
+
+            $this->schema->bind('gallery', [
+                'relation' => 'belongsTo',
+                'to'       => Gallery::class,
+                'keys'     => ['gallery_id' => 'id']
+            ]);
+
+            $this->schema->bind('images_tags', [
+                'relation' => 'hasMany',
+                'to'       => ImageTag::class,
+                'keys'     => ['id' => 'image_id']
+            ]);
+
+            $this->schema->bind('tags', [
+                'relation' => 'hasManyThrough',
+                'to'       => Tag::class,
+                'through'  => 'images_tags',
+                'using'    => 'tag'
+            ]);
+
+        });
+
+        afterEach(function() {
+
+            Image::reset();
+
+        });
+
+        it("gets/sets the conventions", function() {
+
+            $image = $this->schema->cast(null, [
+                'id'         => '1',
+                'gallery_id' => '2',
+                'name'       => 'image.jpg',
+                'title'      => 'My Image',
+                'score'      => '8.9',
+                'tags'       => [
+                    [
+                        'id'   => '1',
+                        'name' => 'landscape'
+                    ],
+                    [
+                        'id'   => '2',
+                        'name' => 'mountain'
+                    ]
+                ]
+            ]);
+
+            expect($image->id)->toBeAn('integer');
+            expect($image->gallery_id)->toBeAn('integer');
+            expect($image->name)->toBeA('string');
+            expect($image->title)->toBeA('string');
+            expect($image->score)->toBeA('float');
+            expect($image->tags)->toBeAnInstanceOf('chaos\collection\Through');
+            expect($image->tags[0])->toBeAnInstanceOf('chaos\spec\fixture\model\Tag');
+            expect($image->tags[1])->toBeAnInstanceOf('chaos\spec\fixture\model\Tag');
 
         });
 

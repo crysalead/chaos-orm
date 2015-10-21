@@ -160,6 +160,10 @@ class Schema
             $this->_fields[$key] = $this->_initField($value);
         }
 
+        if ($this->_connection) {
+            $this->_formatters = $this->_connection->formatters();
+        }
+
         $handlers = $this->_handlers;
 
         $this->formatter('array', 'id',        $handlers['array']['integer']);
@@ -172,10 +176,6 @@ class Schema
         $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
         $this->formatter('array', 'null',      $handlers['array']['null']);
         $this->formatter('array', '_default_', $handlers['array']['string']);
-
-        if ($this->_connection) {
-            $this->_formatters = $this->_connection->formatters();
-        }
     }
 
     /**
@@ -387,7 +387,6 @@ class Schema
             $this->bind($name, $field);
         }
         $this->_fields[$name] = $field;
-
         return $this;
     }
 
@@ -657,7 +656,7 @@ class Schema
             'collector' => null,
             'parent'    => null,
             'type'      => 'entity',
-            'model'     => Model::class,
+            'model'     => $this->model(),
             'rootPath'  => null,
             'exists'    => false
         ];
@@ -734,7 +733,7 @@ class Schema
     {
         if ($properties['relation'] === 'hasManyThrough') {
             if (!isset($properties['through'])) {
-                throw ChaosException("Missing `'through'` relation name.");
+                throw new ChaosException("Missing `'through'` relation name.");
             }
             $properties += ['using' => $this->_conventions->apply('usingName', $name)];
             $options['through'] = $properties['through'];
@@ -785,7 +784,7 @@ class Schema
                     return (int) $value;
                 },
                 'float' => function($value, $options = []) {
-                    return (int) $value;
+                    return (float) $value;
                 },
                 'date' => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
@@ -798,7 +797,7 @@ class Schema
                 'boolean' => function($value, $options = []) {
                     return $value;
                 },
-                'null'    => function($value, $options = []) {
+                'null' => function($value, $options = []) {
                     return;
                 }
             ]
