@@ -963,7 +963,8 @@ class Schema
         foreach ($with as $relName => $value) {
             if (!isset($this->_relations[$relName])) {
                 continue;
-            } elseif ($this->_relations[$relName]['relation'] === 'hasManyThrough') {
+            }
+            if ($this->_relations[$relName]['relation'] === 'hasManyThrough') {
                 $rel = $this->relation($relName);
                 $result[$rel->through()] = [$rel->using() => $value];
                 $result[$relName] = $value;

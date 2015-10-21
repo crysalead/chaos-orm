@@ -19,6 +19,19 @@ class Conventions
     protected $_conventions = null;
 
     /**
+     * Constructor.
+     *
+     * @param array $config Possible options are:
+     *                      - `'conventions'` _array_: Allow to override the default convention rules for generating
+     *                                                 primary or foreign key as well as for table/collection names
+     *                                                 from an entity class name.
+     */
+    public function __construct($config = [])
+    {
+        $this->config($config);
+    }
+
+    /**
      * Configures the schema class.
      *
      * @param array $config Possible options are:
@@ -83,9 +96,6 @@ class Conventions
      */
     public function get($name = null)
     {
-        if (!isset($this->_conventions)) {
-            $this->config();
-        }
         if (!$name) {
             return $this->_conventions;
         }
