@@ -41,6 +41,13 @@ class Relationship
     protected $_name = null;
 
     /**
+     * The type of relationship.
+     *
+     * @var string
+     */
+    protected $_type = '';
+
+    /**
      * Mathing keys definition.
      *
      * @var array
@@ -136,9 +143,9 @@ class Relationship
         }
 
         $this->_name = $config['name'];
-        $this->_keys = $config['keys'];
         $this->_from = $config['from'];
         $this->_to = $config['to'];
+        $this->_keys = $config['keys'];
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
 
@@ -203,8 +210,8 @@ class Relationship
     /**
      * Gets the related data.
      *
-     * @param  $entity An entity.
-     * @return         The related data.
+     * @param  object $entity An entity.
+     * @return                The related data.
      */
     public function get($entity, $options = [])
     {

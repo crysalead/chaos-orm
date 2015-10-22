@@ -639,7 +639,6 @@ class Schema
             if (!isset($relations[$relPath])) {
                 $relations[$relPath] = $relations[$path];
             }
-            $expanded[] = $name;
         }
         return $relations;
     }
