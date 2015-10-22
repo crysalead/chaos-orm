@@ -23,6 +23,25 @@ describe("Schema", function() {
         $this->schema->set('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
         $this->schema->set('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
 
+        $this->schema->bind('gallery', [
+            'relation' => 'belongsTo',
+            'to'       => Gallery::class,
+            'keys'     => ['gallery_id' => 'id']
+        ]);
+
+
+        $this->schema->bind('images_tags', [
+            'relation' => 'hasMany',
+            'to'       => ImageTag::class,
+            'keys'     => ['id' => 'image_id']
+        ]);
+
+        $this->schema->bind('tags', [
+            'relation' => 'hasManyThrough',
+            'to'       => Tag::class,
+            'through'  => 'images_tags',
+            'using'    => 'tag'
+        ]);
     });
 
     describe("->__construct()", function() {
@@ -428,13 +447,15 @@ describe("Schema", function() {
 
         it("binds a relation", function() {
 
-            $this->schema->bind('gallery', [
+            expect($this->schema->hasRelation('parent'))->toBe(false);
+
+            $this->schema->bind('parent', [
                 'relation' => 'belongsTo',
-                'to'       => 'chaos\spec\fixture\model\Gallery',
-                'keys'     => ['gallery_id' => 'id']
+                'to'       => Image::class,
+                'keys'     => ['image_id' => 'id']
             ]);
 
-            expect($this->schema->hasRelation('gallery'))->toBe(true);
+            expect($this->schema->hasRelation('parent'))->toBe(true);
 
         });
 
@@ -443,12 +464,6 @@ describe("Schema", function() {
     describe("->unbind()", function() {
 
         it("unbinds a relation", function() {
-
-            $this->schema->bind('gallery', [
-                'relation' => 'belongsTo',
-                'to'       => 'chaos\spec\fixture\model\Gallery',
-                'keys'     => ['gallery_id' => 'id']
-            ]);
 
             expect($this->schema->hasRelation('gallery'))->toBe(true);
 
@@ -463,25 +478,6 @@ describe("Schema", function() {
     describe("->relations", function() {
 
         it("returns all relation names", function() {
-
-            $this->schema->bind('gallery', [
-                'relation' => 'belongsTo',
-                'to'       => 'chaos\spec\fixture\model\Gallery',
-                'keys'     => ['gallery_id' => 'id']
-            ]);
-
-
-            $this->schema->bind('images_tags', [
-                'relation' => 'hasMany',
-                'to'       => 'chaos\spec\fixture\model\ImageTag',
-                'keys'     => ['id' => 'image_id']
-            ]);
-
-            $this->schema->bind('tags', [
-                'relation' => 'hasManyThrough',
-                'through'  => 'images_tags',
-                'using'    => 'tag'
-            ]);
 
             $relations = $this->schema->relations();
             sort($relations);
@@ -501,6 +497,71 @@ describe("Schema", function() {
 
             expect($schema->conventions($conventions))->toBe($schema);
             expect($schema->conventions())->toBe($conventions);
+
+        });
+
+    });
+
+    describe("->expand()", function() {
+
+        it("expands schema paths", function() {
+
+            expect($this->schema->expand(['gallery', 'tags']))->toBe([
+                'gallery' => null,
+                'tags' => null,
+                'images_tags.tag' => null
+            ]);
+
+        });
+
+        it("perserves values", function() {
+
+            $actual = $this->schema->expand([
+                'gallery' => [
+                    'conditions' => [
+                        'name' => 'My Gallery'
+                    ]
+                ],
+                'tags' => [
+                    'conditions' => [
+                        'name' => 'landscape'
+                    ]
+                ]
+            ]);
+
+            expect($actual)->toBe([
+                'gallery' => [
+                    'conditions' => [
+                        'name' => 'My Gallery'
+                    ]
+                ],
+                'tags' => [
+                    'conditions' => [
+                        'name' => 'landscape'
+                    ]
+                ],
+                'images_tags.tag' => [
+                    'conditions' => [
+                        'name' => 'landscape'
+                    ]
+                ]
+            ]);
+
+        });
+
+    });
+
+    describe("->treeify()", function() {
+
+        it("treeify schema paths", function() {
+
+            expect($this->schema->treeify(['gallery', 'tags']))->toBe([
+                'gallery' => null,
+                'images_tags' => [
+                    'tag' => null
+                ],
+                'tags' => null
+            ]);
 
         });
 

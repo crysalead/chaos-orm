@@ -580,13 +580,15 @@ class Schema
     public function embed(&$collection, $relations, $options = [])
     {
         $expanded = [];
-        $relations = $this->_expandHasManyThrough(Set::normalize($relations), $expanded);
+        $relations = $this->expand($relations);
+        $tree = $this->treeify($relations);
 
-        $tree = Set::expand(array_fill_keys(array_keys($relations), []));
+        $habtm = [];
 
         foreach ($tree as $name => $subtree) {
             $rel = $this->relation($name);
             if ($rel->type() === 'hasManyThrough') {
+                $habtm[] = $name;
                 continue;
             }
 
@@ -610,21 +612,22 @@ class Schema
             }
         }
 
-        foreach ($expanded as $name) {
+        foreach ($habtm as $name) {
             $rel = $this->relation($name);
             $related = $rel->embed($collection, $options);
         }
     }
 
     /**
-     * Helper which expands all `'hasManyThrough'` relations into their full path.
+     * Expands all `'hasManyThrough'` relations into their full path.
      *
-     * @param  array $relations       The relations to eager load.
-     * @param  array $expanded        The name of relations which was expanded.
-     * @return array                  The relations to eager load with no more HasManyThrough relations.
+     * @param  array $relations The relations to eager load.
+     * @return array            The relations with expanded `'hasManyThrough'` relations.
      */
-    protected function _expandHasManyThrough($relations, &$expanded)
+    public function expand($relations)
     {
+        $relations = Set::normalize($relations);
+
         foreach ($relations as $path => $value) {
             $num = strpos($path, '.');
             $name = $num !== false ? substr($path, 0, $num) : $path;
@@ -637,9 +640,37 @@ class Schema
                 $relations[$relPath] = $relations[$path];
             }
             $expanded[] = $name;
-            unset($relations[$path]);
         }
         return $relations;
+    }
+
+    /**
+     * Returns a nested tree representation of `'embed'` option.
+     *
+     * @return array The corresponding nested tree representation.
+     */
+    public function treeify($embed)
+    {
+        if (!$embed) {
+            return [];
+        }
+        if ($embed === true) {
+            $embed = $this->relations();
+        }
+        $embed = Set::expand(array_fill_keys(array_keys(Set::normalize((array) $embed)), null));
+
+        $result = [];
+        foreach ($embed as $relName => $value) {
+            if (!isset($this->_relations[$relName])) {
+                continue;
+            }
+            if ($this->_relations[$relName]['relation'] === 'hasManyThrough') {
+                $rel = $this->relation($relName);
+                $result[$rel->through()] = [$rel->using() => $value];
+            }
+            $result[$relName] = $value;
+        }
+        return $result;
     }
 
     /**
@@ -943,34 +974,4 @@ class Schema
         throw new ChaosException("Missing `lastInsertId()` implementation for this schema.");
     }
 
-    /**
-     * The `'embed'` option normalizer function.
-     *
-     * @return array The normalized embed array.
-     */
-    public function normalizeEmbed($embed)
-    {
-        if (!$embed) {
-            return [];
-        }
-        if ($embed === true) {
-            $embed = $this->relations();
-        }
-        $embed = Set::expand(Set::normalize((array) $embed));
-
-        $result = [];
-        foreach ($embed as $relName => $value) {
-            if (!isset($this->_relations[$relName])) {
-                continue;
-            }
-            if ($this->_relations[$relName]['relation'] === 'hasManyThrough') {
-                $rel = $this->relation($relName);
-                $result[$rel->through()] = [$rel->using() => $value];
-                $result[$relName] = $value;
-            } else {
-                $result[$relName] = $value;
-            }
-        }
-        return $result;
-    }
 }

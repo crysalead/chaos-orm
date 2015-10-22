@@ -1087,7 +1087,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
 
         $options['validate'] = false;
-        $options['embed'] = $schema->normalizeEmbed($options['embed']);
+        $options['embed'] = $schema->treeify($options['embed']);
 
         if (!$this->_save('belongsTo', $options)) {
             return false;
@@ -1247,10 +1247,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $options += $defaults;
 
         $schema = static::schema();
-        $embed = $schema->normalizeEmbed($options['embed']);
+        $tree = $schema->treeify($options['embed']);
         $success = true;
 
-        foreach ($embed as $name => $value) {
+        foreach ($tree as $name => $value) {
             $rel = $schema->relation($name);
             $success = $success && $rel->validate($this, ['embed' => $value] + $options);
         }
@@ -1268,10 +1268,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $options += $defaults;
 
         $schema = static::schema();
-        $embed = $schema->normalizeEmbed($options['embed']);
+        $tree = $schema->treeify($options['embed']);
         $errors = $this->_errors;
 
-        foreach ($embed as $name => $value) {
+        foreach ($tree as $name => $value) {
             $relation = $schema->relation($name);
             $fieldname = $relation->name();
             if (isset($this->{$fieldname})) {
@@ -1309,15 +1309,15 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $options += $defaults;
 
         $schema = static::schema();
-        $embed = $schema->normalizeEmbed($options['embed']);
+        $tree = $schema->treeify($options['embed']);
 
         $result = [];
         foreach ($this as $field => $value) {
             if ($schema->hasRelation($field)) {
-                if (!array_key_exists($field, $embed)) {
+                if (!array_key_exists($field, $tree)) {
                     continue;
                 }
-                $options['embed'] = $embed[$field];
+                $options['embed'] = $tree[$field];
             }
             if ($value instanceof Model) {
                 $result[$field] = $value->to($format, $options);
