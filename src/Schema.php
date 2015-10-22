@@ -944,22 +944,22 @@ class Schema
     }
 
     /**
-     * The `'with'` option normalizer function.
+     * The `'embed'` option normalizer function.
      *
-     * @return array The normalized with array.
+     * @return array The normalized embed array.
      */
-    public function with($with)
+    public function normalizeEmbed($embed)
     {
-        if (!$with) {
+        if (!$embed) {
             return [];
         }
-        if ($with === true) {
-            $with = $this->relations();
+        if ($embed === true) {
+            $embed = $this->relations();
         }
-        $with = Set::expand(Set::normalize((array) $with));
+        $embed = Set::expand(Set::normalize((array) $embed));
 
         $result = [];
-        foreach ($with as $relName => $value) {
+        foreach ($embed as $relName => $value) {
             if (!isset($this->_relations[$relName])) {
                 continue;
             }

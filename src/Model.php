@@ -776,7 +776,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Exports the entity into an array based representation.
      *
      * @param  array $options Some exporting options. Possibles values are:
-     *                        - `'with'` _array_: Indicates the relations to embed for the export.
+     *                        - `'embed'` _array_: Indicates the relations to embed for the export.
      * @return mixed          The exported result.
      */
     public function data($options = [])
@@ -1067,7 +1067,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *                                                  be immediately saved. Defaults to `true`.
      *                       - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
      *                       - `'locked'`    _boolean_: Lock data to the schema fields.
-     *                       - `'with'`      _array_  : List of relations to save.
+     *                       - `'embed'`      _array_  : List of relations to save.
      * @return boolean       Returns `true` on a successful save operation, `false` on failure.
      */
     public function save($options = [])
@@ -1078,7 +1078,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'validate' => true,
             'whitelist' => null,
             'locked' => $schema->locked(),
-            'with' => true
+            'embed' => true
         ];
         $options += $defaults;
 
@@ -1087,7 +1087,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
 
         $options['validate'] = false;
-        $options['with'] = $schema->with($options['with']);
+        $options['embed'] = $schema->normalizeEmbed($options['embed']);
 
         if (!$this->_save('belongsTo', $options)) {
             return false;
@@ -1133,18 +1133,18 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     protected function _save($types, $options = [])
     {
-        $defaults = ['with' => []];
+        $defaults = ['embed' => []];
         $options += $defaults;
         $schema = static::schema();
         $types = (array) $types;
 
         $success = true;
         foreach ($types as $type) {
-            foreach ($options['with'] as $relName => $value) {
+            foreach ($options['embed'] as $relName => $value) {
                 if (!($rel = $schema->relation($relName)) || $rel->type() !== $type) {
                     continue;
                 }
-                $success = $success && $rel->save($this, ['with' => $value] + $options);
+                $success = $success && $rel->save($this, ['embed' => $value] + $options);
             }
         }
         return $success;
@@ -1159,7 +1159,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function persist($options = [])
     {
-        return $this->save($options + ['with' => false]);
+        return $this->save($options + ['embed' => false]);
     }
 
     /**
@@ -1212,7 +1212,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *                           Note that when defining validation rules, the `'on'` key can also be an array of
      *                           multiple events.
      *                         - `'required'` _boolean_ : Sets the validation rules `'required'` default value.
-     *                         - `'with'`     _array_   : List of relations to validate.
+     *                         - `'embed'`    _array_   : List of relations to validate.
      * @return boolean         Returns `true` if all validation rules on all fields succeed, otherwise
      *                         `false`. After validation, the messages for any validation failures are assigned
      *                         to the entity, and accessible through the `errors()` method of the entity object.
@@ -1222,7 +1222,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = [
             'events'   => $this->exists() !== false ? 'update' : 'create',
             'required' => $this->exists() !== false ? false : true,
-            'with'     => true
+            'embed'     => true
         ];
         $options += $defaults;
         $validator = static::validator();
@@ -1238,21 +1238,21 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * Validates a relation.
      *
      * @param  array   $options Available options:
-     *                          - `'with'` _array_ : List of relations to validate.
+     *                          - `'embed'` _array_ : List of relations to validate.
      * @return boolean          Returns `true` if all validation rules on all fields succeed, otherwise `false`.
      */
     protected function _validate($options)
     {
-        $defaults = ['with' => true];
+        $defaults = ['embed' => true];
         $options += $defaults;
 
         $schema = static::schema();
-        $with = $schema->with($options['with']);
+        $embed = $schema->normalizeEmbed($options['embed']);
         $success = true;
 
-        foreach ($with as $name => $value) {
+        foreach ($embed as $name => $value) {
             $rel = $schema->relation($name);
-            $success = $success && $rel->validate($this, ['with' => $value] + $options);
+            $success = $success && $rel->validate($this, ['embed' => $value] + $options);
         }
         return $success;
     }
@@ -1264,18 +1264,18 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function errors($options = [])
     {
-        $defaults = ['with' => true];
+        $defaults = ['embed' => true];
         $options += $defaults;
 
         $schema = static::schema();
-        $with = $schema->with($options['with']);
+        $embed = $schema->normalizeEmbed($options['embed']);
         $errors = $this->_errors;
 
-        foreach ($with as $name => $value) {
+        foreach ($embed as $name => $value) {
             $relation = $schema->relation($name);
             $fieldname = $relation->name();
             if (isset($this->{$fieldname})) {
-                $errors[$fieldname] = $this->{$fieldname}->errors(['with' => $value] + $options);
+                $errors[$fieldname] = $this->{$fieldname}->errors(['embed' => $value] + $options);
             }
         }
         return $errors;
@@ -1304,20 +1304,20 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function to($format, $options = [])
     {
         $defaults = [
-            'with' => true
+            'embed' => true
         ];
         $options += $defaults;
 
         $schema = static::schema();
-        $with = $schema->with($options['with']);
+        $embed = $schema->normalizeEmbed($options['embed']);
 
         $result = [];
         foreach ($this as $field => $value) {
             if ($schema->hasRelation($field)) {
-                if (!array_key_exists($field, $with)) {
+                if (!array_key_exists($field, $embed)) {
                     continue;
                 }
-                $options['with'] = $with[$field];
+                $options['embed'] = $embed[$field];
             }
             if ($value instanceof Model) {
                 $result[$field] = $value->to($format, $options);
