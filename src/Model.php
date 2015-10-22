@@ -669,13 +669,20 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Allows several properties to be assigned at once.
+     * Sets one or several properties.
      *
-     * @param array $data    An associative array of fields and values.
-     * @param array $options An options array.
+     * @param  mixed $name    A field name or an associative array of fields and values.
+     * @param  array $data    An associative array of fields and values or an options array.
+     * @param  array $options An options array.
+     * @return object         Returns `$this`.
      */
-    public function set($data = [], $options = [])
+    public function set($name, $data = [], $options = [])
     {
+        if (is_string($name)) {
+            return $this->_set($name, $data, $options);
+        }
+        $options = $data;
+        $data = $name;
         foreach ($data as $name => $value) {
             $this->_set($name, $value, $options);
         }

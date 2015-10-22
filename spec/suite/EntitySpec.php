@@ -200,6 +200,23 @@ describe("Entity", function() {
 
     describe("->set()", function() {
 
+        it("sets values", function() {
+
+            $date = new DateTime('2014-10-26 00:25:15');
+
+            $model = $this->model;
+            $entity = $model::create();
+            $entity->set('title', 'Hello');
+            $entity->set('body', 'World');
+            $entity->set('created', $date);
+
+            expect($entity->title)->toBe('Hello');
+            expect($entity->body)->toBe('World');
+            expect($entity->created)->toBe($date);
+            expect($entity)->toHaveLength(3);
+
+        });
+
         it("sets an array of values", function() {
 
             $date = new DateTime('2014-10-26 00:25:15');
