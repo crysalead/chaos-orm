@@ -37,7 +37,6 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * If this `Collection` instance has a parent document (see `$_parent`), this value indicates
      * the key name of the parent document that contains it.
      *
-     * @see lithium\data\Collection::$_parent
      * @var string
      */
     protected $_rootPath = null;
