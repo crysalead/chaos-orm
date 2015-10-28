@@ -215,7 +215,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @param object $schema The schema instance.
      */
-    protected static function _schema($schema)
+    protected static function _define($schema)
     {
     }
 
@@ -406,7 +406,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
 
         $class = static::$_schema;
         $schema = static::$_schemas[$self] = new $class($config);
-        static::_schema($schema);
+        static::_define($schema);
         return $schema;
     }
 

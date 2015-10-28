@@ -39,7 +39,7 @@ class Gallery extends \chaos\Model
 
     protected static $_schema = 'chaos\database\Schema';
 
-    protected static function _schema($schema)
+    protected static function _define($schema)
     {
         $schema->set('id', ['type' => 'serial']);
         $schema->set('name', ['type' => 'string']);
@@ -53,7 +53,7 @@ class Gallery extends \chaos\Model
 }
 ```
 
-The model definition is pretty straightforward. A "blank" schema instance is injected to the `::_schema()` method and can be configured right there to fit the Domain Model.
+The model definition is pretty straightforward. A "blank" schema instance is injected to the `::_define()` method and can be configured right there to fit the Domain Model.
 
 By default the injected schema instance is pre-configured with a source name and a primary key field name through a `Conventions` instance used to extract correct values. However in Chaos you can either set your own `Conventions` instance or manually set specific values like the following:
 
@@ -70,7 +70,7 @@ $schema->primaryKey('uuid');
 
 ### <a name="schema"></a>Schema
 
-In the previous example you noticed that fields and relations have been defined using the `::_schema()` method. More informations on [how to define a schema can by found here](schemas.md)
+In the previous example you noticed that fields and relations have been defined using the `::_define()` method. More informations on [how to define a schema can by found here](schemas.md)
 
 Once done, you can retrieve the model's schema using `::schema()` or defined relations using `::relations()`:
 
@@ -142,7 +142,7 @@ namespace myproject\model;
 
 class Image extends \chaos\Model
 {
-    protected static function _schema($schema)
+    protected static function _define($schema)
     {
         $schema->set('id', ['type' => 'serial']);
         $schema->set('name', ['type' => 'string']);

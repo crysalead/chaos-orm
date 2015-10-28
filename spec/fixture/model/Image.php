@@ -3,7 +3,7 @@ namespace chaos\spec\fixture\model;
 
 class Image extends \chaos\Model
 {
-    protected static function _schema($schema)
+    protected static function _define($schema)
     {
         $schema->set('id', ['type' => 'serial']);
         $schema->set('gallery_id', ['type' => 'integer']);
