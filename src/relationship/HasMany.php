@@ -10,6 +10,13 @@ use chaos\ChaosException;
 class HasMany extends \chaos\Relationship
 {
     /**
+     * Indicates whether the relation is a junction table or not.
+     *
+     * @var boolean
+     */
+    protected $_junction = false;
+
+    /**
      * Constructs an object that represents a relationship between two model classes.
      *
      * @see chaos\Relationship

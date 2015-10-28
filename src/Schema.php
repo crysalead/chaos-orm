@@ -30,6 +30,13 @@ class Schema
     protected $_connection = null;
 
     /**
+     * The conventions instance.
+     *
+     * @var object
+     */
+    protected $_conventions = [];
+
+    /**
      * The source name.
      *
      * @var string
@@ -77,6 +84,13 @@ class Schema
      * @var array
      */
     protected $_handlers = [];
+
+    /**
+     * Formatters.
+     *
+     * @var array
+     */
+    protected $_formatters = [];
 
     /**
      * Relations configuration.
