@@ -568,12 +568,12 @@ describe("Entity", function() {
             it("autoboxes setted data", function() {
 
                 $model = $this->model;
-                $child = Stub::classname(['extends' => $this->model]);
+                $childModel = Stub::classname(['extends' => $this->model]);
 
                 $schema = new Schema(['model' => $model]);
                 $schema->set('child', [
                     'type' => 'object',
-                    'class' => $child
+                    'model' => $childModel
                 ]);
 
                 $model::config(compact('schema'));
@@ -586,7 +586,8 @@ describe("Entity", function() {
                     'enabled' => true
                 ];
                 $child = $entity['child'];
-                expect($child)->toBeAnInstanceOf($child);
+
+                expect($child)->toBeAnInstanceOf($childModel);
                 expect($child->parent())->toBe($entity);
                 expect($child->rootPath())->toBe('child');
 

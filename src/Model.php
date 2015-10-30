@@ -194,8 +194,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * // Custom object with a dedicated class
      * $schema->set('comments', [
-     *     'type' => 'object',
-     *     'class' => 'name\space\model\Comment',
+     *     'type'  => 'object',
+     *     'model' => 'name\space\model\Comment',
      *     'array' => true,
      *     'default' => []
      * ]);
@@ -479,12 +479,12 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     /**
      * Returns an array of relation names (shortcut).
      *
-     * @param  string $type A relation type name.
-     * @return array        Returns an array of relation names.
+     * @param  boolean $embedded Include or not embedded relations.
+     * @return array             Returns an array of relation names.
      */
-    public static function relations($type = null)
+    public static function relations($embedded = true)
     {
-        return static::schema()->relations($type);
+        return static::schema()->relations($embedded);
     }
 
     /**
@@ -1110,7 +1110,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             $whitelist = $whitelist ?: array_keys($schema->fields());
         }
 
-        $exclude = array_diff($schema->relations(), array_keys($schema->fields()));
+        $exclude = array_diff($schema->relations(false), array_keys($schema->fields()));
         $values = array_diff_key($this->get(), array_fill_keys($exclude, true));
 
         if ($this->exists() === false) {

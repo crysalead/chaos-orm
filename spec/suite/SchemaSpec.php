@@ -5,6 +5,7 @@ use stdClass;
 use DateTime;
 use InvalidArgumentException;
 use chaos\Schema;
+use chaos\Model;
 
 use kahlan\plugin\Stub;
 use chaos\spec\fixture\model\Gallery;
@@ -483,6 +484,21 @@ describe("Schema", function() {
             sort($relations);
 
             expect($relations)->toBe(['gallery', 'images_tags', 'tags']);
+
+        });
+
+        it("includes embedded relations using `true` as first parameter", function() {
+
+             $model = Stub::classname(['extends' => Model::class]);
+
+            $schema = new Schema(['model' => $model]);
+            $schema->set('embedded', [
+                'type' => 'object',
+                'model' => $model
+            ]);
+
+            expect($schema->relations())->toBe(['embedded']);
+            expect($schema->relations(false))->toBe([]);
 
         });
 

@@ -389,17 +389,19 @@ class Schema
     {
         $field = $this->_initField($params);
 
-        if ($field['type'] === 'object') {
-            $relationship = $this->_classes['relationship'];
-
-            $field += [
-                'relation' => $field['array'] ? 'hasMany' : 'hasOne',
-                'to'       => isset($field['to']) ? $field['to'] : Model::class,
-                'link'     => $relationship::LINK_EMBEDDED
-            ];
-
-            $this->bind($name, $field);
+        if ($field['type'] !== 'object') {
+            $this->_fields[$name] = $field;
+            return $this;
         }
+        $relationship = $this->_classes['relationship'];
+
+        $this->bind($name, [
+            'type'     => $field['array'] ? 'set' : 'entity',
+            'relation' => $field['array'] ? 'hasMany' : 'hasOne',
+            'to'       => isset($field['model']) ? $field['model'] : Model::class,
+            'link'     => $relationship::LINK_EMBEDDED
+        ]);
+
         $this->_fields[$name] = $field;
         return $this;
     }
@@ -489,11 +491,12 @@ class Schema
         $relationship = $this->_classes['relationship'];
 
         $config += [
+            'type' => 'entity',
             'from' => $this->model(),
             'to'   => null,
             'link' => $relationship::LINK_KEY
         ];
-        $config['type'] = 'object';
+        $config['embedded'] = strncmp($config['link'], 'key', 3) !== 0;
 
         if (!isset($config['relation']) || !isset($this->_classes[$config['relation']])) {
             throw new ChaosException("Unexisting binding relation `{$config['relation']}` for `'{$name}'`.");
@@ -511,6 +514,15 @@ class Schema
         }
 
         $config['array'] = !!preg_match('~Many~', $config['relation']);
+        $config['type'] = $config['array'] ? 'set' : $config['type'];
+
+        if ($config['relation'] === 'hasManyThrough') {
+            if (!isset($config['through'])) {
+                throw new ChaosException("Missing `'through'` relation name.");
+            }
+            $config += ['using' => $this->_conventions->apply('usingName', $name)];
+            $config['type'] = 'through';
+        }
 
         $this->_relations[$name] = $config;
         $this->_relationships[$name] = null;
@@ -562,11 +574,11 @@ class Schema
      * @param  boolean $embedded Include or not embedded relations.
      * @return array             Returns an array of relation names.
      */
-    public function relations($embedded = false)
+    public function relations($embedded = true)
     {
         $result = [];
         foreach ($this->_relations as $field => $config) {
-            if ($embedded || strncmp($config['link'], 'key', 3) === 0) {
+            if (!$config['embedded'] || $embedded) {
                 $result[] = $field;
             }
         }
@@ -699,7 +711,6 @@ class Schema
         $defaults = [
             'collector' => null,
             'parent'    => null,
-            'type'      => 'entity',
             'model'     => $this->model(),
             'rootPath'  => null,
             'exists'    => false
@@ -715,101 +726,68 @@ class Schema
         }
 
         if ($name === null) {
-            $model = $options['model'];
-            if ($data instanceof $model) {
-                return $data;
+            return $this->_cast($data, $options);
+        }
+        if (isset($this->_relations[$name])) {
+            $options = $this->_relations[$name] + $options;
+            if ($options['embedded']) {
+                $options['rootPath'] = $name;
             }
-            return $model::create($data, $options);
+            if ($options['relation'] !== 'hasManyThrough') {
+                $options['model'] = $options['to'];
+            }
+            if ($options['array']) {
+                return $this->_castArray($name, $data, $options);
+            }
+            return $this->_cast($data, $options);
         }
-
-        if (!$properties = $this->_properties($name)) {
-            return $data;
-        }
-
-        if (isset($properties['to'])) {
-            $options['model'] = $properties['to'];
-        }
-
         if (isset($this->_fields[$name])) {
-            $options['rootPath'] = $name;
+            $options = $this->_fields[$name] + $options;
+            if ($data === null && $options['null']) {
+                return;
+            }
+            if ($options['array']) {
+                $options['type'] = 'set';
+                return $this->_castArray($name, $data, $options);
+            }
+            return $this->format('cast', $name, $data);
         }
 
-        return $this->_cast($name, $properties, $data, $options);
+        return $data;
     }
 
     /**
-     * Casting helper.
+     * Casting helper for entities.
      *
-     * @param  string $name       The field name to cast.
-     * @param  array  $properties The field properties which define the casting.
      * @param  array  $data       Some data to cast.
      * @param  array  $options    Options for the casting.
      * @return mixed              The casted data.
      */
-    public function _cast($name, $properties, $data, $options)
+    public function _cast($data, $options)
     {
-        if ($properties['array']) {
-            return $this->_castArray($name, $properties, $data, $options);
+        $model = $options['model'];
+        if ($data instanceof $model) {
+            return $data;
         }
-        if ($properties['type'] === 'object') {
-            $model = $options['model'];
-            if ($data instanceof $model) {
-                return $data;
-            }
-            return $model::create($data, $options);
-        }
-        if ($data === null && $properties['null']) {
-            return;
-        }
-        return $this->format('cast', $name, $data);
+        return $model::create($data, $options);
     }
 
     /**
      * Casting helper for arrays.
      *
      * @param  string $name       The field name to cast.
-     * @param  array  $properties The field properties which define the casting.
      * @param  array  $data       Some data to cast.
      * @param  array  $options    Options for the casting.
      * @return mixed              The casted data.
      */
-    public function _castArray($name, $properties, $data, $options)
+    public function _castArray($name, $data, $options)
     {
-        if ($properties['relation'] === 'hasManyThrough') {
-            if (!isset($properties['through'])) {
-                throw new ChaosException("Missing `'through'` relation name.");
-            }
-            $properties += ['using' => $this->_conventions->apply('usingName', $name)];
-            $options['through'] = $properties['through'];
-            $options['using'] = $properties['using'];
-            $options['type'] = 'through';
-        } else {
-            $options['type'] = 'set';
-        }
         $collection = $this->_classes[$options['type']];
         if ($data instanceof $collection) {
             return $data;
         }
         $model = $options['model'];
         return $model::create($data, $options);
-    }
-
-    /**
-     * Returns all field name attached properties.
-     *
-     * @param  string $name The field name.
-     * @return array        The field name properties.
-     */
-    public function _properties($name)
-    {
-        if (isset($this->_fields[$name])) {
-            return $this->_fields[$name];
-        }
-        if (isset($this->_relations[$name])) {
-            $properties = $this->_relations[$name];
-            return $properties;
-        }
-        return;
     }
 
     /**
