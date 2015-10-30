@@ -400,7 +400,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * @param  Closure $closure The closure to apply.
      * @return mixed            Returns the set of filtered values inside a `Collection`.
      */
-    public function map($closure, $options = [])
+    public function map($closure)
     {
         $data = array_map($closure, $this->_data);
         return new static(compact('data'));
