@@ -296,10 +296,10 @@ describe("Entity", function() {
 
             $entity = Stub::create([
                 'extends' => $this->model,
-                'methods' => ['setHelloBoy']
+                'methods' => ['getHelloBoy']
             ]);
 
-            Stub::on($entity)->method('setHelloBoy', function($data) {
+            Stub::on($entity)->method('getHelloBoy', function($data) {
                 return 'Hi ' . $data;
             });
 
