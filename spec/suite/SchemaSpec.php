@@ -489,7 +489,7 @@ describe("Schema", function() {
 
         it("includes embedded relations using `true` as first parameter", function() {
 
-             $model = Stub::classname(['extends' => Model::class]);
+            $model = Stub::classname(['extends' => Model::class]);
 
             $schema = new Schema(['model' => $model]);
             $schema->set('embedded', [
