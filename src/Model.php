@@ -160,6 +160,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'schema'      => null,
             'validator'   => null,
             'finders'     => null,
+            'query'       => [],
             'connection'  => null,
             'conventions' => null
         ];
@@ -173,6 +174,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         static::schema($config['schema']);
         static::validator($config['validator']);
         static::finders($config['finders']);
+        static::query($config['query']);
     }
 
     /**

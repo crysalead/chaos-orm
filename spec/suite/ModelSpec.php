@@ -18,7 +18,41 @@ describe("Model", function() {
 
     afterEach(function() {
         $model = $this->model;
-        $model::config(); // (acts like a reset)
+        $model::reset();
+    });
+
+    describe("::config()", function() {
+
+        it("configures the model", function() {
+
+            $model = $this->model;
+            $model::config([
+                'schema'      => $schema = Stub::create(),
+                'validator'   => $validator = Stub::create(),
+                'finders'     => $finders = Stub::create(),
+                'query'       => $query = ['option' => 'value'],
+                'connection'  => $connection = Stub::create(),
+                'conventions' => $conventions = Stub::create()
+            ]);
+
+            expect($model::schema())->toBe($schema);
+            expect($model::validator())->toBe($validator);
+            expect($model::finders())->toBe($finders);
+            expect($model::query())->toBe($query);
+            expect($model::connection())->toBe($connection);
+            expect($model::conventions())->toBe($conventions);
+
+            $model::reset();
+
+            expect($model::schema())->not->toBe($schema);
+            expect($model::validator())->not->toBe($validator);
+            expect($model::finders())->not->toBe($finders);
+            expect($model::query())->toBe([]);
+            expect($model::connection())->toBe(null);
+            expect($model::conventions())->not->toBe($conventions);
+
+        });
+
     });
 
     describe("::conventions()", function() {

@@ -26,7 +26,7 @@ describe("Entity", function() {
 
     afterEach(function() {
         $model = $this->model;
-        $model::config(); // (acts like a reset)
+        $model::reset();
     });
 
     describe("->__construct()", function() {
