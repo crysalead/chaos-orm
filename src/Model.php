@@ -390,7 +390,11 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public static function schema($schema = null)
     {
         if (func_num_args()) {
-            static::$_schemas[static::class] = $schema;
+            if (is_string($schema)) {
+                static::$_schema = $schema;
+            } else {
+                static::$_schemas[static::class] = $schema;
+            }
             return;
         }
         $self = static::class;
