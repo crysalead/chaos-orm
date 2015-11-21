@@ -9,16 +9,12 @@ class ImageTag extends \chaos\Model
         $schema->set('image_id', ['type' => 'integer']);
         $schema->set('tag_id', ['type' => 'integer']);
 
-        $schema->bind('image', [
-            'relation' => 'belongsTo',
-            'to'       => 'chaos\spec\fixture\model\Image',
-            'keys'     => ['image_id' => 'id']
+        $schema->belongsTo('image', Image::class, [
+            'keys' => ['image_id' => 'id']
         ]);
 
-        $schema->bind('tag', [
-            'relation' => 'belongsTo',
-            'to'       => 'chaos\spec\fixture\model\Tag',
-            'keys'     => ['tag_id' => 'id']
+        $schema->belongsTo('tag', Tag::class, [
+            'keys' => ['tag_id' => 'id']
         ]);
     }
 }

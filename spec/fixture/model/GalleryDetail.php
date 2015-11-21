@@ -9,10 +9,8 @@ class GalleryDetail extends \chaos\Model
         $schema->set('description', ['type' => 'string']);
         $schema->set('gallery_id', ['type' => 'integer']);
 
-        $schema->bind('gallery', [
-            'relation' => 'belongsTo',
-            'to'       => 'chaos\spec\fixture\model\Gallery',
-            'keys'     => ['gallery_id' => 'id']
+        $schema->belongsTo('gallery', Gallery::class, [
+            'keys' => ['gallery_id' => 'id']
         ]);
     }
 }

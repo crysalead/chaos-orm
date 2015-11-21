@@ -8,17 +8,11 @@ class Tag extends \chaos\Model
         $schema->set('id', ['type' => 'serial']);
         $schema->set('name', ['type' => 'string', 'length' => 50]);
 
-        $schema->bind('images_tags', [
-            'relation' => 'hasMany',
-            'to'       => 'chaos\spec\fixture\model\ImageTag',
-            'key'      => ['id' => 'tag_id']
+        $schema->hasMany('images_tags', ImageTag::class, [
+            'key' => ['id' => 'tag_id']
         ]);
 
-        $schema->bind('images', [
-            'relation' => 'hasManyThrough',
-            'through'  => 'images_tags',
-            'using'    => 'image'
-        ]);
+        $schema->hasManyThrough('images', 'images_tags', 'image');
     }
 
 }

@@ -478,6 +478,80 @@ class Schema
     }
 
     /**
+     * Sets a BelongsTo relation.
+     *
+     * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
+     * @param  string  $to     The model class name to bind.
+     * @param  array   $config The configuration that should be specified in the relationship.
+     *                         See the `Relationship` class for more information.
+     * @return boolean
+     */
+    public function belongsTo($name, $to, $config) {
+        $defaults = [
+            'to'       => $to,
+            'relation' => 'belongsTo'
+        ];
+        $config += $defaults;
+        return $this->bind($name, $config);
+    }
+
+    /**
+     * Sets a hasMany relation.
+     *
+     * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
+     * @param  string  $to     The model class name to bind.
+     * @param  array   $config The configuration that should be specified in the relationship.
+     *                         See the `Relationship` class for more information.
+     * @return boolean
+     */
+    public function hasMany($name, $to, $config) {
+        $defaults = [
+            'to'       => $to,
+            'relation' => 'hasMany'
+        ];
+        $config += $defaults;
+        return $this->bind($name, $config);
+    }
+
+    /**
+     * Sets a hasOne relation.
+     *
+     * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
+     * @param  string  $to     The model class name to bind.
+     * @param  array   $config The configuration that should be specified in the relationship.
+     *                         See the `Relationship` class for more information.
+     * @return boolean
+     */
+    public function hasOne($name, $to, $config) {
+        $defaults = [
+            'to'       => $to,
+            'relation' => 'hasOne'
+        ];
+        $config += $defaults;
+        return $this->bind($name, $config);
+    }
+
+    /**
+     * Sets a hasManyThrough relation.
+     *
+     * @param  string  $name    The name of the relation (i.e. field name where it will be binded).
+     * @param  string  $through the relation name to pivot table.
+     * @param  string  $using   the target relation name in the through relation.
+     * @param  array   $config  The configuration that should be specified in the relationship.
+     *                          See the `Relationship` class for more information.
+     * @return boolean
+     */
+    public function hasManyThrough($name, $through, $using, $config = []) {
+        $defaults = [
+            'through'  => $through,
+            'using'    => $using,
+            'relation' => 'hasManyThrough'
+        ];
+        $config += $defaults;
+        return $this->bind($name, $config);
+    }
+
+    /**
      * Lazy bind a relation.
      *
      * @param  string    $name   The name of the relation (i.e. field name where it will be binded).
