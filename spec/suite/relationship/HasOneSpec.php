@@ -173,7 +173,7 @@ describe("HasOne", function() {
 
         });
 
-        it("saves a hasMany relationship", function() {
+        it("saves a hasOne relationship", function() {
 
             $hasOne = Gallery::relation('detail');
 
