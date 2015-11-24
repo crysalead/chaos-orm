@@ -12,12 +12,15 @@
         "crysalead/validator": "~1.0"
     },
     "require-dev": {
-        "php": ">=5.4",
         "crysalead/kahlan": "~1.2"
     },
     "autoload": {
         "psr-4": {
-            "chaos\\": "src/",
+            "chaos\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "chaos\\spec\\": "spec/"
         }
     },
