@@ -1075,94 +1075,19 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * $post->save(null, ['validate' => false]);
      * }}}
      *
-     * @param array $options Options:
-     *                       - `'validate'`  _boolean_: If `false`, validation will be skipped, and the record will
-     *                                                  be immediately saved. Defaults to `true`.
-     *                       - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
-     *                       - `'locked'`    _boolean_: Lock data to the schema fields.
-     *                       - `'embed'`      _array_  : List of relations to save.
-     * @return boolean       Returns `true` on a successful save operation, `false` on failure.
+     * @param array    $options Options:
+     *                          - `'validate'`  _boolean_: If `false`, validation will be skipped, and the record will
+     *                                                     be immediately saved. Defaults to `true`.
+     *                          - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
+     *                          - `'locked'`    _boolean_: Lock data to the schema fields.
+     *                          - `'embed'`     _array_  : List of relations to save.
+     * @return boolean          Returns `true` on a successful save operation, `false` otherwise.
      */
     public function save($options = [])
     {
         $schema = static::schema();
-
-        $defaults = [
-            'validate' => true,
-            'whitelist' => null,
-            'locked' => $schema->locked(),
-            'embed' => true
-        ];
-        $options += $defaults;
-
-        if ($options['validate'] && !$this->validate($options)) {
-            return false;
-        }
-
-        $options['validate'] = false;
-        $options['embed'] = $schema->treeify($options['embed']);
-
-        if (!$this->_save('belongsTo', $options)) {
-            return false;
-        }
-
-        $hasRelations = ['hasMany', 'hasOne'];
-
-        if (!$this->modified()) {
-            return $this->_save($hasRelations, $options);
-        }
-
-        if (($whitelist = $options['whitelist']) || $options['locked']) {
-            $whitelist = $whitelist ?: array_keys($schema->fields());
-        }
-
-        $exclude = array_diff($schema->relations(false), array_keys($schema->fields()));
-        $values = array_diff_key($this->get(), array_fill_keys($exclude, true));
-
-        if ($this->exists() === false) {
-            $cursor = $schema->insert($values);
-        } else {
-            $id = $this->primaryKey();
-            if ($id === null) {
-                throw new ChaosException("Can't update an entity missing ID data.");
-            }
-            $cursor = $schema->update($values, [$schema->primaryKey() => $id]);
-        }
-
-        $success = !$cursor->error();
-
-        if ($this->exists() === false) {
-            $id = $this->primaryKey() === null ? $schema->lastInsertId() : null;
-            $this->sync($id, [], ['exists' => true]);
-        }
-
-        return $success && $this->_save($hasRelations, $options);
+        return $schema->save($this, $options);
     }
-
-    /**
-     * Save relations helper.
-     *
-     * @param array $types Type of relations to save.
-     */
-    protected function _save($types, $options = [])
-    {
-        $defaults = ['embed' => []];
-        $options += $defaults;
-        $schema = static::schema();
-        $types = (array) $types;
-
-        $success = true;
-        foreach ($types as $type) {
-            foreach ($options['embed'] as $relName => $value) {
-                if (!($rel = $schema->relation($relName)) || $rel->type() !== $type) {
-                    continue;
-                }
-                $success = $success && $rel->save($this, ['embed' => $value] + $options);
-            }
-        }
-        return $success;
-    }
-
 
     /**
      * Similar to `->save()` except the direct relationship has not been saved by default.
