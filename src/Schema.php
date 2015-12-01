@@ -1016,16 +1016,14 @@ class Schema
         $values = array_diff_key($entity->get(), array_fill_keys($exclude, true));
 
         if ($entity->exists() === false) {
-            $cursor = $this->insert($values);
+            $success = $this->insert($values);
         } else {
             $id = $entity->primaryKey();
             if ($id === null) {
                 throw new ChaosException("Can't update an entity missing ID data.");
             }
-            $cursor = $this->update($values, [$this->primaryKey() => $id]);
+            $success = $this->update($values, [$this->primaryKey() => $id]);
         }
-
-        $success = !$cursor->error();
 
         if ($entity->exists() === false) {
             $id = $entity->primaryKey() === null ? $this->lastInsertId() : null;
