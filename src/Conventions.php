@@ -1,10 +1,9 @@
 <?php
-namespace chaos;
+namespace Chaos;
 
 use Iterator;
-use set\Set;
-use inflector\Inflector;
-use chaos\ChaosException;
+use Lead\Set\Set;
+use Lead\Inflector\Inflector;
 
 /**
  * The `Conventions` allows to define some conveniences naming conventions.

@@ -1,16 +1,17 @@
 <?php
-namespace chaos\spec\suite\relationship;
+namespace Chaos\Spec\Suite\Relationship;
 
-use chaos\ChaosException;
-use chaos\Model;
-use chaos\Relationship;
-use chaos\relationship\HasManyThrough;
-use chaos\Conventions;
+use Chaos\ChaosException;
+use Chaos\Model;
+use Chaos\Relationship;
+use Chaos\Relationship\HasManyThrough;
+use Chaos\Conventions;
 
-use kahlan\plugin\Stub;
-use chaos\spec\fixture\model\Image;
-use chaos\spec\fixture\model\ImageTag;
-use chaos\spec\fixture\model\Tag;
+use Kahlan\Plugin\Stub;
+
+use Chaos\Spec\Fixture\Model\Image;
+use Chaos\Spec\Fixture\Model\ImageTag;
+use Chaos\Spec\Fixture\Model\Tag;
 
 describe("HasManyThrough", function() {
 

@@ -1,16 +1,17 @@
 <?php
-namespace chaos\spec\suite;
+namespace Chaos\Spec\Suite;
 
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use chaos\ChaosException;
-use chaos\Model;
-use chaos\Schema;
+use Chaos\ChaosException;
+use Chaos\Model;
+use Chaos\Schema;
 
-use kahlan\plugin\Stub;
-use chaos\spec\fixture\model\Gallery;
-use chaos\spec\fixture\model\Image;
+use Kahlan\Plugin\Stub;
+
+use Chaos\Spec\Fixture\Model\Gallery;
+use Chaos\Spec\Fixture\Model\Image;
 
 describe("Entity", function() {
 

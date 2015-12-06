@@ -1,15 +1,16 @@
 <?php
-namespace chaos\spec\suite\model\collection;
+namespace Chaos\Spec\Suite\Collection;
 
 use InvalidArgumentException;
-use chaos\Model;
-use chaos\collection\Collection;
-use chaos\collection\Through;
+use Chaos\Model;
+use Chaos\Collection\Collection;
+use Chaos\Collection\Through;
 
-use kahlan\plugin\Stub;
-use chaos\spec\fixture\model\Image;
-use chaos\spec\fixture\model\Tag;
-use chaos\spec\fixture\model\ImageTag;
+use Kahlan\Plugin\Stub;
+
+use Chaos\Spec\Fixture\Model\Image;
+use Chaos\Spec\Fixture\Model\Tag;
+use Chaos\Spec\Fixture\Model\ImageTag;
 
 describe("Through", function() {
 

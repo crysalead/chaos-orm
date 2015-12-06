@@ -33,7 +33,7 @@ To ask questions, provide feedback or otherwise communicate with the team, join 
 ## Example of syntax:
 
 ```php
-use myproject\model\Images;
+use Myproject\Model\Images;
 
 // Adding a many-to-many relation
 $image = Image::id(123);

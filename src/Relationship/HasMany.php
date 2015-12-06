@@ -1,13 +1,13 @@
 <?php
-namespace chaos\relationship;
+namespace Chaos\Relationship;
 
-use set\Set;
-use chaos\ChaosException;
+use Lead\Set\Set;
+use Chaos\ChaosException;
 
 /**
  * The `HasMany` relationship.
  */
-class HasMany extends \chaos\Relationship
+class HasMany extends \Chaos\Relationship
 {
     /**
      * Indicates whether the relation is a junction table or not.
@@ -19,7 +19,7 @@ class HasMany extends \chaos\Relationship
     /**
      * Constructs an object that represents a relationship between two model classes.
      *
-     * @see chaos\Relationship
+     * @see Chaos\Relationship
      * @param array $config The relationship's configuration, which defines how the two models in
      *                      question are bound. The available options are:
      *                      - `'junction'` _boolean_ : Indicates whether the relation is a junction table or not.

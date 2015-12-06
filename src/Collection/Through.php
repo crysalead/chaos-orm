@@ -1,8 +1,8 @@
 <?php
-namespace chaos\collection;
+namespace Chaos\Collection;
 
-use chaos\ChaosException;
-use chaos\collection\Collection;
+use Chaos\ChaosException;
+use Chaos\Collection\Collection;
 
 /**
  * `Through` provide context-specific features for working with sets of data persisted by a backend data store.

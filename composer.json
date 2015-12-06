@@ -5,23 +5,23 @@
     "license": "MIT",
     "require": {
         "php": ">=5.5",
-        "crysalead/box": "~1.0",
-        "crysalead/set": "~1.0",
-        "crysalead/text": "~1.0",
-        "crysalead/inflector": "~1.0",
-        "crysalead/validator": "~1.0"
+        "crysalead/box": "~2.0",
+        "crysalead/set": "~2.0",
+        "crysalead/text": "~2.0",
+        "crysalead/inflector": "~2.0",
+        "crysalead/validator": "~2.0"
     },
     "require-dev": {
-        "crysalead/kahlan": "~1.2"
+        "crysalead/kahlan": "~2.0"
     },
     "autoload": {
         "psr-4": {
-            "chaos\\": "src/"
+            "Chaos\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "chaos\\spec\\": "spec/"
+            "Chaos\\Spec\\": "spec/"
         }
     },
     "config": {

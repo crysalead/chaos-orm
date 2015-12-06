@@ -1,17 +1,18 @@
 <?php
-namespace chaos\spec\suite;
+namespace Chaos\Spec\Suite;
 
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use chaos\Schema;
-use chaos\Model;
+use Chaos\Schema;
+use Chaos\Model;
 
-use kahlan\plugin\Stub;
-use chaos\spec\fixture\model\Gallery;
-use chaos\spec\fixture\model\Image;
-use chaos\spec\fixture\model\ImageTag;
-use chaos\spec\fixture\model\Tag;
+use Kahlan\Plugin\Stub;
+
+use Chaos\Spec\Fixture\Model\Gallery;
+use Chaos\Spec\Fixture\Model\Image;
+use Chaos\Spec\Fixture\Model\ImageTag;
+use Chaos\Spec\Fixture\Model\Tag;
 
 describe("Schema", function() {
 

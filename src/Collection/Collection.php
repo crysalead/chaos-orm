@@ -1,9 +1,9 @@
 <?php
-namespace chaos\collection;
+namespace Chaos\Collection;
 
 use ArrayAccess;
 use InvalidArgumentException;
-use chaos\Model;
+use Chaos\Model;
 
 /**
  * `Collection` provide context-specific features for working with sets of data persisted by a backend data store.
@@ -16,7 +16,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
      * @var array
      */
     protected $_classes = [
-        'collector' => 'chaos\Collector'
+        'collector' => 'Chaos\Collector'
     ];
 
     /**

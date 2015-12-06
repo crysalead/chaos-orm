@@ -5,7 +5,7 @@ Connections comes from a datasource library. It need to be configured at a boots
 Let's create a PostgreSql connection:
 
 ```php
-use chaos\database\adapter\PostgreSql;
+use Chaos\Database\Adapter\PostgreSql;
 
 $connection = new PostgreSql([
     'database' => 'mydatabase',
@@ -17,7 +17,7 @@ $connection = new PostgreSql([
 The we need to attach it to our models using `::connection()`:
 
 ```php
-use chaos\Model;
+use Chaos\Model;
 
 Model::connection($connection);
 ```
@@ -46,8 +46,8 @@ class ModelCustom extends \chaos\Model
 So now all models extending `ModelCustom` can be connected that way:
 
 ```php
-use chaos\Model;
-use myproject\http\MyApi; // Example of a custom HTTP based connection
+use Chaos\Model;
+use Myproject\Http\MyApi; // Example of a custom HTTP based connection
 
 $connection = new MyApi([
     'scheme' => 'http',

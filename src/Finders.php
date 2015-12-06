@@ -1,7 +1,5 @@
 <?php
-namespace chaos;
-
-use chaos\ChaosException;
+namespace Chaos;
 
 /**
  * `Finders` can stores closures for configuring queries.

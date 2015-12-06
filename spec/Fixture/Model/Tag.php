@@ -1,7 +1,7 @@
 <?php
-namespace chaos\spec\fixture\model;
+namespace Chaos\Spec\Fixture\Model;
 
-class Tag extends \chaos\Model
+class Tag extends \Chaos\Model
 {
     protected static function _define($schema)
     {

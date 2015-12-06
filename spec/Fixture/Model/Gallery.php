@@ -1,7 +1,7 @@
 <?php
-namespace chaos\spec\fixture\model;
+namespace Chaos\Spec\Fixture\Model;
 
-class Gallery extends \chaos\Model
+class Gallery extends \Chaos\Model
 {
     protected static function _define($schema)
     {

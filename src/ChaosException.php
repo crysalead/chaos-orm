@@ -1,5 +1,5 @@
 <?php
-namespace chaos;
+namespace Chaos;
 
 /**
  * The `ChaosException` is thrown when a operation fails at the model layer.

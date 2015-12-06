@@ -1,15 +1,16 @@
 <?php
-namespace chaos\spec\suite\relationship;
+namespace Chaos\Spec\Suite\Relationship;
 
-use chaos\ChaosException;
-use chaos\Model;
-use chaos\Relationship;
-use chaos\relationship\BelongsTo;
-use chaos\Conventions;
+use Chaos\ChaosException;
+use Chaos\Model;
+use Chaos\Relationship;
+use Chaos\Relationship\BelongsTo;
+use Chaos\Conventions;
 
-use kahlan\plugin\Stub;
-use chaos\spec\fixture\model\Image;
-use chaos\spec\fixture\model\Gallery;
+use Kahlan\Plugin\Stub;
+
+use Chaos\Spec\Fixture\Model\Image;
+use Chaos\Spec\Fixture\Model\Gallery;
 
 describe("BelongsTo", function() {
 

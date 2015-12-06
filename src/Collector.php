@@ -1,7 +1,5 @@
 <?php
-namespace chaos;
-
-use chaos\ChaosException;
+namespace Chaos;
 
 /**
  * The `Collector` class ensures single references of objects through the Identity Map pattern.

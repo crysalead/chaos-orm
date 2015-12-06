@@ -1,11 +1,11 @@
 <?php
-namespace chaos\spec\suite\model\collection;
+namespace Chaos\Spec\Suite\Collection;
 
 use InvalidArgumentException;
-use chaos\Model;
-use chaos\collection\Collection;
+use Chaos\Model;
+use Chaos\Collection\Collection;
 
-use kahlan\plugin\Stub;
+use Kahlan\Plugin\Stub;
 
 describe("Collection", function() {
 

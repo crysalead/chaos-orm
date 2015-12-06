@@ -1,8 +1,7 @@
 <?php
-namespace chaos;
+namespace Chaos;
 
-use set\Set;
-use chaos\ChaosException;
+use Lead\Set\Set;
 
 /**
  * The `Relationship` class encapsulates the data and functionality necessary to link two model together.

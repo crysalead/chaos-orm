@@ -24,7 +24,7 @@ Schemas are like tables and contain typed fields (like `string`, `integer`, etc.
 Example:
 
 ```php
-use chaos\Schema;
+use Chaos\Schema;
 
 $schema = new Schema();
 $schema->set('id',   ['type' => 'serial']);
@@ -56,7 +56,7 @@ However it's also possible to create you own types and also override the default
 With Chaos you are not limited to "scalar" types, you can also have objects and arrays. So with PostgreSQL you should be able to support schema like:
 
 ```php
-use chaos\Schema;
+use Chaos\Schema;
 
 $schema = new Schema();
 $schema->set('id',             ['type' => 'serial']);
@@ -92,7 +92,7 @@ The first parameter of methods will be the name of the relation (which mean the 
 Example:
 
 ```php
-use chaos\Schema;
+use Chaos\Schema;
 
 $schema = new Schema();
 
@@ -124,7 +124,7 @@ Let's take for example the date type in MySQL. In the RDBMS the date are stored 
 With Chaos, you can define as many formatters as you need. Let's take a concrete example:
 
 ```php
-use myproject\model\Gallery;
+use Myproject\Model\Gallery;
 
 $schema = Gallery::schema();
 
@@ -153,7 +153,7 @@ Using the above example, let's change default handlers to be able to use my `MyD
 
 ```php
 use MyDateTime;
-use myproject\model\Gallery;
+use Myproject\Model\Gallery;
 
 $schema = Gallery::schema();
 
@@ -206,7 +206,7 @@ It's also possible to define some custom formatters. To do so, you need to add y
 Example:
 
 ```php
-use myproject\model\Gallery;
+use Myproject\Model\Gallery;
 
 $schema = Gallery::schema();
 
@@ -244,7 +244,7 @@ Adding a new type requires to set at least a `'cast'` and a `'datasource'` handl
 Example:
 
 ```php
-use myproject\model\Gallery;
+use Myproject\Model\Gallery;
 
 $schema = Gallery::schema();
 
@@ -266,7 +266,7 @@ $schema->custom = "customdata";
 
 One of the principal key point of Chaos is that a `Schema` can be easily adapted to take advantage of specific datasource features. So the additionnal methods can by anything you willing to implement.
 
-In the example bellow I will use `chaos\database\Schema` to show how the added methods of this specific implementation can be used in practice:
+In the example bellow I will use `Chaos\Database\Schema` to show how the added methods of this specific implementation can be used in practice:
 
 ```php
 $schema = Gallery::schema();

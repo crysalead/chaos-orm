@@ -1,9 +1,10 @@
 <?php
-namespace chaos\spec\suite;
+namespace Chaos\Spec\Suite;
 
-use chaos\ChaosException;
-use chaos\Finders;
-use kahlan\plugin\Stub;
+use Chaos\ChaosException;
+use Chaos\Finders;
+
+use Kahlan\Plugin\Stub;
 
 describe("Finders", function() {
 

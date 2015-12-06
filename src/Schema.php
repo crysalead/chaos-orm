@@ -1,11 +1,10 @@
 <?php
-namespace chaos;
+namespace Chaos;
 
 use Iterator;
 use DateTime;
-use set\Set;
-use chaos\ChaosException;
-use chaos\Model;
+use Lead\Set\Set;
+use Chaos\Model;
 
 class Schema
 {
@@ -15,11 +14,11 @@ class Schema
      * @var array
      */
     protected $_classes = [
-        'relationship'   => 'chaos\Relationship',
-        'belongsTo'      => 'chaos\relationship\BelongsTo',
-        'hasOne'         => 'chaos\relationship\HasOne',
-        'hasMany'        => 'chaos\relationship\HasMany',
-        'hasManyThrough' => 'chaos\relationship\HasManyThrough'
+        'relationship'   => 'Chaos\Relationship',
+        'belongsTo'      => 'Chaos\Relationship\BelongsTo',
+        'hasOne'         => 'Chaos\Relationship\HasOne',
+        'hasMany'        => 'Chaos\Relationship\HasMany',
+        'hasManyThrough' => 'Chaos\Relationship\HasManyThrough'
     ];
 
     /**
@@ -556,7 +555,7 @@ class Schema
      *
      * @param  string    $name   The name of the relation (i.e. field name where it will be binded).
      * @param  array     $config The configuration that should be specified in the relationship.
-     *                           See the `chaos\Relationship` class for more information.
+     *                           See the `Chaos\Relationship` class for more information.
      * @return boolean
      * @throws Exception         Throws a `ChaosException` if the config has no type option defined.
      */

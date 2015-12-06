@@ -1,14 +1,14 @@
 <?php
-namespace chaos\spec\suite;
+namespace Chaos\Spec\Suite;
 
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use chaos\Model;
-use chaos\Schema;
-use chaos\collection\Collection;
+use Chaos\Model;
+use Chaos\Schema;
+use Chaos\Collection\Collection;
 
-use kahlan\plugin\Stub;
+use Kahlan\Plugin\Stub;
 
 describe("Model", function() {
 

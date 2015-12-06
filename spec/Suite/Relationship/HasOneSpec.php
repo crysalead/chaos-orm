@@ -1,15 +1,16 @@
 <?php
-namespace chaos\spec\suite\relationship;
+namespace Chaos\Spec\Suite\Relationship;
 
-use chaos\ChaosException;
-use chaos\Model;
-use chaos\Relationship;
-use chaos\relationship\HasOne;
-use chaos\Conventions;
+use Chaos\ChaosException;
+use Chaos\Model;
+use Chaos\Relationship;
+use Chaos\Relationship\HasOne;
+use Chaos\Conventions;
 
-use kahlan\plugin\Stub;
-use chaos\spec\fixture\model\Gallery;
-use chaos\spec\fixture\model\GalleryDetail;
+use Kahlan\Plugin\Stub;
+
+use Chaos\Spec\Fixture\Model\Gallery;
+use Chaos\Spec\Fixture\Model\GalleryDetail;
 
 describe("HasOne", function() {
 

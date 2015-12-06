@@ -1,10 +1,9 @@
 <?php
-namespace chaos;
+namespace Chaos;
 
 use ArrayAccess;
-use set\Set;
-use chaos\ChaosException;
-use chaos\collection\Collection;
+use Lead\Set\Set;
+use Chaos\collection\Collection;
 
 class Model implements \ArrayAccess, \Iterator, \Countable
 {
@@ -14,12 +13,12 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @var array
      */
     protected static $_classes = [
-        'collector'   => 'chaos\Collector',
-        'set'         => 'chaos\collection\Collection',
-        'through'     => 'chaos\collection\Through',
-        'conventions' => 'chaos\Conventions',
-        'finders'     => 'chaos\Finders',
-        'validator'   => 'validator\Validator'
+        'collector'   => 'Chaos\Collector',
+        'set'         => 'Chaos\Collection\Collection',
+        'through'     => 'Chaos\Collection\Through',
+        'conventions' => 'Chaos\Conventions',
+        'finders'     => 'Chaos\Finders',
+        'validator'   => 'Lead\Validator\Validator'
     ];
 
     /**
@@ -27,7 +26,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      *
      * @var array
      */
-    protected static $_schema = 'chaos\Schema';
+    protected static $_schema = 'Chaos\Schema';
 
     /**
      * Stores model's schema.
