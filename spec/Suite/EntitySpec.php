@@ -12,6 +12,7 @@ use Kahlan\Plugin\Stub;
 
 use Chaos\Spec\Fixture\Model\Gallery;
 use Chaos\Spec\Fixture\Model\Image;
+use Chaos\Spec\Fixture\Model\Tag;
 
 describe("Entity", function() {
 
@@ -885,6 +886,39 @@ describe("Entity", function() {
             $entity = $model::create($data);
             expect($entity->to('array'))->toBe($data);
 
+        });
+
+        it("supports the `'embed'` option", function() {
+
+            $image = Image::create([
+                'title' => 'Amiga 1200'
+            ]);
+            $image->tags[] = ['name' => 'Computer'];
+            $image->tags[] = ['name' => 'Science'];
+
+            $image->gallery = ['name' => 'Gallery 1'];
+
+            expect($image->to('array', ['embed' => true]))->toBe([
+                'title' => 'Amiga 1200',
+                'tags' => [
+                    ['name' => 'Computer'],
+                    ['name' => 'Science']
+                ],
+                'images_tags' => [
+                    ['tag' => ['name' => 'Computer']],
+                    ['tag' => ['name' => 'Science']]
+                ],
+                'gallery' => ['name' => 'Gallery 1']
+            ]);
+
+            expect($image->to('array', ['embed' => ['gallery']]))->toBe([
+                'title' => 'Amiga 1200',
+                'gallery' => ['name' => 'Gallery 1']
+            ]);
+
+            expect($image->to('array', ['embed' => false]))->toBe([
+                'title' => 'Amiga 1200'
+            ]);
         });
 
     });
