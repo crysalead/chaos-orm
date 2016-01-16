@@ -1013,6 +1013,41 @@ describe("Entity", function() {
 
     });
 
+    describe("->save()", function() {
+
+        afterEach(function() {
+
+            Image::reset();
+            Gallery::reset();
+
+        });
+
+        it("validates by default", function() {
+
+            $image = Image::create([]);
+            Image::validator()->rule('name', 'not:empty');
+
+            expect($image->save())->toBe(false);
+            expect($image->exists())->toBe(false);
+
+        });
+
+        it("validates direct relationships by default", function() {
+
+            Gallery::validator()->rule('name', 'not:empty');
+
+            $image = Image::create([
+                'name' => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200',
+                'gallery' => []
+            ]);
+            expect($image->save())->toBe(false);
+            expect($image->exists())->toBe(false);
+
+        });
+
+    });
+
     describe("->to('array')", function() {
 
         it("exports data using `'array'` formatter handlers", function() {

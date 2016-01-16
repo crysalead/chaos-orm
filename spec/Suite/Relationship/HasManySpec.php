@@ -239,9 +239,8 @@ describe("HasMany", function() {
                 return true;
             });
 
-            Stub::on($toUnset)->method('save', function() use ($toUnset) {
-                return true;
-            });
+            Stub::on($toKeep)->method('save', function() { return true; });
+            Stub::on($toUnset)->method('save', function() use ($toUnset) {return true;});
 
             expect($gallery->images[0])->toReceive('save');
             expect($toKeep)->toReceive('save');
@@ -278,9 +277,8 @@ describe("HasMany", function() {
 
             $schema = ImageTag::schema();
 
-            Stub::on($schema)->method('delete', function() {
-                return true;
-            });
+            Stub::on($toKeep)->method('save', function() { return true; });
+            Stub::on($schema)->method('delete', function() { return true; });
 
             expect($image->images_tags[0])->toReceive('save');
             expect($toKeep)->toReceive('save');

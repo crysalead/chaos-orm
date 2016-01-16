@@ -970,95 +970,6 @@ class Schema
     }
 
     /**
-     * Creates and/or updates an entity and its direct relationship data in the datasource.
-     *
-     * @param array    $options Options:
-     *                          - `'validate'`  _boolean_: If `false`, validation will be skipped, and the record will
-     *                                                     be immediately saved. Defaults to `true`.
-     *                          - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
-     *                          - `'locked'`    _boolean_: Lock data to the schema fields.
-     *                          - `'embed'`     _array_  : List of relations to save.
-     * @return boolean          Returns `true` on a successful save operation, `false` otherwise.
-     */
-    public function save($entity, $options = [])
-    {
-        $defaults = [
-            'validate' => true,
-            'whitelist' => null,
-            'locked' => $this->locked(),
-            'embed' => true
-        ];
-        $options += $defaults;
-
-        if ($options['validate'] && !$entity->validate($options)) {
-            return false;
-        }
-
-        $options['validate'] = false;
-        $options['embed'] = $this->treeify($options['embed']);
-
-        if (!$this->_save($entity, 'belongsTo', $options)) {
-            return false;
-        }
-
-        $hasRelations = ['hasMany', 'hasOne'];
-
-        if (!$entity->modified()) {
-            return $this->_save($entity, $hasRelations, $options);
-        }
-
-        if (($whitelist = $options['whitelist']) || $options['locked']) {
-            $whitelist = $whitelist ?: array_keys($this->fields());
-        }
-
-        $exclude = array_diff($this->relations(false), array_keys($this->fields()));
-        $values = array_diff_key($entity->get(), array_fill_keys($exclude, true));
-
-        if ($entity->exists() === false) {
-            $success = $this->insert($values);
-        } else {
-            $id = $entity->primaryKey();
-            if ($id === null) {
-                throw new ChaosException("Can't update an entity missing ID data.");
-            }
-            $success = $this->update($values, [$this->primaryKey() => $id]);
-        }
-
-        if ($entity->exists() === false) {
-            $id = $entity->primaryKey() === null ? $this->lastInsertId() : null;
-            $entity->sync($id, [], ['exists' => true]);
-        }
-
-        return $success && $this->_save($entity, $hasRelations, $options);
-    }
-
-    /**
-     * Save relations helper.
-     *
-     * @param  object  $entity  The entity instance.
-     * @param  array   $types   Type of relations to save.
-     * @param  array   $options Options array.
-     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
-     */
-    protected function _save($entity, $types, $options = [])
-    {
-        $defaults = ['embed' => []];
-        $options += $defaults;
-        $types = (array) $types;
-
-        $success = true;
-        foreach ($types as $type) {
-            foreach ($options['embed'] as $relName => $value) {
-                if (!($rel = $this->relation($relName)) || $rel->type() !== $type) {
-                    continue;
-                }
-                $success = $success && $rel->save($entity, ['embed' => $value] + $options);
-            }
-        }
-        return $success;
-    }
-
-    /**
      * Returns a query to retrieve data from the connected data source.
      *
      * @param  array  $options Query options.
@@ -1066,7 +977,20 @@ class Schema
      */
     public function query($options = [])
     {
+
         throw new ChaosException("Missing `query()` implementation for this schema.");
+    }
+
+    /**
+     * Inserts and/or updates an entity and its direct relationship data in the datasource.
+     *
+     * @param object   $entity  The entity instance to save.
+     * @param array    $options Options.
+     * @return boolean          Returns `true` on a successful save operation, `false` otherwise.
+     */
+    public function save($entity, $options = [])
+    {
+        throw new ChaosException("Missing `save()` implementation for `{$this->_model}`'s schema.");
     }
 
     /**
@@ -1080,7 +1004,7 @@ class Schema
      */
     public function insert($data, $options = [])
     {
-        throw new ChaosException("Missing `insert()` implementation for this schema.");
+        throw new ChaosException("Missing `insert()` implementation for `{$this->_model}`'s schema.");
     }
 
     /**
@@ -1096,7 +1020,7 @@ class Schema
      */
     public function update($data, $conditions = [], $options = [])
     {
-        throw new ChaosException("Missing `update()` implementation for this schema.");
+        throw new ChaosException("Missing `update()` implementation for `{$this->_model}`'s schema.");
     }
 
     /**
@@ -1114,7 +1038,7 @@ class Schema
      */
     public function delete($options = [])
     {
-        throw new ChaosException("Missing `delete()` implementation for this schema.");
+        throw new ChaosException("Missing `delete()` implementation for `{$this->_model}`'s schema.");
     }
 
     /**
@@ -1124,7 +1048,7 @@ class Schema
      */
     public function lastInsertId()
     {
-        throw new ChaosException("Missing `lastInsertId()` implementation for this schema.");
+        throw new ChaosException("Missing `lastInsertId()` implementation for `{$this->_model}`'s schema.");
     }
 
 }

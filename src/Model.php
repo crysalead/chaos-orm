@@ -1071,19 +1071,21 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * {{{
      * $post->title = "We Don't Need No Stinkin' Validation";
      * $post->body = "I know what I'm doing.";
-     * $post->save(null, ['validate' => false]);
+     * $post->save(['validate' => false]);
      * }}}
      *
-     * @param array    $options Options:
-     *                          - `'validate'`  _boolean_: If `false`, validation will be skipped, and the record will
+     * @param  array    $options Options:
+     *                           - `'validate'`  _boolean_: If `false`, validation will be skipped, and the record will
      *                                                     be immediately saved. Defaults to `true`.
-     *                          - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
-     *                          - `'locked'`    _boolean_: Lock data to the schema fields.
-     *                          - `'embed'`     _array_  : List of relations to save.
-     * @return boolean          Returns `true` on a successful save operation, `false` otherwise.
+     * @return boolean           Returns `true` on a successful save operation, `false` otherwise.
      */
     public function save($options = [])
     {
+        $defaults = ['validate' => true];
+        $options += $defaults;
+        if ($options['validate'] && !$this->validate($options)) {
+            return false;
+        }
         $schema = static::schema();
         return $schema->save($this, $options);
     }
