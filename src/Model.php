@@ -684,7 +684,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function set($name, $data = [], $options = [])
     {
         if (is_string($name)) {
-            return $this->_set($name, $data, $options);
+            $this->_set($name, $data, $options);
+            return $this;
         }
         $options = $data;
         $data = $name;
