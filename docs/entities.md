@@ -7,22 +7,24 @@
 
 ### <a name="creation"></a>Creation
 
-Once a model has been defined it's possible to create entity instances using its `::create()` method.
+Once a model has been defined it's possible to create an entity instance using `::create()`:
 
 ```php
 $gallery = Gallery::create(['name' => 'MyGallery']);
+//or
+$gallery = Gallery::create();
 $gallery->name = 'MyGallery';
 ```
 
-The first parameter is the entity's data to set. And the second parameter takes an array of options. Main options are:
+`::create()` first parameter is the entity's data to set. And the second parameter takes an array of options. Main options are:
 
 * `'type'`: can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection of entities. Default to `'entity'`.
 * `'exists'`: corresponds whether the entity is present in the datastore or not.
-* `'autoreload'`: sets the specific behavior when exists is `null`. A `'true'` value will perform a reload of the entity from the datasource. Default to `'true'`.
+* `'autoreload'`: A `'true'` value will perform a reload of the entity from the datasource exists is `null`. Default to `'true'`.
 * `'defaults'`: indicates whether the entity needs to be populated with their defaults values on creation.
 * `'model'`: the model to use for instantiating the entity. Can be useful for implementing [Single Table Inheritance](http://martinfowler.com/eaaCatalog/singleTableInheritance.html)
 
-The meaning of the `'exists'` states can be quite confusing if you don't get its purpose correctly. `'exists'` is used to indicate that the data you are passing is a pre-existing entity from the database, without actually querying the database:
+The meaning of the `'exists'` states can be quite confusing if you don't get its purpose correctly. `'exists'` is used to indicate that the data you are passing is a pre-existing entity (i.e a persisted entity). When the entites are loaded from the database, `exists` is set to `true` by default but it's also possible the manually set the `exists` value:
 
 ```php
 $gallery = Gallery::create([
@@ -33,21 +35,21 @@ $gallery->name = 'MyAwesomeGallery';
 $success = $gallery->save();
 ```
 
-So the above example will generate **an update query** instead of an insert one.
+So the above example will generate **an update query** instead of an insert one since the created entity assumed to be a pre-existing entity.
 
 The `'exists'` attribute can have three different states:
 
-* `true`: means you provided the whole data of an pre-existing entity.
-* `false`: means you provided the whole data of a new entity. It's the default state.
+* `true`: means that the entity has already been persited at some point.
+* `false`: means that it's a new entity with no existance in the database.
 * `null`: on the contrary `null` is a kind of "undefined state" where two different scenarios can occurs:
   * coupled with `'autoreload' => true`, will attempt to reload the whole entity data from the datasource.
   * coupled with `'autoreload' => false`, it doesn't do nothing, and assumes you know what you are doing.
 
-`'exists' => null` is the common scenario when you get partial entity's data from a `<form>` for example. When `$_POST` contains only a subset of the entity's data, using `'exists' => null` will reload the entity from the datasource to make sure `->modified()` && `->persisted()` to be accurate.
+`'exists' => null` is the common scenario when you get partial entity's data from a `<form>` for example. When `$_POST` contains only a subset of the entity's data, using `'exists' => null` will reload the entity from the datasource so that `->modified()` && `->persisted()` will run accurately.
 
-`'exists' => null` with `'autoreload' => false` is the state you get when you try to filter out some fields from your queries. This point is really important to get. To make accurate object oriented representation of stored data filtering out some fields can be an issue (especially when the ID has been filetered out from data). Long story short, `'exists' => null` indicates something is wrong with your entity and you should question on its reliability.
+`'exists' => null` with `'autoreload' => false` is the state you gain when you filter out some fields from your queries. This loose state will make some operation on your entity unpredicatable like `->modified()` && `->persisted()`. The source of truth is altered has been altered at some point and you should manage this state wisely.
 
-Note: if you want to be able to think at a higher level of abstraction, I would recommand to not filter out fields on find queries. Let have them filtered out in your views only. Early optimizations generally acts as an anti-pattern.
+Note: I would recommand to not filter out fields at a query level and have them filtered out in your views.
 
 #### Getters/Setters
 
@@ -65,7 +67,8 @@ Let's take the following example:
 ```php
 class User
 {
-    public funciton getFullname() {
+    public funciton getFullname()
+    {
         return $this->firstname . ' ' . $this->lastname;
     }
 }
@@ -94,7 +97,7 @@ $gallery->set([
 
 In a reciprocal manner using `->get()` will returns the whole entity's data.
 
-Although it have a different purpose `->to()` is also a useful method to get entity's data. The main purpose of `->to()` is to exports entity's data into a different format.
+Although it have a different purpose `->to()` is also a useful method to export entity's data into a different format.
 
 For example `->to('array')` (or the alias `->data()`) exports the entity's data using the schema `'array'` formatters. See the [schema documentation to learn more about formatters & custom types](schemas.md).
 
@@ -106,7 +109,7 @@ The `::find()` method stands for the READ action and it belongs to the model. An
 
 #### Saving an entity
 
-The `->save()` method performs an `INSERT` or an `UPDATE` query depending the entity's exists value. It returns either `true` or `false` depending on the success of the save operation.
+The `->save()` method performs an `INSERT` or an `UPDATE` query depending the entity's exists value. It returns either `true` or `false` depending on the success of operation.
 
 Example of usage:
 
@@ -121,7 +124,7 @@ if ($gallery->save()) {
 }
 ```
 
-Note: the `->save()` method method also validates entity's data by default if you have any validation rules defined at the model level. More information on [validation & errors here](models.md#validations).
+Note: the `->save()` method also validates entity's data by default. More information on [validation & errors here](models.md#validations).
 
 The `->save()` method takes as first argument an array of options. Possible values are:
 
@@ -129,7 +132,7 @@ The `->save()` method takes as first argument an array of options. Possible valu
 * `'events'`: A string or array defining one or more validation events. Events are different contexts in which data events can occur, and correspond to the optional 'on' key in validation rules. They will be passed to the `->validate()` method if 'validate' is not `false`.
 * `'whitelist'`: An array of fields that are allowed to be saved. Defaults to the schema fields.
 
-Once an entity has been saved its exists value has been set to `true` which will lead to do `UPDATE` queries the next `->save()` calls.
+Once an entity has been saved its exists value is setted to `true`.
 
 Example:
 
@@ -146,8 +149,6 @@ $gallery->save()              // update query
 $gallery->exists()            // true
 ```
 
-Note: when the exists value of an entity is `null` something probably gone wrong somewhere and you should reconsider the way you are creating/loading your entities. The main drawback will be that `->modified()` && `->persisted()` won't be accurate.
-
 #### Modified and persisted data
 
 When the exists value is not `null` you can reliably use `modified()` to check whether a field has been updated or not.
@@ -156,14 +157,14 @@ When the exists value is not `null` you can reliably use `modified()` to check w
 
 ```php
 $entity = Gallery::create(['name' => 'old name'], ['exists' => true]);
-$entity->modified('title'); // false
+$entity->modified('name'); // false
 
 $entity->name = 'new name';
-$entity->modified('title'); // true
+$entity->modified('name'); // true
 $entity->modified();        // true
 ```
 
-Also it's also possible to retrieve the persisted data are using `->persisted()` (i.e. the previous state of values):
+It's also possible to retrieve the persisted data with `->persisted()` (i.e. the persisted state of values):
 
 ```php
 $entity = Gallery::create(['name' => 'old name'], ['exists' => true]);
@@ -175,7 +176,7 @@ $entity->persisted('name')); // old name
 
 #### Deleting an entity
 
-Deleting entities from a datasource is pretty straightforward and can be accomplished by simply calling the `->delete()` method on entities to delete:
+Deleting entities from a datasource is pretty straightforward and can be accomplished by simply calling the `->delete()` method:
 
 ```php
 $gallery = Gallery::create([name = 'MyGallery']);
@@ -199,7 +200,7 @@ The `->primaryKey()` method allows to return the ID value of an entity. It's for
 
 #### parent()
 
-Most of the time, entites will be connected together through relations and the `->parent()` method allows to return the parent instance of an entity which can be either an entity or a collection instance.
+Most of the time, entites will be connected together through relations. In this context `->parent()` allows to return the parent instance of an entity which can be either an entity or a collection instance.
 
 #### rootPath()
 

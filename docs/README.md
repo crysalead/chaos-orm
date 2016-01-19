@@ -3,18 +3,14 @@
 
 Chaos is an independent, persistence-agnostic layer responsible for defining entities' business logic and relationships. It allows to describe a [Domain Model](https://en.wikipedia.org/wiki/Domain_model) without any assumption about the persitence layer.
 
-Already available datasources libraries:
-  * [chaos-database](https://github.com/crysalead/chaos-database): supports MySQL and PostgreSQL.
+Already available persistant layers:
+  * [chaos-database](https://github.com/crysalead/chaos-database): supports MySQL, PostgreSQL and SQLite.
 
-Since Chaos already contains all persistence-agnostic logic like relationships, eager/lazy loading, validations, etc. it dramatically simplify the developpment of a datasources libraries.
+Since Chaos contains all persistence-agnostic logic like relationships, eager/lazy loading, validations, etc. it dramatically simplify the developpment of datasources libraries.
 
-If the datasource you envisionned to use is able to fetch a record/document thanks to a unique identifier (i.e no composite primary key), developping a comptatible datasources library for Chaos would be trivial.
+As long as the datasource you envisionned to use is able to fetch a record/document thanks to a unique identifier (i.e no composite primary key), creating a persistant layer for Chaos will be trivial.
 
 > Note: The Chaos syntax is derived from [li3](http://li3.me/). If the syntax is not fully compatible with its predecessor, some effort has been made to keep the same clean and beautiful syntax.
-
-## Community
-
-To ask questions, provide feedback or otherwise communicate with the team, join us on `#chaos` on Freenode.
 
 ## Requirements
 
@@ -32,7 +28,7 @@ To ask questions, provide feedback or otherwise communicate with the team, join 
 ## Example of syntax:
 
 ```php
-use Myproject\Model\Images;
+use My\Project\Model\Image;
 
 // Adding a many-to-many relation
 $image = Image::id(123);

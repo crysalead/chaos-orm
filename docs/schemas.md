@@ -11,7 +11,7 @@
 
 The Schema abstraction is the central point of the Chaos data abstraction layer. Schema instances are bridges between in-memory entities representation and datasources storage.
 
-Note: `Schema` corresponds to the mapper part in the DataMapper pattern.
+Note: in a way the `Schema` class corresponds to the mapper part in the DataMapper pattern.
 
 Schemas are compounded by:
 * fields
@@ -19,9 +19,9 @@ Schemas are compounded by:
 
 #### <a name="fields"></a>Fields
 
-Schemas are like tables and contain typed fields (like `string`, `integer`, etc.). To define a schema's field we need to use the `->set()` method.
+Schemas defined structured data (like SQL tables) and contain typed fields (like `string`, `integer`, etc.).
 
-Example:
+Example of schema definition:
 
 ```php
 use Chaos\Schema;
@@ -31,9 +31,9 @@ $schema->set('id',   ['type' => 'serial']);
 $schema->set('name', ['type' => 'string']);
 ```
 
-The `'type'` define an abstract representation of type which essentially depends on the used datasource. For example `'type' => 'serial'` will mean `INT NOT NULL AUTO_INCREMENT` for a MySQL connection and `SERIAL` for PostgreSQL.
+`'type'` is an abstract type. For example `'type' => 'serial'` will be translated into `INT NOT NULL AUTO_INCREMENT` for a MySQL connection and into `SERIAL` for PostgreSQL.
 
-With the RDBMS schema implementation for example, you can rely on the following abstracted `'type'` definitions:
+For the `Chaos\Database\Schema` implementation, you can rely on the following abstracted `'type'` definitions:
 
 * `'id'`
 * `'serial'`
@@ -51,9 +51,9 @@ With the RDBMS schema implementation for example, you can rely on the following 
 
 Each type above will be matched to a RDBMS type definition through the dedicaded database adapter.
 
-However it's also possible to create you own types and also override the default ones. See the [custom types section bellow](#types) for more informations on types.
+It's possible to create you own custom types and or override the default ones. See the [custom types section bellow](#types) for more informations on types.
 
-With Chaos you are not limited to "scalar" types, you can also have objects and arrays. So with PostgreSQL you should be able to support schema like:
+Moreover with Chaos you are not limited to "scalar" types and you can also deal with objects or arrays. With PostgreSQL you should be able to support schema like:
 
 ```php
 use Chaos\Schema;
@@ -66,7 +66,7 @@ $schema->set('user.lastname',  ['type' => 'string']);
 $schema->set('comments',       ['type' => 'id', 'array' => true]);
 ```
 
-Note: 26/07/2015, the PostgreSQL database adapter doesn't support this high level feature yet as the time I'm writing this documentation.
+Note: no persistant layer support this high level feature yet as the time I'm writing this documentation but it's planned for PostgreSQL.
 
 Field definition can have the following options:
 
@@ -108,6 +108,9 @@ $schema->bind('images', [
     'to'       => 'myproject\model\Image',
     'keys'     => ['id' => 'gallery_id']
 ]);
+
+// External relation can also be rewrited with
+$schema->hasMany('images', 'myproject\model\Image', ['id' => 'gallery_id']);
 ```
 
 #### <a name="formatters"></a>Formatters
@@ -115,11 +118,11 @@ $schema->bind('images', [
 Formatters are a handy way to perform casting between different data representations. For example when data are loaded from a database, they must be casted first to fit the schema definition, and then, must be casted back into the datasource format to be saved.
 
 A schema with a connection has three built-in type of formatters:
-- `'cast'`: used to load data into an entity. Data can come from the datasource or form manually setted data (e.g. `$entity->created = '2015-07-26'`).
+- `'cast'`: used to load data into an entity. Data can come from the datasource or from manually setted data (e.g. `$entity->created = '2015-07-26'`).
 - `'datasource'` : used to cast entity's data back to a compatible datasource format.
 - `'array'` : used to export a entity's data into a kind of generic array structure (used by `$entiy->data()`);
 
-Let's take for example the date type in MySQL. In the RDBMS the date are stored as a "Y-m-d H:i:s" string. However it's not a really handy structure to deal with. It would be interesting To have them casted into `DateTime` instances (which is the actually the default behavior).
+Let's take for example the date type in MySQL. In the RDBMS the date are stored as a "Y-m-d H:i:s" string. However it's not a really handy structure to deal with. It would be interesting to have it casted into `DateTime` instances (which is the actually the default behavior).
 
 With Chaos, you can define as many formatters as you need. Let's take a concrete example:
 
@@ -153,7 +156,7 @@ Using the above example, let's change default handlers to be able to use my `MyD
 
 ```php
 use MyDateTime;
-use Myproject\Model\Gallery;
+use My\Project\Model\Gallery;
 
 $schema = Gallery::schema();
 
@@ -206,7 +209,7 @@ It's also possible to define some custom formatters. To do so, you need to add y
 Example:
 
 ```php
-use Myproject\Model\Gallery;
+use My\Project\Model\Gallery;
 
 $schema = Gallery::schema();
 
@@ -244,7 +247,7 @@ Adding a new type requires to set at least a `'cast'` and a `'datasource'` handl
 Example:
 
 ```php
-use Myproject\Model\Gallery;
+use My\Project\Model\Gallery;
 
 $schema = Gallery::schema();
 
@@ -264,9 +267,9 @@ $schema->custom = "customdata";
 
 #### <a name="methods"></a>Additionnal Methods
 
-One of the principal key point of Chaos is that a `Schema` can be easily adapted to take advantage of specific datasource features. So the additionnal methods can by anything you willing to implement.
+One of the key points of Chaos is that schemas can be easily adapted to take advantage of specific datasource features.
 
-In the example bellow I will use `Chaos\Database\Schema` to show how the added methods of this specific implementation can be used in practice:
+With `Chaos\Database\Schema` you can for have access the the following API:
 
 ```php
 $schema = Gallery::schema();
@@ -284,4 +287,4 @@ $schema->remove(['id' => $id]);               // removes raw datas
 $schema->drop();                              // drops the table
 ```
 
-The fact there's no additional abstraction layer between models and schemas allows to take advantages of any kind of datasource features by simply extending your base models and making a use of it.
+This way schemas allows to take advantages of any kind of datasource features by simply extending the core one and use the features through a custom base model.
