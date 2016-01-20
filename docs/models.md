@@ -58,7 +58,7 @@ By default the schema instance is pre-configured with a source name and a primar
 $schema->source('prefixed_gallery');
 
 // Uses 'uuid' as field name for primary key instead of 'id'
-$schema->primaryKey('uuid');
+$schema->key('uuid');
 ```
 
 Note: Composite primary keys have not been implemented in Chaos to minimize the [object-relational impedance mismatch](https://en.wikipedia.org/wiki/Object-relational_impedance_mismatch). Indeed it adds extra overhead with non negligible performance impact.
@@ -345,12 +345,12 @@ $gallery = Gallery::all();
 $gallery = Gallery::find()->all();
 ```
 
-##### ::id()
+##### ::load()
 
 Gets an entity of a specific id:
 
 ```php
-$gallery = Gallery::id(123);
+$gallery = Gallery::load(123);
 
 // Similar to
 $gallery = Gallery::find()->where(['id' => 123])->first();

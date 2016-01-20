@@ -118,8 +118,8 @@ class HasMany extends \Chaos\Relationship
         $result = true;
 
         foreach ($entity->{$name} as $item) {
-            if ($item->exists() && isset($indexes[$item->primaryKey()])) {
-                unset($previous[$indexes[$item->primaryKey()]]);
+            if ($item->exists() && isset($indexes[$item->id()])) {
+                unset($previous[$indexes[$item->id()]]);
             }
             $item->set($conditions);
             $result = $result && $item->save($options);

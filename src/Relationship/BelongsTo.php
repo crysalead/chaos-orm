@@ -21,8 +21,8 @@ class BelongsTo extends \Chaos\Relationship
         parent::__construct($config);
 
         if (!$keys ) {
-            $primaryKey = $this->_conventions->apply('primaryKey');
-            $this->_keys = [$this->_conventions->apply('foreignKey', $config['from']) => $primaryKey];
+            $key = $this->_conventions->apply('key');
+            $this->_keys = [$this->_conventions->apply('reference', $config['from']) => $key];
         }
     }
 

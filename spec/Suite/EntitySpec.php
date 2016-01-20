@@ -53,14 +53,14 @@ describe("Entity", function() {
         it("throws an exception if exists is `null` but no record actually exists", function() {
 
             $model = $this->model;
-            Stub::on($model)->method('::id', function() { return; });
+            Stub::on($model)->method('::load', function() { return; });
 
             $closure = function() {
                 $model = $this->model;
                 $entity = $model::create([
-                    'id' => 1,
-                    'title'   => 'Good Bye',
-                    'body'    => 'Folks'
+                    'id'    => 1,
+                    'title' => 'Good Bye',
+                    'body'  => 'Folks'
                 ], ['exists' => null]);
             };
 
@@ -117,22 +117,22 @@ describe("Entity", function() {
 
     });
 
-    describe("->primaryKey()", function() {
+    describe("->id()", function() {
 
         it("returns the entity's primary key value", function() {
 
             $model = $this->model;
             $entity = $model::create([
-                'id'      => 123,
-                'title'   => 'Hello',
-                'body'    => 'World'
+                'id'    => 123,
+                'title' => 'Hello',
+                'body'  => 'World'
             ]);
-            expect($entity->primaryKey())->toBe(123);
+            expect($entity->id())->toBe(123);
 
         });
 
         it("throws an exception if the schema has no primary key defined", function() {
-            $schema = new Schema(['primaryKey' => null]);
+            $schema = new Schema(['key' => null]);
 
             $model = $this->model;
             $model::config(compact('schema'));
@@ -140,11 +140,11 @@ describe("Entity", function() {
             $closure = function() {
                 $model = $this->model;
                 $entity = $model::create([
-                    'id'      => 123,
-                    'title'   => 'Hello',
-                    'body'    => 'World'
+                    'id'    => 123,
+                    'title' => 'Hello',
+                    'body'  => 'World'
                 ]);
-                $entity->primaryKey();
+                $entity->id();
             };
             expect($closure)->toThrow(new ChaosException("No primary key has been defined for `{$model}`'s schema."));
 
@@ -161,13 +161,13 @@ describe("Entity", function() {
             $entity->modified = 'modified';
 
             expect($entity->exists())->toBe(false);
-            expect($entity->primaryKey())->toBe(null);
+            expect($entity->id())->toBe(null);
             expect($entity->modified('modified'))->toBe(true);
 
             $entity->sync(123, ['added' => 'added'], ['exists' => true]);
 
             expect($entity->exists())->toBe(true);
-            expect($entity->primaryKey())->toBe(123);
+            expect($entity->id())->toBe(123);
             expect($entity->modified('modified'))->toBe(false);
             expect($entity->modified('added'))->toBe(false);
             expect($entity->added)->toBe('added');
@@ -183,13 +183,13 @@ describe("Entity", function() {
                 $entity->modified = 'modified';
 
                 expect($entity->exists())->toBe(false);
-                expect($entity->primaryKey())->toBe(null);
+                expect($entity->id())->toBe(null);
                 expect($entity->modified('modified'))->toBe(true);
 
                 $entity->sync(null, ['added' => 'added'], ['exists' => true]);
 
                 expect($entity->exists())->toBe(true);
-                expect($entity->primaryKey())->toBe(null);
+                expect($entity->id())->toBe(null);
                 expect($entity->modified('modified'))->toBe(false);
                 expect($entity->modified('added'))->toBe(false);
                 expect($entity->added)->toBe('added');
@@ -366,15 +366,15 @@ describe("Entity", function() {
             $model = $this->model;
 
             $entity = $model::create([
-                'id'      => 1,
-                'title'   => 'Hello',
-                'body'    => 'World'
+                'id'    => 1,
+                'title' => 'Hello',
+                'body'  => 'World'
             ], ['exists' => true]);
 
             $entity->set([
-                'id' => 1,
-                'title'   => 'Good Bye',
-                'body'    => 'Folks'
+                'id'    => 1,
+                'title' => 'Good Bye',
+                'body'  => 'Folks'
             ]);
 
             expect($entity->persisted('title'))->toBe('Hello');
@@ -393,21 +393,21 @@ describe("Entity", function() {
             $model = $this->model;
 
             $entity = $model::create([
-                'id'      => 1,
-                'title'   => 'Hello',
-                'body'    => 'World'
+                'id'     => 1,
+                'title'  => 'Hello',
+                'body'   => 'World'
             ], ['exists' => true]);
 
             $entity->set([
-                'id' => 1,
-                'title'   => 'Good Bye',
-                'body'    => 'Folks'
+                'id'    => 1,
+                'title' => 'Good Bye',
+                'body'  => 'Folks'
             ]);
 
             expect($entity->persisted())->toBe([
-                'id'      => 1,
-                'title'   => 'Hello',
-                'body'    => 'World'
+                'id'    => 1,
+                'title' => 'Hello',
+                'body'  => 'World'
             ]);
 
         });
@@ -617,8 +617,8 @@ describe("Entity", function() {
 
             expect($entity)->toHaveLength(2);
             expect($entity->data())->toBe([
-                'id'      => 1,
-                'title'   => 'test record'
+                'id'    => 1,
+                'title' => 'test record'
             ]);
 
         });
@@ -780,9 +780,9 @@ describe("Entity", function() {
         it("navigates through collection", function() {
 
             $data = [
-                'id'      => 1,
-                'title'   => 'test record',
-                'body'    => 'test body'
+                'id'    => 1,
+                'title' => 'test record',
+                'body'  => 'test body'
             ];
 
             $model = $this->model;
@@ -807,9 +807,9 @@ describe("Entity", function() {
         it("returns respectively the first and the last item of the collection", function() {
 
             $data = [
-                'id'      => 1,
-                'title'   => 'test record',
-                'body'    => 'test body'
+                'id'    => 1,
+                'title' => 'test record',
+                'body'  => 'test body'
             ];
 
             $model = $this->model;
@@ -833,9 +833,9 @@ describe("Entity", function() {
             expect($entity->valid())->toBe(false);
 
             $data = [
-                'id'      => 1,
-                'title'   => 'test record',
-                'body'    => 'test body'
+                'id'    => 1,
+                'title' => 'test record',
+                'body'  => 'test body'
             ];
             $entity = $model::create($data);
             expect($entity->valid())->toBe(true);
@@ -878,8 +878,8 @@ describe("Entity", function() {
         it("exports into an array", function() {
 
             $data = [
-                'id'      => 1,
-                'title'   => 'test record'
+                'id'    => 1,
+                'title' => 'test record'
             ];
 
             $model = $this->model;
@@ -900,7 +900,7 @@ describe("Entity", function() {
 
             expect($image->to('array', ['embed' => true]))->toBe([
                 'title' => 'Amiga 1200',
-                'tags' => [
+                'tags'  => [
                     ['name' => 'Computer'],
                     ['name' => 'Science']
                 ],
@@ -912,7 +912,7 @@ describe("Entity", function() {
             ]);
 
             expect($image->to('array', ['embed' => ['gallery']]))->toBe([
-                'title' => 'Amiga 1200',
+                'title'   => 'Amiga 1200',
                 'gallery' => ['name' => 'Gallery 1']
             ]);
 
@@ -928,8 +928,8 @@ describe("Entity", function() {
         it("returns the title field", function() {
 
             $data = [
-                'id'      => 1,
-                'title'   => 'test record'
+                'id'    => 1,
+                'title' => 'test record'
             ];
 
             $model = $this->model;
@@ -979,7 +979,7 @@ describe("Entity", function() {
 
             expect($gallery->validate())->toBe(false);
             expect($gallery->errors())->toBe([
-                'name' => ['is required'],
+                'name'   => ['is required'],
                 'images' => [
                     ['name' => ['is required']],
                     ['name' => ['is required']]
@@ -991,7 +991,7 @@ describe("Entity", function() {
             $gallery->images[1]->name = '';
             expect($gallery->validate())->toBe(false);
             expect($gallery->errors())->toBe([
-                'name' => ['must not be a empty'],
+                'name'   => ['must not be a empty'],
                 'images' => [
                     ['name' => ['must not be a empty']],
                     ['name' => ['must not be a empty']]
@@ -1037,8 +1037,8 @@ describe("Entity", function() {
             Gallery::validator()->rule('name', 'not:empty');
 
             $image = Image::create([
-                'name' => 'amiga_1200.jpg',
-                'title' => 'Amiga 1200',
+                'name'    => 'amiga_1200.jpg',
+                'title'   => 'Amiga 1200',
                 'gallery' => []
             ]);
             expect($image->save())->toBe(false);
@@ -1074,9 +1074,9 @@ describe("Entity", function() {
         it("supports recursive structures", function() {
 
             $data = [
-                'name' => 'amiga_1200.jpg',
+                'name'  => 'amiga_1200.jpg',
                 'title' => 'Amiga 1200',
-                'tags' => [
+                'tags'  => [
                     ['name' => 'tag1']
                 ]
             ];

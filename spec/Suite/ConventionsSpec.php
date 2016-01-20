@@ -13,7 +13,7 @@ describe("Conventions", function() {
 
             $conventions = new Conventions();
             $model = 'app\model\MyPost';
-            expect($conventions->apply('primaryKey'))->toBe('id');
+            expect($conventions->apply('key'))->toBe('id');
 
         });
 
@@ -22,9 +22,10 @@ describe("Conventions", function() {
             $conventions = new Conventions();
             $model = 'app\model\MyPost';
             expect($conventions->apply('source', $model))->toBe('my_post');
-            expect($conventions->apply('foreignKey', $model))->toBe('my_post_id');
-            expect($conventions->apply('fieldName', $model))->toBe('my_post');
-            expect($conventions->apply('usingName', 'tag'))->toBe('tag');
+            expect($conventions->apply('reference', $model))->toBe('my_post_id');
+            expect($conventions->apply('field', $model))->toBe('my_post');
+            expect($conventions->apply('single', 'tag'))->toBe('tag');
+            expect($conventions->apply('multiple', 'tag'))->toBe('tags');
             expect($conventions->apply('getter', 'hello_world'))->toBe('getHelloWorld');
             expect($conventions->apply('setter', 'hello_world'))->toBe('setHelloWorld');
 
@@ -35,9 +36,10 @@ describe("Conventions", function() {
             $conventions = new Conventions();
             $model = 'app\model\MyComments';
             expect($conventions->apply('source', $model))->toBe('my_comments');
-            expect($conventions->apply('foreignKey', $model))->toBe('my_comment_id');
-            expect($conventions->apply('fieldName', $model))->toBe('my_comment');
-            expect($conventions->apply('usingName', 'tags'))->toBe('tag');
+            expect($conventions->apply('reference', $model))->toBe('my_comment_id');
+            expect($conventions->apply('field', $model))->toBe('my_comment');
+            expect($conventions->apply('single', 'tags'))->toBe('tag');
+            expect($conventions->apply('multiple', 'tags'))->toBe('tags');
 
         });
 
@@ -65,13 +67,14 @@ describe("Conventions", function() {
             $closures = $conventions->get();
             ksort($closures);
             expect(array_keys($closures))->toBe([
-                'fieldName',
-                'foreignKey',
+                'field',
                 'getter',
-                'primaryKey',
+                'key',
+                'multiple',
+                'reference',
                 'setter',
-                'source',
-                'usingName'
+                'single',
+                'source'
             ]);
 
         });
@@ -82,13 +85,14 @@ describe("Conventions", function() {
             $closures = $conventions->get();
             ksort($closures);
             expect(array_keys($closures))->toBe([
-                'fieldName',
-                'foreignKey',
+                'field',
                 'getter',
-                'primaryKey',
+                'key',
+                'multiple',
+                'reference',
                 'setter',
-                'source',
-                'usingName'
+                'single',
+                'source'
             ]);
 
         });

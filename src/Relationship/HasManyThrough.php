@@ -85,7 +85,7 @@ class HasManyThrough extends \Chaos\Relationship
         $this->_to = $relUsing->to();
         $this->_keys = $relUsing->keys();
 
-        $this->_name = $config['name'] ?: $this->_conventions->apply('fieldName', $this->to());
+        $this->_name = $config['name'] ?: $this->_conventions->apply('field', $this->to());
 
         $pos = strrpos(static::class, '\\');
         $this->_type = lcfirst(substr(static::class, $pos !== false ? $pos + 1 : 0));

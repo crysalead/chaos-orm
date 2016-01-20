@@ -16,7 +16,7 @@ describe("BelongsTo", function() {
 
     beforeEach(function() {
         $this->conventions = new Conventions();
-        $this->primaryKey = $this->conventions->apply('primaryKey');
+        $this->key = $this->conventions->apply('key');
     });
 
     describe("->__construct()", function() {
@@ -28,10 +28,10 @@ describe("BelongsTo", function() {
                 'to'   => Gallery::class
             ]);
 
-            expect($relation->name())->toBe($this->conventions->apply('fieldName', Gallery::class));
+            expect($relation->name())->toBe($this->conventions->apply('field', Gallery::class));
 
-            $foreignKey = $this->conventions->apply('foreignKey', Image::class);
-            expect($relation->keys())->toBe([$foreignKey => $this->primaryKey]);
+            $foreignKey = $this->conventions->apply('reference', Image::class);
+            expect($relation->keys())->toBe([$foreignKey => $this->key]);
 
             expect($relation->from())->toBe(Image::class);
             expect($relation->to())->toBe(Gallery::class);

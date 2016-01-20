@@ -17,7 +17,7 @@ describe("HasMany", function() {
 
     beforeEach(function() {
         $this->conventions = new Conventions();
-        $this->primaryKey = $this->conventions->apply('primaryKey');
+        $this->key = $this->conventions->apply('key');
     });
 
     describe("->__construct()", function() {
@@ -29,10 +29,10 @@ describe("HasMany", function() {
                 'to'   => Image::class
             ]);
 
-            expect($relation->name())->toBe($this->conventions->apply('fieldName', Image::class));
+            expect($relation->name())->toBe($this->conventions->apply('field', Image::class));
 
-            $foreignKey = $this->conventions->apply('foreignKey', Gallery::class);
-            expect($relation->keys())->toBe([$this->primaryKey => $foreignKey]);
+            $foreignKey = $this->conventions->apply('reference', Gallery::class);
+            expect($relation->keys())->toBe([$this->key => $foreignKey]);
 
             expect($relation->from())->toBe(Gallery::class);
             expect($relation->to())->toBe(Image::class);

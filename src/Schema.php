@@ -61,7 +61,7 @@ class Schema
      *
      * @var string
      */
-    protected $_primaryKey = null;
+    protected $_key = null;
 
     /**
      * The schema meta data.
@@ -113,20 +113,20 @@ class Schema
      *                      - `'source'`      _string_ : The source name (defaults to `null`).
      *                      - `'model'`       _string_ : The fully namespaced model class name (defaults to `null`).
      *                      - `'locked'`      _boolean_: set the ability to dynamically add/remove fields (defaults to `false`).
-     *                      - `'primaryKey'`  _array_  : The primary key value (defaults to `id`).
+     *                      - `'key'`         _string_ : The primary key value (defaults to `id`).
      *                      - `'fields'`      _array_  : array of field definition where keys are field names and values are arrays
      *                                                   with the following keys. All properties are optionnal except the `'type'`:
-     *                                                   - `'type'`       _string_ : the type of the field.
-     *                                                   - `'default'`    _mixed_  : the default value (default to '`null`').
-     *                                                   - `'null'`       _boolean_: allow null value (default to `'null'`).
-     *                                                   - `'length'`     _integer_: the length of the data (default to `'null'`).
-     *                                                   - `'precision'`  _integer_: the precision (for decimals) (default to `'null'`).
-     *                                                   - `'use'`        _string_ : the database type to override the associated type for
-     *                                                                               this type (default to `'null'`).
-     *                                                   - `'serial'`     _string_ : autoincremented field (default to `'null'`).
-     *                                                   - `'primary'`    _boolead_: primary key (default to `'null'`).
-     *                                                   - `'unique'`     _boolead_: unique key (default to `'null'`).
-     *                                                   - `'foreignKey'` _string_ : foreign key (default to `'null'`).
+     *                                                   - `'type'`      _string_ : the type of the field.
+     *                                                   - `'default'`   _mixed_  : the default value (default to '`null`').
+     *                                                   - `'null'`      _boolean_: allow null value (default to `'null'`).
+     *                                                   - `'length'`    _integer_: the length of the data (default to `'null'`).
+     *                                                   - `'precision'` _integer_: the precision (for decimals) (default to `'null'`).
+     *                                                   - `'use'`       _string_ : the database type to override the associated type for
+     *                                                                              this type (default to `'null'`).
+     *                                                   - `'serial'`    _string_ : autoincremented field (default to `'null'`).
+     *                                                   - `'primary'`   _boolead_: primary key (default to `'null'`).
+     *                                                   - `'unique'`    _boolead_: unique key (default to `'null'`).
+     *                                                   - `'reference'` _string_ : foreign key (default to `'null'`).
      *                      - `'meta'`        _array_  : array of meta definitions for the schema. The definitions are related to
      *                                                   the datasource. For the MySQL adapter the following options are available:
      *                                                   - `'charset'`    _string_: the charset value to use for the table.
@@ -161,13 +161,13 @@ class Schema
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
         $config += [
-            'primaryKey' => $this->_conventions->apply('primaryKey')
+            'key' => $this->_conventions->apply('key')
         ];
 
         $this->_fields = $config['fields'];
         $this->_source = $config['source'];
         $this->_model = $config['model'];
-        $this->_primaryKey = $config['primaryKey'];
+        $this->_key = $config['key'];
 
         foreach ($config['fields'] as $key => $value) {
             $this->_fields[$key] = $this->_initField($value);
@@ -283,15 +283,15 @@ class Schema
     /**
      * Gets/sets the primary key field name of the schema.
      *
-     * @param  string $primaryKey The name or the primary key field name or none to get the defined one.
+     * @param  string $key The name or the primary key field name or none to get the defined one.
      * @return string
      */
-    public function primaryKey($primaryKey = null)
+    public function key($key = null)
     {
         if (!func_num_args()) {
-            return $this->_primaryKey;
+            return $this->_key;
         }
-        $this->_primaryKey = $primaryKey;
+        $this->_key = $key;
         return $this;
     }
 
@@ -593,7 +593,7 @@ class Schema
             if (!isset($config['through'])) {
                 throw new ChaosException("Missing `'through'` relation name.");
             }
-            $config += ['using' => $this->_conventions->apply('usingName', $name)];
+            $config += ['using' => $this->_conventions->apply('single', $name)];
             $config['type'] = 'through';
         }
 

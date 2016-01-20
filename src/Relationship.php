@@ -133,12 +133,12 @@ class Relationship
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
         if (!$config['keys']) {
-            $primaryKey = $this->_conventions->apply('primaryKey');
-            $config['keys'] = [$primaryKey => $this->_conventions->apply('foreignKey', $config['from'])];
+            $key = $this->_conventions->apply('key');
+            $config['keys'] = [$key => $this->_conventions->apply('reference', $config['from'])];
         }
 
         if (!$config['name']) {
-            $config['name'] = $this->_conventions->apply('fieldName', $config['to']);
+            $config['name'] = $this->_conventions->apply('field', $config['to']);
         }
 
         $this->_name = $config['name'];

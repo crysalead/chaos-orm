@@ -285,9 +285,9 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @param  array $fetchOptions The fecthing options.
      * @return mixed               The result.
      */
-    public static function id($id, $options = [], $fetchOptions = [])
+    public static function load($id, $options = [], $fetchOptions = [])
     {
-        $options = ['conditions' => [static::schema()->primaryKey() => $id]] + $options;
+        $options = ['conditions' => [static::schema()->key() => $id]] + $options;
         return static::find($options)->first($fetchOptions);
     }
 
@@ -571,7 +571,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         }
 
         $this->_persisted = $this->_data;
-        if (!$id = $this->primaryKey()) {
+        if (!$id = $this->id()) {
             return; // TODO: would probaly better to throw an exception here.
         }
         $schema = static::schema();
@@ -641,13 +641,13 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      * @return array     the primary key value.
      * @throws Exception Throws a `ChaosException` if no primary key has been defined.
      */
-    public function primaryKey()
+    public function id()
     {
-        if (!$id = static::schema()->primaryKey()) {
+        if (!$key = static::schema()->key()) {
             $class = static::class;
             throw new ChaosException("No primary key has been defined for `{$class}`'s schema.");
         }
-        return $this->{$id};
+        return $this->{$key};
     }
 
     /**
@@ -665,8 +665,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         if (isset($options['exists'])) {
             $this->_exists = $options['exists'];
         }
-        if ($id && $pk = static::schema()->primaryKey()) {
-            $data[$pk] = $id;
+        if ($id && $key = static::schema()->key()) {
+            $data[$key] = $id;
         }
         $this->set($data + $this->_data);
         $this->_persisted = $this->_data;
@@ -1107,8 +1107,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
      */
     public function reload()
     {
-        $id = $this->primaryKey();
-        $persisted = $id !== null ? static::id($id) : null;
+        $id = $this->id();
+        $persisted = $id !== null ? static::load($id) : null;
         if (!$persisted) {
             throw new ChaosException("The entity id:`{$id}` doesn't exists.");
         }
@@ -1127,10 +1127,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     public function delete($options = [])
     {
         $schema = static::schema();
-        if ((!$id = $schema->primaryKey()) || $this->exists() === false) {
+        if ((!$key = $schema->key()) || $this->exists() === false) {
             return false;
         }
-        if($schema->delete([$id => $this->primaryKey()])) {
+        if($schema->delete([$key => $this->id()])) {
             $this->_exists = false;
             $this->_persisted = [];
             return true;

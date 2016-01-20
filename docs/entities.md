@@ -194,9 +194,9 @@ To support non-CRUD actions. The first step is to make sure that the `Schema` cl
 
 There's a couple of useful method which gives additionnal information about entites.
 
-#### primaryKey()
+#### id()
 
-The `->primaryKey()` method allows to return the ID value of an entity. It's for example identical to `$entity->id` if the primary key field name of your entity is `'id'`.
+The `->id()` method allows to return the ID value of an entity. It's for example identical to `$entity->id` if the primary key field name of your entity is `'id'`.
 
 #### parent()
 

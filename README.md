@@ -13,10 +13,6 @@ Available datasources libraries:
 
 Chaos dramatically simplify the developpment of a datasources libraries by providing all persistence-agnostic logic like relationships, eager/lazy loading, validations, etc. at the root level. The only requirement is the datasource you envisionned to use need to be able to fetch a record/document thanks to a unique identifier (i.e no composite primary key).
 
-## Community
-
-To ask questions, provide feedback or otherwise communicate with the team, join us on `#chaos` on Freenode.
-
 ## Requirements
 
  * PHP 5.5+
@@ -33,10 +29,10 @@ To ask questions, provide feedback or otherwise communicate with the team, join 
 ## Example of syntax:
 
 ```php
-use Myproject\Model\Images;
+use My\Project\Model\Images;
 
 // Adding a many-to-many relation
-$image = Image::id(123);
+$image = Image::load(123);
 $image->tags[] = ['name' => 'Landscape'];
 $image->save();
 

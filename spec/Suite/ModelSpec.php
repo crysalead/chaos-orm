@@ -266,7 +266,7 @@ describe("Model", function() {
 
     });
 
-    describe("::id()", function() {
+    describe("::load()", function() {
 
         beforeEach(function() {
             $model = $this->model;
@@ -287,7 +287,7 @@ describe("Model", function() {
             ]);
             expect($this->query)->toReceive('first')->with(['fetch' => 'options']);
 
-            $model::id(1, ['option' => 'value'], ['fetch' => 'options']);
+            $model::load(1, ['option' => 'value'], ['fetch' => 'options']);
 
         });
 

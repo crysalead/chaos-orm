@@ -31,7 +31,7 @@ As long as the datasource you envisionned to use is able to fetch a record/docum
 use My\Project\Model\Image;
 
 // Adding a many-to-many relation
-$image = Image::id(123);
+$image = Image::load(123);
 $image->tags[] = ['name'  =>  'Landscape'];
 $image->save();
 

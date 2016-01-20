@@ -17,7 +17,7 @@ describe("HasManyThrough", function() {
 
     beforeEach(function() {
         $this->conventions = new Conventions();
-        $this->primaryKey = $this->conventions->apply('primaryKey');
+        $this->key = $this->conventions->apply('key');
     });
 
     describe("->__construct()", function() {
@@ -30,17 +30,17 @@ describe("HasManyThrough", function() {
                 'using'   => 'tag'
             ]);
 
-            expect($relation->name())->toBe($this->conventions->apply('fieldName', Tag::class));
+            expect($relation->name())->toBe($this->conventions->apply('field', Tag::class));
 
-            $foreignKey = $this->conventions->apply('foreignKey', 'tag');
-            expect($relation->keys())->toBe([$foreignKey => $this->primaryKey]);
+            $foreignKey = $this->conventions->apply('reference', 'tag');
+            expect($relation->keys())->toBe([$foreignKey => $this->key]);
 
             expect($relation->from())->toBe(Image::class);
             expect($relation->to())->toBe(Tag::class);
             expect($relation->through())->toBe('images_tags');
             expect($relation->using())->toBe($this->conventions->apply(
-                'usingName',
-                $this->conventions->apply('fieldName',
+                'single',
+                $this->conventions->apply('field',
                 Tag::class
             )));
             expect($relation->link())->toBe(Relationship::LINK_KEY);

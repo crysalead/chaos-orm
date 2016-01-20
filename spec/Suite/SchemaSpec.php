@@ -59,7 +59,7 @@ describe("Schema", function() {
                 'connection'   => $connection,
                 'source'       => 'image',
                 'model'        => Image::class,
-                'primaryKey'   => 'key',
+                'key'         => 'key',
                 'locked'       => false,
                 'fields'       => ['id' => 'serial', 'age' => 'integer'],
                 'meta'         => ['some' => ['meta']],
@@ -69,7 +69,7 @@ describe("Schema", function() {
             expect($schema->connection())->toBe($connection);
             expect($schema->source())->toBe('image');
             expect($schema->model())->toBe(Image::class);
-            expect($schema->primaryKey())->toBe('key');
+            expect($schema->key())->toBe('key');
             expect($schema->locked())->toBe(false);
             expect($schema->fields())->toBe([
                 'id' => [
@@ -156,14 +156,14 @@ describe("Schema", function() {
 
     });
 
-    describe("->primaryKey()", function() {
+    describe("->key()", function() {
 
         it("gets/sets the primary key value", function() {
 
             $schema = new Schema();
 
-            expect($schema->primaryKey('_id'))->toBe($schema);
-            expect($schema->primaryKey())->toBe('_id');
+            expect($schema->key('_id'))->toBe($schema);
+            expect($schema->key())->toBe('_id');
 
         });
 
