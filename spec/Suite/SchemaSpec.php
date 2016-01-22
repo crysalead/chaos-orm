@@ -498,8 +498,8 @@ describe("Schema", function() {
                 'model' => $model
             ]);
 
-            expect($schema->relations())->toBe(['embedded']);
-            expect($schema->relations(false))->toBe([]);
+            expect($schema->relations())->toBe([]);
+            expect($schema->relations(true))->toBe(['embedded']);
 
         });
 

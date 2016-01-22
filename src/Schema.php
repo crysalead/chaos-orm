@@ -647,7 +647,7 @@ class Schema
      * @param  boolean $embedded Include or not embedded relations.
      * @return array             Returns an array of relation names.
      */
-    public function relations($embedded = true)
+    public function relations($embedded = false)
     {
         $result = [];
         foreach ($this->_relations as $field => $config) {
