@@ -19,6 +19,11 @@ describe("HasOne", function() {
         $this->key = $this->conventions->apply('key');
     });
 
+    afterEach(function() {
+        Gallery::reset();
+        GalleryDetail::reset();
+    });
+
     describe("->__construct()", function() {
 
         it("creates a hasOne relationship", function() {

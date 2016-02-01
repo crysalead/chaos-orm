@@ -20,6 +20,12 @@ describe("HasManyThrough", function() {
         $this->key = $this->conventions->apply('key');
     });
 
+    afterEach(function() {
+        Image::reset();
+        ImageTag::reset();
+        Tag::reset();
+    });
+
     describe("->__construct()", function() {
 
         it("creates a hasManyThrough relationship", function() {

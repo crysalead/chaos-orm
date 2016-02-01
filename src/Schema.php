@@ -595,9 +595,14 @@ class Schema
             }
             $config += ['using' => $this->_conventions->apply('single', $name)];
             $config['type'] = 'through';
+            $this->_relations[$config['through']]['junction'] = true;
         }
 
-        $this->_relations[$name] = $config;
+        if (isset($this->_relations[$name]['junction'])) {
+            $this->_relations[$name] = $config + ['junction' => $this->_relations[$name]['junction']];
+        } else {
+            $this->_relations[$name] = $config;
+        }
         $this->_relationships[$name] = null;
         return true;
     }
