@@ -657,7 +657,6 @@ describe("Schema", function() {
 
             $this->schema->bind('tags', [
                 'relation' => 'hasManyThrough',
-                'to'       => Tag::class,
                 'through'  => 'images_tags',
                 'using'    => 'tag'
             ]);
@@ -670,7 +669,7 @@ describe("Schema", function() {
 
         });
 
-        it("gets/sets the conventions", function() {
+        it("casts hasManyThrough relation data", function() {
 
             $image = $this->schema->cast(null, [
                 'id'         => '1',
@@ -695,9 +694,10 @@ describe("Schema", function() {
             expect($image->name)->toBeA('string');
             expect($image->title)->toBeA('string');
             expect($image->score)->toBeA('float');
-            expect($image->tags)->toBeAnInstanceOf('chaos\collection\Through');
-            expect($image->tags[0])->toBeAnInstanceOf('chaos\spec\fixture\model\Tag');
-            expect($image->tags[1])->toBeAnInstanceOf('chaos\spec\fixture\model\Tag');
+            expect($image->tags)->toBeAnInstanceOf('Chaos\Collection\Through');
+            expect($image->tags->model())->toBe('Chaos\Spec\Fixture\Model\Tag');
+            expect($image->tags[0])->toBeAnInstanceOf('Chaos\Spec\Fixture\Model\Tag');
+            expect($image->tags[1])->toBeAnInstanceOf('Chaos\Spec\Fixture\Model\Tag');
 
         });
 

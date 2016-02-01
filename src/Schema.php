@@ -805,7 +805,11 @@ class Schema
             }
             if ($options['relation'] !== 'hasManyThrough') {
                 $options['model'] = $options['to'];
+            } else {
+                $through = $this->relation($name);
+                $options['model'] = $through->to();
             }
+
             if ($options['array']) {
                 return $this->_castArray($name, $data, $options);
             }
