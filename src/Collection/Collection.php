@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\Collection;
 
-use ArrayAccess;
+use Iterator;
 use InvalidArgumentException;
 use Chaos\Model;
 
@@ -547,6 +547,22 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
         return $errors;
     }
 
+    /**
+     * Returns an array of all external relations and nested relations names.
+     *
+     * @param  boolean $embedded Include or not embedded relations.
+     * @return array             Returns an array of relation names.
+     */
+    public function hierarchy($prefix = '', &$ignore = [])
+    {
+        $result = [];
+
+        foreach ($this as $entity) {
+            $result += array_fill_keys($entity->hierarchy($prefix, $ignore), true);
+        }
+
+        return array_keys($result);
+    }
 
     /**
      * Exports a `Collection` instance to an array. Used by `Collection::to()`.
@@ -584,7 +600,7 @@ class Collection implements \ArrayAccess, \Iterator, \Countable
                 case $item instanceof Model:
                     $result[$key] = $item->to('array', $options);
                 break;
-                case $item instanceof ArrayAccess:
+                case $item instanceof Iterator:
                     $result[$key] = static::toArray($item, $options);
                 break;
                 case (method_exists($item, '__toString')):

@@ -1,7 +1,7 @@
 <?php
 namespace Chaos;
 
-use ArrayAccess;
+use Iterator;
 use Lead\Set\Set;
 use Chaos\collection\Collection;
 
@@ -549,8 +549,8 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             'data'       => []
         ];
         $config += $defaults;
-        $this->_collector = $config['collector'];
-        $this->_parent = $config['parent'];
+        $this->collector($config['collector']);
+        $this->parent($config['parent']);
         $this->_exists = $config['exists'];
         $this->_rootPath = $config['rootPath'];
         $this->set($config['data']);
@@ -1186,13 +1186,19 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = ['embed' => true];
         $options += $defaults;
 
+        if ($options['embed'] === true) {
+            $options['embed'] = $this->hierarchy();
+        }
+
         $schema = static::schema();
         $tree = $schema->treeify($options['embed']);
         $success = true;
 
-        foreach ($tree as $name => $value) {
-            $rel = $schema->relation($name);
-            $success = $success && $rel->validate($this, ['embed' => $value] + $options);
+        foreach ($tree as $field => $value) {
+            if (isset($this->{$field})) {
+                $rel = $schema->relation($field);
+                $success = $success && $rel->validate($this, ['embed' => $value] + $options);
+            }
         }
         return $success;
     }
@@ -1207,18 +1213,57 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         $defaults = ['embed' => true];
         $options += $defaults;
 
+        if ($options['embed'] === true) {
+            $options['embed'] = $this->hierarchy();
+        }
+
         $schema = static::schema();
         $tree = $schema->treeify($options['embed']);
         $errors = $this->_errors;
 
-        foreach ($tree as $name => $value) {
-            $relation = $schema->relation($name);
-            $fieldname = $relation->name();
-            if (isset($this->{$fieldname})) {
-                $errors[$fieldname] = $this->{$fieldname}->errors(['embed' => $value] + $options);
+        foreach ($tree as $field => $value) {
+            if (isset($this->{$field})) {
+                $errors[$field] = $this->{$field}->errors(['embed' => $value] + $options);
             }
         }
         return $errors;
+    }
+
+    /**
+     * Returns all included relations accessible through this entity.
+     *
+     * @param  string $prefix The parent relation path.
+     * @param  array  $ignore The already processed entities to ignore (address circular dependencies).
+     * @return array          The included relations.
+     */
+    public function hierarchy($prefix = '', &$ignore = [])
+    {
+        $hash = spl_object_hash($this);
+        if (isset($ignore[$hash])) {
+            return false;
+        } else {
+            $ignore[$hash] = true;
+        }
+
+        $tree = array_fill_keys($this::relations(), true);
+        $result = [];
+
+        foreach ($tree as $field => $value) {
+            if (!isset($this->{$field})) {
+                continue;
+            }
+            $rel = $this->relation($field);
+            if ($rel->type() === 'hasManyThrough') {
+                $result[] = $prefix ? $prefix . '.' . $field : $field;
+                continue;
+            }
+            if ($childs = $this->{$field}->hierarchy($field, $ignore)) {
+                $result = array_merge($result, $childs);
+            } elseif ($childs !== false) {
+                $result[] = $prefix ? $prefix . '.' . $field : $field;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -1248,6 +1293,10 @@ class Model implements \ArrayAccess, \Iterator, \Countable
         ];
         $options += $defaults;
 
+        if ($options['embed'] === true) {
+            $options['embed'] = $this->hierarchy();
+        }
+
         $schema = static::schema();
         $tree = $schema->treeify($options['embed']);
 
@@ -1261,7 +1310,7 @@ class Model implements \ArrayAccess, \Iterator, \Countable
             }
             if ($value instanceof Model) {
                 $result[$field] = $value->to($format, $options);
-            } elseif ($value instanceof ArrayAccess) {
+            } elseif ($value instanceof Iterator) {
                 $result[$field] = Collection::toArray($value, $options);
             } else {
                 $result[$field] = static::schema()->format($format, $field, $value, $options);

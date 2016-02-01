@@ -11,6 +11,7 @@ use Chaos\Schema;
 use Kahlan\Plugin\Stub;
 
 use Chaos\Spec\Fixture\Model\Gallery;
+use Chaos\Spec\Fixture\Model\GalleryDetail;
 use Chaos\Spec\Fixture\Model\Image;
 use Chaos\Spec\Fixture\Model\Tag;
 
@@ -873,6 +874,34 @@ describe("Entity", function() {
 
     });
 
+    describe("->hierarchy()", function() {
+
+        it("returns all included relations and sub-relations with non empty data", function() {
+
+            $gallery = Gallery::create(['title' => 'Gallery1']);
+
+            $gallery->detail = ['desription' => 'Tech'];
+
+            $image = Image::create([
+                'title' => 'Amiga 1200'
+            ]);
+            $image->tags[] = ['name' => 'Computer'];
+            $image->tags[] = ['name' => 'Science'];
+
+            $image->gallery = $gallery;
+
+            $gallery->images[] = $image;
+
+            expect($gallery->hierarchy())->toBe([
+                'detail',
+                'images_tags.tag',
+                'images.tags'
+            ]);
+
+        });
+
+    });
+
     describe("->to()", function() {
 
         it("exports into an array", function() {
@@ -898,7 +927,7 @@ describe("Entity", function() {
 
             $image->gallery = ['name' => 'Gallery 1'];
 
-            expect($image->to('array', ['embed' => true]))->toBe([
+            expect($image->to('array'))->toBe([
                 'title' => 'Amiga 1200',
                 'tags'  => [
                     ['name' => 'Computer'],

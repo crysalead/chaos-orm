@@ -752,9 +752,6 @@ class Schema
         if (!$embed) {
             return [];
         }
-        if ($embed === true) {
-            $embed = $this->relations();
-        }
         $embed = Set::expand(array_fill_keys(array_keys(Set::normalize((array) $embed)), null));
 
         $result = [];
