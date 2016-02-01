@@ -351,6 +351,16 @@ class Model implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * Gets the model name.
+     *
+     * @return string Returns the entity's model name.
+     */
+    public function model()
+    {
+        return static::class;
+    }
+
+    /**
      * Gets/sets the connection object to which this model is bound.
      *
      * @param  object $connection The connection instance to set or `null` to get the current one.

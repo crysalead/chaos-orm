@@ -71,6 +71,18 @@ describe("Entity", function() {
 
     });
 
+    describe("->model()", function() {
+
+        it("returns the model class name", function() {
+
+            $model = $this->model;
+            $entity = new $model();
+            expect($entity->model())->toBe($model);
+
+        });
+
+    });
+
     describe("->exists()", function() {
 
         it("returns the exists value", function() {
