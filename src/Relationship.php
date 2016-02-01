@@ -33,11 +33,25 @@ class Relationship
     const LINK_CONTAINED = 'contained';
 
     /**
-     * The field name used for accessing the related data.
+     * The relation/field name.
      *
      * @var string
      */
     protected $_name = null;
+
+    /**
+     * The counterpart relation/field name.
+     *
+     * @var string
+     */
+    protected $_inverseOf = null;
+
+    /**
+     * The counterpart relation.
+     *
+     * @var object|null
+     */
+    protected $_counterpart = null;
 
     /**
      * The type of relationship.
@@ -94,7 +108,9 @@ class Relationship
      * @param array $config The relationship's configuration, which defines how the two models in
      *                      question are bound. The available options are:
      *                      - `'name'`        _string_ : The field name used for accessing the related data.
-     *                                                   For example, in the case of `Post` hasMany `Comment`, the name defaults to `'comments'`.
+     *                                                   For example, in the case of `Post` hasMany `Comment`, the name could be `'comments'`.
+     *                      - `'inverseOf'`   _string_ : The counterpart field name used for accessing the data.
+     *                                                   For example, in the case of `Post` hasMany `Comment`, the inverseOf could be `'post'`.
      *                      - `'keys'`        _mixed_  : Mathing keys definition, where the key is the key in the originating model,
      *                                                   and the value is the key in the target model (i.e. `['fromId' => 'toId']`).
      *                      - `'from'`        _string_ : The fully namespaced class name this relationship originates.
@@ -114,6 +130,7 @@ class Relationship
     {
         $defaults = [
             'name'        => null,
+            'counterpart' => null,
             'keys'        => null,
             'from'        => null,
             'to'          => null,
@@ -142,6 +159,7 @@ class Relationship
         }
 
         $this->_name = $config['name'];
+        $this->_counterpart = $config['counterpart'];
         $this->_from = $config['from'];
         $this->_to = $config['to'];
         $this->_keys = $config['keys'];
@@ -159,10 +177,48 @@ class Relationship
      * @param  array  $args Unused.
      * @return mixed        Returns the value of the given configuration item.
      */
-    public function __call($name, $args = array())
+    public function __call($name, $args = [])
     {
         $attribute = "_{$name}";
         return isset($this->{$attribute}) ? $this->{$attribute} : null;
+    }
+
+    /**
+     * Returns the counterpart relation.
+     *
+     * @return object
+     */
+    public function counterpart()
+    {
+        if ($this->_counterpart) {
+            return $this->_counterpart;
+        }
+
+        $to = $this->to();
+
+        if ($this->_inverseOf) {
+            if ($rel = $to::relation($this->_inverseOf)) {
+                return $this->_counterpart = $rel;
+            }
+            throw new ChaosException("The {$this->type()} counterpart relationship `'{$this->_inverseOf}'` in `{$to}` is missing.");
+        }
+
+        $from = $this->from();
+        $relations = $to::relations();
+        $result = [];
+
+        foreach ($relations as $relation) {
+            $rel = $to::relation($relation);
+            if ($rel->to() === $this->from()) {
+                $result[] = $rel;
+            }
+        }
+        if (count($result) === 1) {
+            return $this->_counterpart = reset($result);
+        } elseif (count($result) > 1) {
+            throw new ChaosException("Ambiguous {$this->type()} counterpart relationship for `{$from}`. Apply the Single Table Inheritance pattern to get unique models.");
+        }
+        throw new ChaosException("Missing {$this->type()} counterpart relationship for `{$from}`. Add one in the `{$to}` model.");
     }
 
     /**
@@ -331,7 +387,7 @@ class Relationship
      * @param  mixed  $collection An collection to extract index from.
      * @param  string $name       The field name to build index for.
      * @return array              An array of indexes where keys are `$name` values and
-     *                            values the correcponding index in the collection.
+     *                            values the corresponding index in the collection.
      */
     protected function _index($collection, $name)
     {
