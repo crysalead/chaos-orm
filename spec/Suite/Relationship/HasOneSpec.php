@@ -87,7 +87,7 @@ describe("HasOne", function() {
 
         it("embeds a hasOne relationship", function() {
 
-            $hasOne = Gallery::relation('detail');
+            $hasOne = Gallery::definition()->relation('detail');
 
             $galleries = Gallery::create([
                 ['id' => 1, 'name' => 'Foo Gallery'],
@@ -110,7 +110,7 @@ describe("HasOne", function() {
 
         it("embeds a hasOne relationship using array hydration", function() {
 
-            $hasOne = Gallery::relation('detail');
+            $hasOne = Gallery::definition()->relation('detail');
 
             $galleries = Gallery::create([
                 ['id' => 1, 'name' => 'Foo Gallery'],
@@ -173,7 +173,7 @@ describe("HasOne", function() {
 
         it("bails out if no relation data hasn't been setted", function() {
 
-            $hasOne = Gallery::relation('detail');
+            $hasOne = Gallery::definition()->relation('detail');
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             expect($hasOne->save($gallery))->toBe(true);
 
@@ -181,7 +181,7 @@ describe("HasOne", function() {
 
         it("saves a hasOne relationship", function() {
 
-            $hasOne = Gallery::relation('detail');
+            $hasOne = Gallery::definition()->relation('detail');
 
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             $gallery->detail = ['description' => 'Foo Gallery Description'];

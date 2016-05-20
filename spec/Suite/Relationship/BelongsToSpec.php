@@ -87,7 +87,7 @@ describe("BelongsTo", function() {
 
         it("embeds a belongsTo relationship", function() {
 
-            $belongsTo = Image::relation('gallery');
+            $belongsTo = Image::definition()->relation('gallery');
 
             $images = Image::create([
                 ['gallery_id' => 1, 'title' => 'Amiga 1200'],
@@ -112,7 +112,7 @@ describe("BelongsTo", function() {
 
         it("embeds a belongsTo relationship using array hydration", function() {
 
-            $belongsTo = Image::relation('gallery');
+            $belongsTo = Image::definition()->relation('gallery');
 
             $images = Image::create([
                 ['gallery_id' => 1, 'title' => 'Amiga 1200'],
@@ -173,7 +173,7 @@ describe("BelongsTo", function() {
 
         it("bails out if no relation data hasn't been setted", function() {
 
-            $belongsTo = Image::relation('gallery');
+            $belongsTo = Image::definition()->relation('gallery');
             $image = Image::create(['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200']);
             expect($belongsTo->save($image))->toBe(true);
 
@@ -181,7 +181,7 @@ describe("BelongsTo", function() {
 
         it("saves a belongsTo relationship", function() {
 
-            $belongsTo = Image::relation('gallery');
+            $belongsTo = Image::definition()->relation('gallery');
 
             $image = Image::create(['id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
             $image->gallery = ['name' => 'Foo Gallery'];
@@ -200,7 +200,7 @@ describe("BelongsTo", function() {
         it("throws an exception if the saves relation didn't populate any ID", function() {
 
             $closure = function() {
-                $belongsTo = Image::relation('gallery');
+                $belongsTo = Image::definition()->relation('gallery');
 
                 $image = Image::create(['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
                 $image->gallery = ['name' => 'Foo Gallery'];

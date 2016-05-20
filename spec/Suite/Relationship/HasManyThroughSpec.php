@@ -142,7 +142,7 @@ describe("HasManyThrough", function() {
 
         it("embeds a hasManyThrough relationship", function() {
 
-            $hasManyThrough = Image::relation('tags');
+            $hasManyThrough = Image::definition()->relation('tags');
 
             $images = Image::create([
                 ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
@@ -176,7 +176,7 @@ describe("HasManyThrough", function() {
 
         it("embeds a hasManyThrough relationship using object hydration", function() {
 
-            $hasManyThrough = Image::relation('tags');
+            $hasManyThrough = Image::definition()->relation('tags');
 
             $images = Image::create([
                 ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
@@ -209,7 +209,7 @@ describe("HasManyThrough", function() {
 
         it("embeds a hasManyThrough relationship using array hydration", function() {
 
-            $hasManyThrough = Image::relation('tags');
+            $hasManyThrough = Image::definition()->relation('tags');
 
             $images = Image::create([
                 ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
@@ -287,7 +287,7 @@ describe("HasManyThrough", function() {
 
         it("bails out on save since it's just an alias", function() {
 
-            $hasManyThrough = Image::relation('tags');
+            $hasManyThrough = Image::definition()->relation('tags');
             expect($hasManyThrough->save(null))->toBe(true);
 
         });

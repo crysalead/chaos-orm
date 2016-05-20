@@ -13,12 +13,14 @@ use Kahlan\Plugin\Stub;
 describe("Model", function() {
 
     before(function() {
-        $this->model = Stub::classname(['extends' => Model::class]);
+        $model = $this->model = Stub::classname(['extends' => Model::class]);
+        $model::definition()->locked(false);
     });
 
     afterEach(function() {
         $model = $this->model;
         $model::reset();
+        $model::definition()->locked(false);
     });
 
     describe("::config()", function() {
@@ -35,7 +37,7 @@ describe("Model", function() {
                 'conventions' => $conventions = Stub::create()
             ]);
 
-            expect($model::schema())->toBe($schema);
+            expect($model::definition())->toBe($schema);
             expect($model::validator())->toBe($validator);
             expect($model::finders())->toBe($finders);
             expect($model::query())->toBe($query);
@@ -44,7 +46,7 @@ describe("Model", function() {
 
             $model::reset();
 
-            expect($model::schema())->not->toBe($schema);
+            expect($model::definition())->not->toBe($schema);
             expect($model::validator())->not->toBe($validator);
             expect($model::finders())->not->toBe($finders);
             expect($model::query())->toBe([]);
@@ -73,6 +75,9 @@ describe("Model", function() {
         it("gets/sets a connection", function() {
 
             $connection = Stub::create();
+            Stub::on($connection)->method('formatters', function() {
+                return [];
+            });
             $model = $this->model;
             $model::connection($connection);
             expect($model::connection())->toBe($connection);
@@ -190,7 +195,7 @@ describe("Model", function() {
 
         beforeEach(function() {
             $model = $this->model;
-            $schema = $model::schema();
+            $schema = $model::definition();
             $this->query = $query = Stub::create(['methods' => ['method1', 'method2']]);
             Stub::on($schema)->method('query', function() use ($query) {
                 return $query;
@@ -207,7 +212,7 @@ describe("Model", function() {
         it("passes the finder instance to the query", function() {
 
             $model = $this->model;
-            $schema = $model::schema();
+            $schema = $model::definition();
             $finders = $model::finders();
 
             expect($schema)->toReceive('query')->with([
@@ -221,7 +226,7 @@ describe("Model", function() {
         it("merges default query parameters on find", function() {
 
             $model = $this->model;
-            $schema = $model::schema();
+            $schema = $model::definition();
             $finders = $model::finders();
 
             $model::query(['method1' => 'param1']);
@@ -246,7 +251,7 @@ describe("Model", function() {
 
         beforeEach(function() {
             $model = $this->model;
-            $schema = $model::schema();
+            $schema = $model::definition();
             $this->query = $query = Stub::create();
             Stub::on($schema)->method('query', function() use ($query) {
                 return $query;
@@ -270,7 +275,7 @@ describe("Model", function() {
 
         beforeEach(function() {
             $model = $this->model;
-            $schema = $model::schema();
+            $schema = $model::definition();
             $this->query = $query = Stub::create();
             Stub::on($schema)->method('query', function() use ($query) {
                 return $query;
@@ -297,7 +302,7 @@ describe("Model", function() {
 
         beforeEach(function() {
             $model = $this->model;
-            $schema = $model::schema();
+            $schema = $model::definition();
             $this->query = $query = Stub::create();
             Stub::on($schema)->method('query', function() use ($query) {
                 return $query;
@@ -317,14 +322,14 @@ describe("Model", function() {
 
     });
 
-    describe("::schema()", function() {
+    describe("::definition()", function() {
 
         it("returns the model", function() {
 
             $model = $this->model;
-            $schema = $model::schema();
+            $schema = $model::definition();
             expect($schema)->toBeAnInstanceOf('chaos\Schema');
-            expect($schema)->toBe($model::schema());
+            expect($schema)->toBe($model::definition());
 
         });
 
@@ -332,42 +337,8 @@ describe("Model", function() {
 
             $schema = Stub::create();
             $model = $this->model;
-            $model::schema($schema);
-            expect($model::schema())->toBe($schema);
-
-        });
-
-    });
-
-    describe("::relations()", function() {
-
-        it("delegates calls to schema", function() {
-
-            $model = $this->model;
-
-            expect($model::schema())->toReceive('relations')->with('hasMany');
-
-            $model::relations('hasMany');
-
-        });
-
-    });
-
-    describe("::relation()", function() {
-
-        it("delegates calls to schema", function() {
-
-            $model = $this->model;
-
-            $schema = $model::schema();
-            $schema->bind('abc', [
-                'relation' => 'hasOne',
-                'to'       => 'TargetModel',
-            ]);
-
-            expect($model::schema())->toReceive('relation')->with('abc');
-
-            $model::relation('abc');
+            $model::definition($schema);
+            expect($model::definition())->toBe($schema);
 
         });
 

@@ -20,37 +20,37 @@ describe("Relationship", function() {
 
         it("returns the counterpart relationship for belongsTo/hasMany relations", function() {
 
-            $relation = Image::relation('gallery');
-            expect($relation->counterpart())->toBe(Gallery::relation('images'));
+            $relation = Image::definition()->relation('gallery');
+            expect($relation->counterpart())->toBe(Gallery::definition()->relation('images'));
 
-            $relation = Gallery::relation('images');
-            expect($relation->counterpart())->toBe(Image::relation('gallery'));
+            $relation = Gallery::definition()->relation('images');
+            expect($relation->counterpart())->toBe(Image::definition()->relation('gallery'));
 
         });
 
         it("returns the counterpart relationship for belongsTo/hasOne relations", function() {
 
-            $relation = GalleryDetail::relation('gallery');
-            expect($relation->counterpart())->toBe(Gallery::relation('detail'));
+            $relation = GalleryDetail::definition()->relation('gallery');
+            expect($relation->counterpart())->toBe(Gallery::definition()->relation('detail'));
 
-            $relation = Gallery::relation('detail');
-            expect($relation->counterpart())->toBe(GalleryDetail::relation('gallery'));
+            $relation = Gallery::definition()->relation('detail');
+            expect($relation->counterpart())->toBe(GalleryDetail::definition()->relation('gallery'));
 
         });
 
         it("returns the counterpart relationship for hasMany/hasMany relations", function() {
 
-            $relation = Image::relation('tags');
-            expect($relation->counterpart())->toBe(Tag::relation('images'));
+            $relation = Image::definition()->relation('tags');
+            expect($relation->counterpart())->toBe(Tag::definition()->relation('images'));
 
-            $relation = Tag::relation('images');
-            expect($relation->counterpart())->toBe(Image::relation('tags'));
+            $relation = Tag::definition()->relation('images');
+            expect($relation->counterpart())->toBe(Image::definition()->relation('tags'));
 
         });
 
         it("throws an exception when the counterpart is ambiguous", function() {
 
-            $schema = Gallery::schema();
+            $schema = Gallery::definition();
             $schema->hasMany('images', Image::class, [
                 'keys' => ['id' => 'gallery_id']
             ]);
@@ -59,7 +59,7 @@ describe("Relationship", function() {
             ]);
 
             $closure = function() {
-                $relation = Image::relation('gallery');
+                $relation = Image::definition()->relation('gallery');
                 $relation->counterpart();
             };
 

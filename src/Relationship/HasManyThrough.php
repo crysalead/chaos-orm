@@ -77,10 +77,10 @@ class HasManyThrough extends \Chaos\Relationship
         $this->_using = $config['using'];
 
         $from = $this->from();
-        $relThrough = $from::relation($this->through());
+        $relThrough = $from::definition()->relation($this->through());
         $relThrough->junction(true);
         $pivot = $relThrough->to();
-        $relUsing = $pivot::relation($this->using());
+        $relUsing = $pivot::definition()->relation($this->using());
 
         $this->_to = $relUsing->to();
         $this->_keys = $relUsing->keys();
@@ -108,11 +108,11 @@ class HasManyThrough extends \Chaos\Relationship
         $using = $this->using();
 
         $from = $this->from();
-        $relThrough = $from::relation($through);
+        $relThrough = $from::definition()->relation($through);
         $middle = $relThrough->embed($collection, $options);
 
         $pivot = $relThrough->to();
-        $relUsing = $pivot::schema()->relation($using);
+        $relUsing = $pivot::definition()->relation($using);
         $related = $relUsing->embed($middle, $options);
 
         $this->_cleanup($collection);

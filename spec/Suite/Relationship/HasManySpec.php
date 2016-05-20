@@ -92,7 +92,7 @@ describe("HasMany", function() {
 
         it("embeds a hasMany relationship", function() {
 
-            $hasMany = Gallery::relation('images');
+            $hasMany = Gallery::definition()->relation('images');
 
             $galleries = Gallery::create([
                 ['id' => 1, 'name' => 'Foo Gallery'],
@@ -117,7 +117,7 @@ describe("HasMany", function() {
 
         it("embeds a hasMany relationship using array hydration", function() {
 
-            $hasMany = Gallery::relation('images');
+            $hasMany = Gallery::definition()->relation('images');
 
             $galleries = Gallery::create([
                 ['id' => 1, 'name' => 'Foo Gallery'],
@@ -193,7 +193,7 @@ describe("HasMany", function() {
 
         it("bails out if no relation data hasn't been setted", function() {
 
-            $hasMany = Gallery::relation('images');
+            $hasMany = Gallery::definition()->relation('images');
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             expect($hasMany->save($gallery))->toBe(true);
 
@@ -206,7 +206,7 @@ describe("HasMany", function() {
                 return $images;
             });
 
-            $hasMany = Gallery::relation('images');
+            $hasMany = Gallery::definition()->relation('images');
 
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             $gallery->images = [['title' => 'Amiga 1200']];
@@ -235,7 +235,7 @@ describe("HasMany", function() {
                 return $images;
             });
 
-            $hasMany = Gallery::relation('images');
+            $hasMany = Gallery::definition()->relation('images');
 
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             $gallery->images = [['title' => 'Amiga 1200'], $toKeep];
@@ -271,7 +271,7 @@ describe("HasMany", function() {
                 return $images;
             });
 
-            $hasMany = Image::relation('images_tags');
+            $hasMany = Image::definition()->relation('images_tags');
 
             $image = Image::create(['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley'], ['exists' => true]);
             $image->images_tags = [['tag_id' => 1], $toKeep];
@@ -281,7 +281,7 @@ describe("HasMany", function() {
                 return true;
             });
 
-            $schema = ImageTag::schema();
+            $schema = ImageTag::definition();
 
             Stub::on($toKeep)->method('save', function() { return true; });
             Stub::on($schema)->method('delete', function() { return true; });

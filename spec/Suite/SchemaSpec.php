@@ -17,33 +17,11 @@ use Chaos\Spec\Fixture\Model\Tag;
 describe("Schema", function() {
 
     beforeEach(function() {
+        $this->schema = Image::definition();
+    });
 
-        $this->schema = new Schema(['model' => Image::class]);
-
-        $this->schema->set('id', ['type' => 'serial']);
-        $this->schema->set('gallery_id', ['type' => 'integer']);
-        $this->schema->set('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
-        $this->schema->set('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
-
-        $this->schema->bind('gallery', [
-            'relation' => 'belongsTo',
-            'to'       => Gallery::class,
-            'keys'     => ['gallery_id' => 'id']
-        ]);
-
-
-        $this->schema->bind('images_tags', [
-            'relation' => 'hasMany',
-            'to'       => ImageTag::class,
-            'keys'     => ['id' => 'image_id']
-        ]);
-
-        $this->schema->bind('tags', [
-            'relation' => 'hasManyThrough',
-            'to'       => Tag::class,
-            'through'  => 'images_tags',
-            'using'    => 'tag'
-        ]);
+    afterEach(function() {
+        Image::reset();
     });
 
     describe("->__construct()", function() {
@@ -175,7 +153,7 @@ describe("Schema", function() {
 
             $names = $this->schema->names();
             sort($names);
-            expect($names)->toBe(['gallery_id', 'id', 'name', 'title']);
+            expect($names)->toBe(['gallery_id', 'id', 'name', 'score', 'title']);
 
         });
 
@@ -198,14 +176,17 @@ describe("Schema", function() {
                 ],
                 'name' => [
                     'type'    => 'string',
-                    'default' => 'Enter The Name Here',
                     'array'   => false,
                     'null'    => true
                 ],
                 'title' => [
                     'type'    => 'string',
-                    'default' => 'Enter The Title Here',
                     'length'  => 50,
+                    'array'   => false,
+                    'null'    => true
+                ],
+                'score' => [
+                    'type'    => 'float',
                     'array'   => false,
                     'null'    => true
                 ]
@@ -218,15 +199,17 @@ describe("Schema", function() {
             expect($this->schema->fields('default'))->toBe([
                 'id'         => null,
                 'gallery_id' => null,
-                'name'       => 'Enter The Name Here',
-                'title'      => 'Enter The Title Here'
+                'name'       => null,
+                'title'      => null,
+                'score'      => null
             ]);
 
             expect($this->schema->fields('type'))->toBe([
                 'id'         => 'serial',
                 'gallery_id' => 'integer',
                 'name'       => 'string',
-                'title'      => 'string'
+                'title'      => 'string',
+                'score'      => 'float'
             ]);
 
         });
@@ -234,6 +217,9 @@ describe("Schema", function() {
     });
 
     it("returns defaults", function() {
+
+        $this->schema->set('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
+        $this->schema->set('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
 
         expect($this->schema->defaults())->toBe([
             'name'       => 'Enter The Name Here',
@@ -340,7 +326,36 @@ describe("Schema", function() {
 
         });
 
-    });
+        it("sets nested fields", function() {
+
+            $schema = new Schema();
+            $schema->set('preferences', ['type' => 'object']);
+            $schema->set('preferences.blacklist', ['type' => 'object']);
+            $schema->set('preferences.blacklist.projects', ['type' => 'id', 'array' => true, 'default' => []]);
+            $schema->set('preferences.mail', ['type' => 'object']);
+            $schema->set('preferences.mail.enabled', ['type' => 'boolean', 'default' => true]);
+            $schema->set('preferences.mail.frequency', ['type' => 'integer', 'default' => 24]);
+
+            $document = $schema->cast(null, []);
+
+            expect($document->data())->toEqual([
+                'preferences' => [
+                    'blacklist' => [
+                        'projects' => []
+                    ],
+                    'mail' => [
+                        'enabled' => true,
+                        'frequency' => 24
+                    ]
+                ]
+            ]);
+
+            $document['preferences.mail.enabled'] = 0;
+            expect($document['preferences.mail.enabled'])->toBe(false);
+
+        });
+
+   });
 
     describe("->remove()", function() {
 
@@ -623,14 +638,6 @@ describe("Schema", function() {
                 }
             ];
 
-            $this->schema = Image::schema();
-
-            $this->schema->set('id', ['type' => 'serial']);
-            $this->schema->set('gallery_id', ['type' => 'integer']);
-            $this->schema->set('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
-            $this->schema->set('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
-            $this->schema->set('score', ['type' => 'float']);
-
             $this->schema->formatter('cast', 'id',        $handlers['integer']);
             $this->schema->formatter('cast', 'serial',    $handlers['integer']);
             $this->schema->formatter('cast', 'integer',   $handlers['integer']);
@@ -643,33 +650,9 @@ describe("Schema", function() {
             $this->schema->formatter('cast', 'string',    $handlers['string']);
             $this->schema->formatter('cast', '_default_', $handlers['string']);
 
-            $this->schema->bind('gallery', [
-                'relation' => 'belongsTo',
-                'to'       => Gallery::class,
-                'keys'     => ['gallery_id' => 'id']
-            ]);
-
-            $this->schema->bind('images_tags', [
-                'relation' => 'hasMany',
-                'to'       => ImageTag::class,
-                'keys'     => ['id' => 'image_id']
-            ]);
-
-            $this->schema->bind('tags', [
-                'relation' => 'hasManyThrough',
-                'through'  => 'images_tags',
-                'using'    => 'tag'
-            ]);
-
         });
 
-        afterEach(function() {
-
-            Image::reset();
-
-        });
-
-        it("casts hasManyThrough relation data", function() {
+        it("casts a nested entity data", function() {
 
             $image = $this->schema->cast(null, [
                 'id'         => '1',
@@ -689,15 +672,15 @@ describe("Schema", function() {
                 ]
             ]);
 
-            expect($image->id)->toBeAn('integer');
-            expect($image->gallery_id)->toBeAn('integer');
-            expect($image->name)->toBeA('string');
-            expect($image->title)->toBeA('string');
-            expect($image->score)->toBeA('float');
+            expect($image->id)->toBe(1);
+            expect($image->gallery_id)->toBe(2);
+            expect($image->name)->toBe('image.jpg');
+            expect($image->title)->toBe('My Image');
+            expect($image->score)->toBe(8.9);
             expect($image->tags)->toBeAnInstanceOf('Chaos\Collection\Through');
-            expect($image->tags->model())->toBe('Chaos\Spec\Fixture\Model\Tag');
-            expect($image->tags[0])->toBeAnInstanceOf('Chaos\Spec\Fixture\Model\Tag');
-            expect($image->tags[1])->toBeAnInstanceOf('Chaos\Spec\Fixture\Model\Tag');
+            expect($image->tags->schema())->toBe(Tag::definition());
+            expect($image->tags[0]->data())->toEqual(['id' => '1', 'name' => 'landscape']);
+            expect($image->tags[1]->data())->toEqual(['id' => '2', 'name' => 'mountain']);
 
         });
 

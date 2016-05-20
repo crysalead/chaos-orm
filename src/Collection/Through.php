@@ -2,12 +2,13 @@
 namespace Chaos\Collection;
 
 use Chaos\ChaosException;
+use Chaos\DataStoreInterface;
 use Chaos\Collection\Collection;
 
 /**
  * `Through` provide context-specific features for working with sets of data persisted by a backend data store.
  */
-class Through implements \ArrayAccess, \Iterator, \Countable
+class Through implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
 {
     /**
      * A reference to this object's parent `Document` object.
@@ -17,12 +18,12 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     protected $_parent = null;
 
     /**
-     * The fully-namespaced class name of the model object to which this entity set is bound. This
-     * is usually the model that executed the query which created this object.
+     * The schema to which this collection is bound. This
+     * is usually the schema that executed the query which created this object.
      *
-     * @var string
+     * @var object
      */
-    protected $_model = null;
+    protected $_schema = null;
 
     /**
      * A reference to this object's parent `Document` object.
@@ -43,7 +44,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      *
      * @param array $config Possible options are:
      *                      - `'parent'`    _object_ : The parent instance.
-     *                      - `'model'`     _string_ : The attached model class name.
+     *                      - `'schema'`    _object_ : The attached schema.
      *                      - `'through'`   _object_ : A collection instance.
      *                      - `'using'`     _string_ : The field name to extract from collection's entities.
      *                      - `'data'`      _array_  : Some data to set on the collection.
@@ -52,18 +53,18 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     {
         $defaults = [
             'parent'  => null,
-            'model'   => null,
+            'schema'   => null,
             'through' => null,
             'using'   => null,
             'data'     => []
         ];
         $config += $defaults;
         $this->_parent = $config['parent'];
-        $this->_model = $config['model'];
+        $this->_schema = $config['schema'];
         $this->_through = $config['through'];
         $this->_using = $config['using'];
 
-        foreach (['parent', 'model', 'through', 'using'] as $name) {
+        foreach (['parent', 'schema', 'through', 'using'] as $name) {
             if (!$config[$name]) {
                 throw new ChaosException("Invalid through collection, `'{$name}'` is empty.");
             }
@@ -77,10 +78,25 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets/sets the parent instance.
+     * Gets/sets the collector.
      *
-     * @param  object $parent The parent instance to set or `null` to get the current one.
-     * @return object
+     * @param  object $collector The collector instance to set or none to get it.
+     * @return mixed          Returns the parent value on get or `$this` otherwise.
+     */
+    public function collector($collector = null)
+    {
+        if (!func_num_args()) {
+            return $this->_parent->{$this->_through}->collector();
+        }
+        $this->_parent->{$this->_through}->collector($collector);
+        return $this;
+    }
+
+    /**
+     * Gets/sets the parent.
+     *
+     * @param  object $parent The parent instance to set or none to get it.
+     * @return mixed          Returns the parent value on get or `$this` otherwise.
      */
     public function parent($parent = null)
     {
@@ -92,6 +108,32 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * Gets/sets whether or not this instance has been persisted somehow.
+     *
+     * @param  boolean $exists The exists value to set or none to get the current one.
+     * @return mixed           Returns the exists value on get or `$this` otherwise.
+     */
+    public function exists($exists = null)
+    {
+        if (!func_num_args()) {
+            return $this->_parent->{$this->_through}->exists();
+        }
+        $this->_parent->{$this->_through}->exists($parent);
+        return $this;
+    }
+
+    /**
+     * Gets/sets the schema instance.
+     *
+     * @param  Object schema The schema instance to set or none to get it.
+     * @return Object        The schema instance or `$this` on set.
+     */
+    public function schema()
+    {
+        return $this->_schema;
+    }
+
+    /**
      * Gets the base rootPath.
      *
      * @return string
@@ -99,16 +141,6 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     public function rootPath()
     {
         return '';
-    }
-
-    /**
-     * Returns the model on which this particular collection is based.
-     *
-     * @return string The fully qualified model class name.
-     */
-    public function model()
-    {
-        return $this->_model;
     }
 
     /**
@@ -144,6 +176,41 @@ class Through implements \ArrayAccess, \Iterator, \Countable
     }
 
     /**
+     * Gets an `Entity` object.
+     *
+     * @param  integer $offset The offset.
+     * @return mixed          Returns an `Entity` object if exists otherwise returns `undefined`.
+     */
+    public function get($offset = null)
+    {
+        if ($entity = $this->_parent->{$this->_through}->get($offset)) {
+            return $entity->{$this->_using};
+        }
+        return;
+    }
+
+    /**
+     * Sets data to a specified offset and wraps all data array in its appropriate object type.
+     *
+     * @param  mixed  $data    An array or an entity instance to set.
+     * @param  mixed  $offset  The offset. If offset is `null` data is simply appended to the set.
+     * @param  array  $options Any additional options to pass to the `Entity`'s constructor.
+     * @return object          Returns the inserted instance.
+     */
+    public function set($offset = null, $data = [])
+    {
+        $name = $this->_through;
+        $parent = $this->parent();
+        $relThrough = $parent->schema()->relation($name);
+        $through = $relThrough->to();
+
+        $item = $through::create($this->_parent->exists() ? $relThrough->match($this->_parent) : []);
+        $item->{$this->_using} = $data;
+
+        return $this->_parent->{$name}->set($offset, $item);
+    }
+
+    /**
      * Returns a boolean indicating whether an offset exists for the
      * current `Collection`.
      *
@@ -164,10 +231,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetGet($offset)
     {
-        if ($entity = $this->_parent->{$this->_through}[$offset]) {
-            return $entity->{$this->_using};
-        }
-        return;
+        return $this->get($offset);
     }
 
     /**
@@ -180,15 +244,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function offsetSet($offset, $data)
     {
-        $name = $this->_through;
-        $parent = $this->parent();
-        $relThrough = $parent::relation($name);
-        $through = $relThrough->to();
-
-        $item = $through::create($this->_parent->exists() ? $relThrough->match($this->_parent) : []);
-        $item->{$this->_using} = $data;
-
-        return $offset !== null ? $this->_parent->{$name}[$offset] = $item : $this->_parent->{$name}[] = $item;
+        return $this->set($offset, $data);
     }
 
     /**
@@ -414,8 +470,7 @@ class Through implements \ArrayAccess, \Iterator, \Countable
      */
     public function embed($relations)
     {
-        $model = $this->_model;
-        $model::schema()->embed($this, $relations);
+        $this->schema()->embed($this, $relations);
     }
 
     /**

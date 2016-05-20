@@ -40,13 +40,6 @@ class Relationship
     protected $_name = null;
 
     /**
-     * The counterpart relation/field name.
-     *
-     * @var string
-     */
-    protected $_inverseOf = null;
-
-    /**
      * The counterpart relation.
      *
      * @var object|null
@@ -96,6 +89,13 @@ class Relationship
     protected $_fields = true;
 
     /**
+     * The embedded mode.
+     *
+     * @var boolean
+     */
+    protected $_embedded = false;
+
+    /**
      * The naming conventions instance to use.
      *
      * @var object
@@ -109,8 +109,6 @@ class Relationship
      *                      question are bound. The available options are:
      *                      - `'name'`        _string_ : The field name used for accessing the related data.
      *                                                   For example, in the case of `Post` hasMany `Comment`, the name could be `'comments'`.
-     *                      - `'inverseOf'`   _string_ : The counterpart field name used for accessing the data.
-     *                                                   For example, in the case of `Post` hasMany `Comment`, the inverseOf could be `'post'`.
      *                      - `'keys'`        _mixed_  : Mathing keys definition, where the key is the key in the originating model,
      *                                                   and the value is the key in the target model (i.e. `['fromId' => 'toId']`).
      *                      - `'from'`        _string_ : The fully namespaced class name this relationship originates.
@@ -136,6 +134,7 @@ class Relationship
             'to'          => null,
             'link'        => static::LINK_KEY,
             'fields'      => true,
+            'embedded'    => false,
             'conventions' => null
         ];
 
@@ -165,6 +164,7 @@ class Relationship
         $this->_keys = $config['keys'];
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
+        $this->_embedded = $config['embedded'];
 
         $pos = strrpos(static::class, '\\');
         $this->_type = lcfirst(substr(static::class, $pos !== false ? $pos + 1 : 0));
@@ -196,19 +196,12 @@ class Relationship
 
         $to = $this->to();
 
-        if ($this->_inverseOf) {
-            if ($rel = $to::relation($this->_inverseOf)) {
-                return $this->_counterpart = $rel;
-            }
-            throw new ChaosException("The {$this->type()} counterpart relationship `'{$this->_inverseOf}'` in `{$to}` is missing.");
-        }
-
         $from = $this->from();
-        $relations = $to::relations();
+        $relations = $to::definition()->relations();
         $result = [];
 
         foreach ($relations as $relation) {
-            $rel = $to::relation($relation);
+            $rel = $to::definition()->relation($relation);
             if ($rel->to() === $this->from()) {
                 $result[] = $rel;
             }
@@ -273,7 +266,7 @@ class Relationship
         $name = $this->name();
 
         if (!$entity->exists()) {
-            return $entity[$name] = $entity::schema()->cast($name, [], [
+            return $entity->schema()->cast($name, [], [
                 'parent'   => $entity,
                 'model'    => $this->to()
             ]);

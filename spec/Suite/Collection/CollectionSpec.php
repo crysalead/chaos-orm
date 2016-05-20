@@ -3,11 +3,17 @@ namespace Chaos\Spec\Suite\Collection;
 
 use InvalidArgumentException;
 use Chaos\Model;
+use Chaos\Schema;
 use Chaos\Collection\Collection;
 
 use Kahlan\Plugin\Stub;
 
 describe("Collection", function() {
+
+    beforeEach(function() {
+        $model = $this->model = Stub::classname(['extends' => Model::class]);
+        $model::definition()->locked(false);
+    });
 
     describe("->__construct()", function() {
 
@@ -53,12 +59,13 @@ describe("Collection", function() {
 
     });
 
-    describe("->model()", function() {
+    describe("->schema()", function() {
 
-        it("returns the model", function() {
+        it("returns the schema", function() {
 
-            $collection = new Collection(['model' => Model::class]);
-            expect($collection->model())->toBe(Model::class);
+            $schema = new Schema();
+            $collection = new Collection(['schema' => $schema]);
+            expect($collection->schema())->toBe($schema);
 
         });
 
@@ -239,6 +246,21 @@ describe("Collection", function() {
 
         });
 
+        it("checks if a value has been setted using a dotted notation", function() {
+
+            $model = $this->model;
+
+            $collection = $model::create([
+                ['name' => 'hello' ],
+                ['name' => 'world', 'item' => ['a' => 'b']]
+            ], ['type' => 'set']);
+
+            expect(isset($collection['0.name']))->toBe(true);
+            expect(isset($collection['1.name']))->toBe(true);
+            expect(isset($collection['1.item.a']))->toBe(true);
+
+        });
+
     });
 
     describe("->offsetSet/offsetGet()", function() {
@@ -252,25 +274,14 @@ describe("Collection", function() {
 
         });
 
-        it("sets at a specific key", function() {
-
-            $collection = new Collection();
-            $collection['mykey'] = 'foo';
-            expect($collection['mykey'])->toBe('foo');
-            expect($collection)->toHaveLength(1);
-
-        });
-
-        context("when a model is defined", function() {
-
-            beforeEach(function() {
-                $this->model = Stub::classname(['extends' => Model::class]);
-            });
+        context("when a schema is defined", function() {
 
             it("autoboxes setted data", function() {
 
+                $model = $this->model;
+
                 $collection = new Collection([
-                    'model' => $this->model
+                    'schema' => $model::definition()
                 ]);
 
                 $collection[] = [
@@ -315,6 +326,21 @@ describe("Collection", function() {
 
         });
 
+        it("unsets items using a dotted notation", function() {
+
+            $model = $this->model;
+
+            $collection = $model::create([
+              ['name' => 'hello'],
+              ['name' => 'world']
+            ], ['type' => 'set']);
+
+            unset($collection['1.name']);
+
+            expect(isset($collection['0.name']))->toBe(true);
+            expect(isset($collection['1.name']))->toBe(false);
+
+        });
 
         it("unsets all items in a foreach", function() {
 
@@ -381,11 +407,11 @@ describe("Collection", function() {
         it("returns the item keys", function() {
 
             $collection = new Collection(['data' => [
-                'key1' => 'one',
-                'key2' => 'two',
-                'key3' => 'three'
+                'one',
+                'two',
+                'three'
             ]]);
-            expect($collection->keys())->toBe(['key1', 'key2', 'key3']);
+            expect($collection->keys())->toBe([0, 1, 2]);
 
         });
 
@@ -396,9 +422,9 @@ describe("Collection", function() {
         it("returns the plain data", function() {
 
             $data = [
-                'key1' => 'one',
-                'key2' => 'two',
-                'key3' => 'three'
+                'one',
+                'two',
+                'three'
             ];
             $collection = new Collection(compact('data'));
             expect($collection->get())->toBe($data);
@@ -539,7 +565,7 @@ describe("Collection", function() {
 
     describe("->embed()", function() {
 
-        it("deletages the call up to the schema instance", function() {
+        it("delegates the call up to the schema instance", function() {
 
             $model = Stub::classname(['extends' => Model::class]);
             $schema = Stub::create();

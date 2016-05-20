@@ -22,10 +22,14 @@ describe("Through", function() {
             'extends' => ImageTag::class
         ]);
 
+        $imageTagModel::definition()->locked(false);
+
         $this->tagModel = $tagModel = Stub::classname([
             'extends' => Tag::class,
             'methods' => ['tagMethod']
         ]);
+
+        $tagModel::definition()->locked(false);
 
         Stub::on($tagModel)->method('tagMethod', function($options) {
             return $options;
@@ -34,7 +38,7 @@ describe("Through", function() {
         for ($i = 0; $i < 5; $i++) {
             $image_tag = new $imageTagModel();
             $tag = new $tagModel();
-            $tag->name = $i;
+            $tag->name = (string) $i;
             $image_tag->tag = $tag;
             $this->images_tags[] = $image_tag;
         }
@@ -48,7 +52,7 @@ describe("Through", function() {
 
         $this->through = new Through([
             'parent'  => $this->image,
-            'model'   => $this->tagModel,
+            'schema'  => $tagModel::definition(),
             'through' => 'images_tags',
             'using'   => 'tag'
         ]);
@@ -83,11 +87,12 @@ describe("Through", function() {
 
     });
 
-    describe("->model()", function() {
+    describe("->schema()", function() {
 
-        it("returns the model", function() {
+        it("returns the schema", function() {
 
-            expect($this->through->model())->toBe($this->tagModel);
+            $tagModel = $this->tagModel;
+            expect($this->through->schema())->toBe($tagModel::definition());
 
         });
 
@@ -190,7 +195,7 @@ describe("Through", function() {
         it("reduces a collection down to a single value", function() {
 
             $filter = function($memo, $item) {
-                return $memo + $item->name;
+                return $memo + (integer) $item->name;
             };
 
             expect($this->through->reduce($filter, 0))->toBe(10);
@@ -312,9 +317,11 @@ describe("Through", function() {
                 'title'       => 'Amiga 1200'
             ]]);
 
+            $tagModel = $this->tagModel;
+
             $through = new Through([
                 'parent'  => $image,
-                'model'   => $this->tagModel,
+                'schema'  => $tagModel::definition(),
                 'through' => 'images_tags',
                 'using'   => 'tag'
             ]);
@@ -387,9 +394,11 @@ describe("Through", function() {
                 'title'       => 'Amiga 1200'
             ]]);
 
+            $tagModel = $this->tagModel;
+
             $through = new Through([
                 'parent'  => $image,
-                'model'   => $this->tagModel,
+                'schema'  => $tagModel::definition(),
                 'through' => 'images_tags',
                 'using'   => 'tag'
             ]);
@@ -461,12 +470,11 @@ describe("Through", function() {
 
     describe("->embed()", function() {
 
-        it("deletages the call up to the schema instance", function() {
+        it("delegates the call up to the schema instance", function() {
 
             $model = $this->tagModel;
-            $schema = Stub::create();
-
-            $model::config(['schema' => $schema]);
+            $schema = $model::definition();
+            Stub::on($schema)->method('embed');
 
             expect($schema)->toReceive('embed')->with($this->through, ['relation1.relation2']);
             $this->through->embed(['relation1.relation2']);

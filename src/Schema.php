@@ -5,6 +5,7 @@ use Iterator;
 use DateTime;
 use Lead\Set\Set;
 use Chaos\Model;
+use Chaos\Document;
 
 class Schema
 {
@@ -14,6 +15,8 @@ class Schema
      * @var array
      */
     protected $_classes = [
+        'set'            => 'Chaos\Collection\Collection',
+        'through'        => 'Chaos\Collection\Through',
         'relationship'   => 'Chaos\Relationship',
         'belongsTo'      => 'Chaos\Relationship\BelongsTo',
         'hasOne'         => 'Chaos\Relationship\HasOne',
@@ -142,7 +145,7 @@ class Schema
         $defaults = [
             'connection'   => null,
             'source'       => null,
-            'model'        => null,
+            'model'        => Document::class,
             'locked'       => true,
             'fields'       => [],
             'meta'         => [],
@@ -189,6 +192,19 @@ class Schema
         $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
         $this->formatter('array', 'null',      $handlers['array']['null']);
         $this->formatter('array', '_default_', $handlers['array']['string']);
+
+        $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
+        $this->formatter('cast', 'float',    $handlers['cast']['float']);
+        $this->formatter('cast', 'decimal',  $handlers['cast']['float']);
+        $this->formatter('cast', 'date',     $handlers['cast']['datetime']);
+        $this->formatter('cast', 'datetime', $handlers['cast']['datetime']);
+        $this->formatter('cast', 'boolean',  $handlers['cast']['boolean']);
+        $this->formatter('cast', 'null',     $handlers['cast']['null']);
+        $this->formatter('cast', 'string',   $handlers['cast']['string']);
+
+        if ($this->_connection) {
+            $this->_formatters = Set::merge($this->_formatters, $this->_connection->formatters());
+        }
     }
 
     /**
@@ -397,7 +413,7 @@ class Schema
         $this->bind($name, [
             'type'     => $field['array'] ? 'set' : 'entity',
             'relation' => $field['array'] ? 'hasMany' : 'hasOne',
-            'to'       => isset($field['model']) ? $field['model'] : Model::class,
+            'to'       => isset($field['model']) ? $field['model'] : $this->model(),
             'link'     => $relationship::LINK_EMBEDDED
         ]);
 
@@ -712,7 +728,7 @@ class Schema
                 }
             }
             if ($subrelations) {
-                $to::schema()->embed($related, $subrelations, $options);
+                $to::definition()->embed($related, $subrelations, $options);
             }
         }
 
@@ -776,26 +792,26 @@ class Schema
     /**
      * Cast data according to the schema definition.
      *
-     * @param  string $name    The field name.
+     * @param  string $field   The field name.
      * @param  array  $data    Some data to cast.
      * @param  array  $options Options for the casting.
      * @return object          The casted data.
      */
-    public function cast($name, $data, $options = [])
+    public function cast($field, $data, $options = [])
     {
         $defaults = [
             'collector' => null,
             'parent'    => null,
-            'model'     => $this->model(),
             'rootPath'  => null,
             'exists'    => false
         ];
         $options += $defaults;
 
-        $name = is_int($name) ? null : $name;
+        $options['model'] = $this->model();
+        $options['schema'] = $this;
 
-        if ($name) {
-            $name = $options['rootPath'] ? $options['rootPath'] . '.' . $name : $name;
+        if ($field) {
+            $name = $options['rootPath'] ? $options['rootPath'] . '.' . $field : $field;
         } else {
             $name = $options['rootPath'];
         }
@@ -803,11 +819,11 @@ class Schema
         if ($name === null) {
             return $this->_cast($data, $options);
         }
+
         if (isset($this->_relations[$name])) {
             $options = $this->_relations[$name] + $options;
-            if ($options['embedded']) {
-                $options['rootPath'] = $name;
-            }
+            $options['rootPath'] = $options['embedded'] ? $name : null;
+
             if ($options['relation'] !== 'hasManyThrough') {
                 $options['model'] = $options['to'];
             } else {
@@ -815,21 +831,32 @@ class Schema
                 $options['model'] = $through->to();
             }
 
-            if ($options['array']) {
+            if ($options['array'] && $field) {
                 return $this->_castArray($name, $data, $options);
             }
             return $this->_cast($data, $options);
         }
+
         if (isset($this->_fields[$name])) {
             $options = $this->_fields[$name] + $options;
             if ($data === null && $options['null']) {
                 return;
             }
-            if ($options['array']) {
-                $options['type'] = 'set';
+            if ($options['array'] && $field) {
                 return $this->_castArray($name, $data, $options);
             }
             return $this->format('cast', $name, $data);
+        }
+
+        if ($this->locked()) {
+            throw new ChaosException("Missing schema definition for field: `" . $name . "`.");
+        }
+        if (is_array($data)) {
+            if ($data === array_values($data)) {
+                return $this->_castArray($name, $data, $options);
+            } else {
+                return $this->_cast($data, $options);
+            }
         }
 
         return $data;
@@ -844,10 +871,14 @@ class Schema
      */
     public function _cast($data, $options)
     {
-        $model = $options['model'];
-        if ($data instanceof $model) {
+        if ($data instanceof Document) {
+            $data->collector($options['collector']);
+            $data->parent($options['parent']);
+            $data->rootPath($options['rootPath']);
             return $data;
         }
+        $options['type'] = 'entity';
+        $model = $options['model'];
         return $model::create($data, $options);
     }
 
@@ -861,8 +892,12 @@ class Schema
      */
     public function _castArray($name, $data, $options)
     {
+        $options['type'] = isset($options['relation']) && $options['relation'] === 'hasManyThrough' ? 'through' : 'set';
         $collection = $this->_classes[$options['type']];
         if ($data instanceof $collection) {
+            $data->collector($options['collector']);
+            $data->parent($options['parent']);
+            $data->rootPath($options['rootPath']);
             return $data;
         }
         $model = $options['model'];
@@ -900,6 +935,40 @@ class Schema
                 },
                 'null' => function($value, $options = []) {
                     return;
+                }
+            ],
+            'cast' => [
+                'string' => function($value, $options = []) {
+                    return (string) $value;
+                },
+                'integer' => function($value, $options = []) {
+                    return (integer) $value;
+                },
+                'float' => function($value, $options = []) {
+                    return (float) $value;
+                },
+                'decimal' => function($value, $options = []) {
+                    $options += ['precision' => 2];
+                    return (float) number_format($value, $options['precision']);
+                },
+                'boolean' => function($value, $options = []) {
+                    return !!$value;
+                },
+                'date' => function($value, $options = []) {
+                    return $this->format('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                },
+                'datetime' => function($value, $options = []) {
+                    $options += ['format' => 'Y-m-d H:i:s'];
+                    if (is_numeric($value)) {
+                        return new DateTime('@' . $value);
+                    }
+                    if ($value instanceof DateTime) {
+                        return $value;
+                    }
+                    return DateTime::createFromFormat($options['format'], date($options['format'], strtotime($value)));
+                },
+                'null' => function($value, $options = []) {
+                    return null;
                 }
             ]
         ];
