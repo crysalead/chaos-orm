@@ -49,18 +49,7 @@ describe("Schema", function() {
             expect($schema->model())->toBe(Image::class);
             expect($schema->key())->toBe('key');
             expect($schema->locked())->toBe(false);
-            expect($schema->fields())->toBe([
-                'id' => [
-                    'type'  => 'serial',
-                    'array' => false,
-                    'null'  => false
-                ],
-                'age' => [
-                    'type'   => 'integer',
-                    'array'  => false,
-                    'null'   => true
-                ]
-            ]);
+            expect($schema->fields())->toBe(['id', 'age']);
             expect($schema->meta())->toBe(['some' => ['meta']]);
             expect($schema->conventions())->toBe($conventions);
 
@@ -163,54 +152,15 @@ describe("Schema", function() {
 
         it("returns all fields", function() {
 
-            expect($this->schema->fields())->toBe([
-                'id' => [
-                    'type'  => 'serial',
-                    'array' => false,
-                    'null'  => false
-                ],
-                'gallery_id' => [
-                    'type'  => 'integer',
-                    'array' => false,
-                    'null'  => true
-                ],
-                'name' => [
-                    'type'    => 'string',
-                    'array'   => false,
-                    'null'    => true
-                ],
-                'title' => [
-                    'type'    => 'string',
-                    'length'  => 50,
-                    'array'   => false,
-                    'null'    => true
-                ],
-                'score' => [
-                    'type'    => 'float',
-                    'array'   => false,
-                    'null'    => true
-                ]
-            ]);
+            expect($this->schema->fields())->toBe(['id', 'gallery_id', 'name', 'title', 'score']);
 
         });
 
-        it("returns an attribute only", function() {
+        it("filters out virtual fields", function() {
 
-            expect($this->schema->fields('default'))->toBe([
-                'id'         => null,
-                'gallery_id' => null,
-                'name'       => null,
-                'title'      => null,
-                'score'      => null
-            ]);
-
-            expect($this->schema->fields('type'))->toBe([
-                'id'         => 'serial',
-                'gallery_id' => 'integer',
-                'name'       => 'string',
-                'title'      => 'string',
-                'score'      => 'float'
-            ]);
+            $this->schema->set('virtualField', ['virtual' => true]);
+            $fields = $this->schema->fields();
+            expect(isset($fields['virtualField']))->toBe(false);
 
         });
 
@@ -228,9 +178,9 @@ describe("Schema", function() {
 
     });
 
-    describe("->type()", function() {
+    describe("->field()", function() {
 
-        it("gets the type of a field", function() {
+        it("gets the field", function() {
 
             expect($this->schema->field('id'))->toBe([
                 'type'  => 'serial',
@@ -238,13 +188,38 @@ describe("Schema", function() {
                 'null'  => false
             ]);
 
+            expect($this->schema->field('gallery_id'))->toBe([
+                'type'  => 'integer',
+                'array' => false,
+                'null'  => true
+            ]);
+
+            expect($this->schema->field('name'))->toBe([
+                'type'  => 'string',
+                'array' => false,
+                'null'  => true
+            ]);
+
+            expect($this->schema->field('title'))->toBe([
+                'type'  => 'string',
+                'length'  => 50,
+                'array' => false,
+                'null'  => true
+            ]);
+
+            expect($this->schema->field('score'))->toBe([
+                'type'  => 'float',
+                'array' => false,
+                'null'  => true
+            ]);
+
         });
 
     });
 
-    describe("->field()", function() {
+    describe("->type()", function() {
 
-        it("returns a field", function() {
+        it("returns a field type", function() {
 
             expect($this->schema->type('id'))->toBe('serial');
 
@@ -355,7 +330,195 @@ describe("Schema", function() {
 
         });
 
-   });
+        context("with a dynamic getter", function() {
+
+            context("with a normal field", function() {
+
+                beforeEach(function() {
+
+                    $this->schema = new Schema();
+                    $this->schema->set('date', ['type' => 'string']);
+                    $this->schema->set('time', ['type' => 'string']);
+                    $this->schema->set('datetime', [
+                        'type' => 'datetime',
+                        'getter' => function($entity, $data, $name) {
+                            return $entity['date'] . ' ' . $entity['time'];
+                        }
+                    ]);
+
+                });
+
+                it("builds the field", function() {
+
+                    $document = $this->schema->cast(null, [
+                        'date' => '2015-05-20',
+                        'time' => '21:50:00'
+                    ]);
+                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
+                    expect(isset($document->datetime))->toBe(true);
+
+                });
+
+                it("rebuilds the field on changes", function() {
+
+                    $document = $this->schema->cast(null, [
+                        'date' => '2015-05-20',
+                        'time' => '21:50:00'
+                    ]);
+                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
+
+                    $document['time'] = '22:15:00';
+                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 22:15:00');
+                    expect(isset($document->datetime))->toBe(true);
+
+                });
+
+            });
+
+            context("with a virtual field", function() {
+
+                beforeEach(function() {
+
+                    $this->schema = new Schema();
+                    $this->schema->set('date', ['type' => 'string']);
+                    $this->schema->set('time', ['type' => 'string']);
+                    $this->schema->set('datetime', [
+                        'type'    => 'datetime',
+                        'virtual' => true,
+                        'getter'  => function($entity, $data, $name) {
+                            return $entity['date'] . ' ' . $entity['time'];
+                        }
+                    ]);
+
+                });
+
+                it("builds the field", function() {
+
+                    $document = $this->schema->cast(null, [
+                        'date' => '2015-05-20',
+                        'time' => '21:50:00'
+                    ]);
+                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
+                    expect(isset($document->datetime))->toBe(false);
+
+                });
+
+                it("rebuilds the field on changes", function() {
+
+                    $document = $this->schema->cast(null, [
+                        'date' => '2015-05-20',
+                        'time' => '21:50:00'
+                    ]);
+                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
+
+                    $document['time'] = '22:15:00';
+                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 22:15:00');
+                    expect(isset($document->datetime))->toBe(false);
+
+                });
+
+            });
+
+        });
+
+        context("with a dynamic setter", function() {
+
+            context("with a normal field", function() {
+
+                beforeEach(function() {
+
+                    $this->schema = new Schema();
+                    $this->schema->set('date', ['type' => 'string']);
+                    $this->schema->set('time', ['type' => 'string']);
+                    $this->schema->set('datetime', [
+                        'type'   => 'string',
+                        'setter' => function($entity, $data, $name) {
+                            $parts = explode(' ', $data);
+                            $entity['date'] = $parts[0];
+                            $entity['time'] = $parts[1];
+                            return $data;
+                        }
+                    ]);
+
+                });
+
+                it("builds the field", function() {
+
+                    $document = $this->schema->cast();
+                    $document->datetime = '2015-05-20 21:50:00';
+                    expect($document->date)->toBe('2015-05-20');
+                    expect($document->time)->toBe('21:50:00');
+                    expect($document->datetime)->toBe('2015-05-20 21:50:00');
+
+                });
+
+                it("rebuilds the field on changes", function() {
+
+                    $document = $this->schema->cast();
+                    $document->datetime = '2015-05-20 21:50:00';
+                    expect($document->date)->toBe('2015-05-20');
+                    expect($document->time)->toBe('21:50:00');
+                    expect($document->datetime)->toBe('2015-05-20 21:50:00');
+
+                    $document->datetime = '2015-05-20 22:15:00';
+                    expect($document->date)->toBe('2015-05-20');
+                    expect($document->time)->toBe('22:15:00');
+                    expect($document->datetime)->toBe('2015-05-20 22:15:00');
+
+                });
+
+            });
+
+            context("with a virtual field", function() {
+
+                beforeEach(function() {
+
+                    $this->schema = new Schema();
+                    $this->schema->set('date', ['type' => 'string']);
+                    $this->schema->set('time', ['type' => 'string']);
+                    $this->schema->set('datetime', [
+                        'type'    => 'string',
+                        'virtual' => true,
+                        'setter'  => function($entity, $data, $name) {
+                            $parts = explode(' ', $data);
+                            $entity['date'] = $parts[0];
+                            $entity['time'] = $parts[1];
+                            return $data;
+                        }
+                    ]);
+
+                });
+
+                it("builds the field", function() {
+
+                    $document = $this->schema->cast();
+                    $document->datetime = '2015-05-20 21:50:00';
+                    expect($document->date)->toBe('2015-05-20');
+                    expect($document->time)->toBe('21:50:00');
+                    expect(isset($document->datetime))->toBe(false);
+
+                });
+
+                it("rebuilds the field on changes", function() {
+
+                    $document = $this->schema->cast();
+                    $document->datetime = '2015-05-20 21:50:00';
+                    expect($document->date)->toBe('2015-05-20');
+                    expect($document->time)->toBe('21:50:00');
+                    expect(isset($document->datetime))->toBe(false);
+
+                    $document->datetime = '2015-05-20 22:15:00';
+                    expect($document->date)->toBe('2015-05-20');
+                    expect($document->time)->toBe('22:15:00');
+                    expect(isset($document->datetime))->toBe(false);
+
+                });
+
+            });
+
+        });
+
+    });
 
     describe("->remove()", function() {
 
@@ -375,6 +538,13 @@ describe("Schema", function() {
             expect($this->schema->has('title'))->toBe(true);
             $this->schema->remove('title');
             expect($this->schema->has('title'))->toBe(false);
+
+        });
+
+        it("checks if a schema contain a virtual field name", function() {
+
+            $this->schema->set('virtualField', ['virtual' => true]);
+            expect($this->schema->has('virtualField'))->toBe(true);
 
         });
 
@@ -401,23 +571,7 @@ describe("Schema", function() {
                 $fields = $this->schema->fields();
                 ksort($fields);
 
-                expect($fields)->toBe([
-                    'id' => [
-                        'type'  => 'serial',
-                        'array' => false,
-                        'null'  => false
-                    ],
-                    'name' => [
-                        'type'  => 'string',
-                        'array' => false,
-                        'null'  => true
-                    ],
-                    'title' => [
-                        'type'  => 'string',
-                        'array' => false,
-                        'null'  => true
-                    ]
-                ]);
+                expect($fields)->toBe(['id', 'name', 'title']);
 
             });
 
@@ -436,25 +590,22 @@ describe("Schema", function() {
                 $fields = $this->schema->fields();
                 ksort($fields);
 
-                expect($fields)->toBe([
-                    'id' => [
-                        'type'  => 'serial',
-                        'array' => false,
-                        'null'  => false
-                    ],
-                    'name' => [
-                        'type'  => 'string',
-                        'array' => false,
-                        'null'  => true
-                    ],
-                    'title' => [
-                        'type'  => 'string',
-                        'array' => false,
-                        'null'  => true
-                    ]
-                ]);
+                expect($fields)->toBe(['id', 'name', 'title']);
 
             });
+
+        });
+
+    });
+
+    describe("->virtuals()", function() {
+
+        it("returns all virtual fields", function() {
+
+            $this->schema->set('virtualField1', ['virtual' => true]);
+            $this->schema->set('virtualField2', ['virtual' => true]);
+
+            expect($this->schema->virtuals())->toBe(['virtualField1', 'virtualField2']);
 
         });
 

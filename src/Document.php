@@ -373,6 +373,71 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         return $this;
     }
 
+
+    /**
+     * Returns the current data.
+     *
+     * @param  string $name If name is defined, it'll only return the field value.
+     * @return array.
+     */
+    public function get($name = null)
+    {
+        if (!func_num_args()) {
+            return $this->_data;
+        }
+        $keys = is_array($name) ? $name : explode('.', $name);
+        $name = array_shift($keys);
+        if (!$name) {
+            throw new ChaosException("Field name can't be empty.");
+        }
+
+        if ($keys) {
+            $value = $this->get($name);
+            if (!$value instanceof DataStoreInterface) {
+                throw new ChaosException("The field: `" . $name . "` is not a valid document or entity.");
+            }
+            return $value->get($keys);
+        }
+
+        $schema = $this->schema();
+        $fieldname = $this->rootPath() ? $this->rootPath() . '.' . $name : $name;
+
+        if (!$schema->has($fieldname)) {
+            if (array_key_exists($name, $this->_data)) {
+                return $this->_data[$name];
+            } elseif ($schema->hasRelation($fieldname)) {
+                return $this->_data[$name] = $schema->relation($fieldname)->get($this);
+            }
+            return;
+        }
+
+        $field = $schema->field($fieldname);
+
+        if (!empty($field['getter'])) {
+            $value = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);
+        } elseif (array_key_exists($name, $this->_data)) {
+            return $this->_data[$name];
+        } elseif ($schema->hasRelation($fieldname)) {
+            return $this->_data[$name] = $schema->relation($fieldname)->get($this);
+        } elseif ($field['type'] === 'object') {
+            $value = [];
+        } else {
+            return;
+        }
+
+        $value = $schema->cast($name, $value, [
+            'collector' => $this->collector(),
+            'parent'    => $this,
+            'rootPath'  => $this->rootPath(),
+            'defaults'  => true,
+            'exists'    => $this->exists()
+        ]);
+        if (!empty($field['virtual'])) {
+            return $value;
+        }
+        return $this->_data[$name] = $value;
+    }
+
     /**
      * Sets one or several properties.
      *
@@ -452,14 +517,8 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             $this->_data[$name]->set($keys, $data);
             return;
         }
-        $conventions = static::conventions();
-        $method = $conventions->apply('setter', $name);
-        if (method_exists($this, $method)) {
-            $data = $this->$method($data);
-        }
 
-        $isPresent = array_key_exists($name, $this->_data);
-        $previous = $isPresent ? $this->_data[$name] : null;
+        $schema = $this->schema();
 
         $value = $this->schema()->cast($name, $data, [
             'collector' => $this->collector(),
@@ -469,63 +528,12 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             'exists'    => $this->exists()
         ]);
 
-        if ($previous === $value && $isPresent) {
-            return;
-        }
-        $this->_data[$name] = $value;
-    }
-
-    /**
-     * Returns the current data.
-     *
-     * @param  string $name If name is defined, it'll only return the field value.
-     * @return array.
-     */
-    public function get($name = null)
-    {
-        if (!func_num_args()) {
-            return $this->_data;
-        }
-        $keys = is_array($name) ? $name : explode('.', $name);
-        $name = array_shift($keys);
-        if (!$name) {
-            throw new ChaosException("Field name can't be empty.");
-        }
-
-        if ($keys) {
-            $value = $this->get($name);
-            if (!$value instanceof DataStoreInterface) {
-                throw new ChaosException("The field: `" . $name . "` is not a valid document or entity.");
-            }
-            return $value->get($keys);
-        }
-
-        $conventions = static::conventions();
-        $method = $conventions->apply('getter', $name);
-        if (method_exists($this, $method)) {
-            return $this->$method(array_key_exists($name, $this->_data) ? $this->_data[$name] : null);
-        }
-        if (array_key_exists($name, $this->_data)) {
-            return $this->_data[$name];
-        }
-
-        $schema = $this->schema();
-        if ($schema->hasRelation($name)) {
-            return $this->_data[$name] = $schema->relation($name)->get($this);
-        }
         $fieldname = $this->rootPath() ? $this->rootPath() . '.' . $name : $name;
-        if (!$schema->has($fieldname)) {
+        if ($schema->isVirtual($fieldname)) {
             return;
         }
-        if ($schema->field($fieldname, 'type') === 'object') {
-            return $this->_data[$name] = $schema->cast($name, [], [
-                'collector' => $this->collector(),
-                'parent'    => $this,
-                'rootPath'  => $this->rootPath(),
-                'defaults'  => true,
-                'exists'    => $this->exists()
-            ]);
-        }
+
+        $this->_data[$name] = $value;
     }
 
     /**
@@ -700,11 +708,8 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      */
     public function &__get($name)
     {
-        if (!$name) {
-            throw new ChaosException("Field name can't be empty.");
-        }
-        $result = $this->get($name);
-        return $result;
+        $value = $this->get($name);
+        return $value;
     }
 
     /**
@@ -971,6 +976,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
     {
         $defaults = [
             'embed' => true,
+            'verbose' => false,
             'rootPath' => null
         ];
         $options += $defaults;
@@ -984,7 +990,11 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $rootPath = $options['rootPath'];
 
         $result = [];
-        foreach ($this as $field => $value) {
+        $fields = array_keys($this->_data);
+        if ($options['verbose'] && $schema->locked()) {
+            $fields += array_keys($schema->fields());
+        }
+        foreach ($fields as $field) {
             if ($schema->hasRelation($field)) {
                 $rel = $schema->relation($field);
                 if (!$rel->embedded()) {
@@ -994,6 +1004,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
                     $options['embed'] = $tree[$field];
                 }
             }
+            $value = $this[$field];
             if ($value instanceof Document) {
                 $options['rootPath'] = $value->rootPath();
                 $result[$field] = $value->to($format, $options);

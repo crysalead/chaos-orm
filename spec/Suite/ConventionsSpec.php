@@ -26,8 +26,6 @@ describe("Conventions", function() {
             expect($conventions->apply('field', $model))->toBe('my_post');
             expect($conventions->apply('single', 'tag'))->toBe('tag');
             expect($conventions->apply('multiple', 'tag'))->toBe('tags');
-            expect($conventions->apply('getter', 'hello_world'))->toBe('getHelloWorld');
-            expect($conventions->apply('setter', 'hello_world'))->toBe('setHelloWorld');
 
         });
 
@@ -68,11 +66,9 @@ describe("Conventions", function() {
             ksort($closures);
             expect(array_keys($closures))->toBe([
                 'field',
-                'getter',
                 'key',
                 'multiple',
                 'reference',
-                'setter',
                 'single',
                 'source'
             ]);
@@ -86,11 +82,9 @@ describe("Conventions", function() {
             ksort($closures);
             expect(array_keys($closures))->toBe([
                 'field',
-                'getter',
                 'key',
                 'multiple',
                 'reference',
-                'setter',
                 'single',
                 'source'
             ]);

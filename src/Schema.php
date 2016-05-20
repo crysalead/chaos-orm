@@ -326,21 +326,16 @@ class Schema
      *
      * @return array
      */
-    public function fields($attribute = null)
+    public function fields()
     {
-        if (!$attribute) {
-            $fields = [];
-            foreach ($this->_fields as $name => $value) {
-                $fields[$name] = $this->field($name);
-            }
-            return $fields;
-        }
-        $result = [];
+        $fields = [];
         foreach ($this->_fields as $name => $field) {
-            $value = isset($field[$attribute]) ? $field[$attribute] : null;
-            $result[$name] = $value;
+            if (!empty($field['virtual'])) {
+                continue;
+            }
+            $fields[] = $name;
         }
-        return $result;
+        return $fields;
     }
 
     /**
@@ -462,7 +457,7 @@ class Schema
      * Checks if the schema has a field/some fields.
      *
      * @param  string|array $name The field name or an array of field names to check.
-     * @return boolean Returns `true` if present, `false` otherwise.
+     * @return boolean            Returns `true` if present, `false` otherwise.
      */
     public function has($name)
     {
@@ -487,9 +482,47 @@ class Schema
                 $this->_fields[$key] = $this->_initField($value);
             }
         } else {
-            $this->_fields = $fields->fields() + $this->_fields;
+            foreach ($fields->fields() as $name) {
+                $this->_fields[$name] = $fields->field($name);
+            }
         }
         return $this;
+    }
+
+    /**
+     * Gets all virtual fields.
+     *
+     * @return array
+     */
+    public function virtuals($attribute = null)
+    {
+        $fields = [];
+        foreach ($this->_fields as $name => $field) {
+            if (empty($field['virtual'])) {
+                continue;
+            }
+            $fields[] = $name;
+        }
+        return $fields;
+    }
+
+    /**
+     * Checks if the schema has a field/some virtual fields.
+     *
+     * @param  string|array $name The field name or an array of field names to check.
+     * @return boolean            Returns `true` if present, `false` otherwise.
+     */
+    public function isVirtual($name)
+    {
+        if (!is_array($name)) {
+            return !empty($this->_fields[$name]['virtual']);
+        }
+        foreach ($name as $field) {
+            if (!$this->isVirtual($field)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -797,7 +830,7 @@ class Schema
      * @param  array  $options Options for the casting.
      * @return object          The casted data.
      */
-    public function cast($field, $data, $options = [])
+    public function cast($field = null, $data = [], $options = [])
     {
         $defaults = [
             'collector' => null,
@@ -839,8 +872,8 @@ class Schema
 
         if (isset($this->_fields[$name])) {
             $options = $this->_fields[$name] + $options;
-            if ($data === null && $options['null']) {
-                return;
+            if (!empty($options['setter'])) {
+                $data = $options['setter']($options['parent'], $data, $name);
             }
             if ($options['array'] && $field) {
                 return $this->_castArray($name, $data, $options);

@@ -64,12 +64,6 @@ class Conventions
                 },
                 'single' => function($name) {
                     return Inflector::singularize($name);
-                },
-                'getter' => function($name) {
-                    return 'get' . str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
-                },
-                'setter' => function($name) {
-                    return 'set' . str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
                 }
             ]
         ];

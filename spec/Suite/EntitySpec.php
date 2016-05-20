@@ -305,35 +305,35 @@ describe("Entity", function() {
 
         });
 
-        it("sets a value using a dedicated method", function() {
+        it("sets a value using a virtual field", function() {
 
-            $entity = Stub::create([
-                'extends' => $this->model,
-                'methods' => ['setHelloBoy']
+            $model = $this->model;
+            $schema = $model::definition();
+            $schema->set('hello_boy', [
+                'setter' => function($entity, $data, $name) {
+                    return 'Hi ' . $data;
+                }
             ]);
-            Stub::on($entity)->method('setHelloBoy', function($data) {
-                return 'Hi ' . $data;
-            });
-            $entity::definition()->locked(false);
+
+            $entity = $model::create();
 
             $entity->hello_boy = 'boy';
             expect($entity->hello_boy)->toBe('Hi boy');
 
         });
 
-        it("gets a value using a dedicated method", function() {
+        it("gets a value using a virtual field", function() {
 
-            $entity = Stub::create([
-                'extends' => $this->model,
-                'methods' => ['getHelloBoy']
+            $model = $this->model;
+            $schema = $model::definition();
+            $schema->set('hello_boy', [
+                'getter' => function($entity, $data, $name) {
+                    return 'Hi Boy!';
+                }
             ]);
-            Stub::on($entity)->method('getHelloBoy', function($data) {
-                return 'Hi ' . $data;
-            });
-            $entity::definition()->locked(false);
 
-            $entity->hello_boy = 'boy';
-            expect($entity->hello_boy)->toBe('Hi boy');
+            $entity = $model::create();
+            expect($entity->hello_boy)->toBe('Hi Boy!');
 
         });
 
