@@ -166,6 +166,43 @@ describe("Schema", function() {
 
     });
 
+    describe("->columns()", function() {
+
+        it("returns all columns", function() {
+
+            expect($this->schema->columns())->toBe([
+                'id' => [
+                    'type'  => 'serial',
+                    'array' => false,
+                    'null'  => false
+                ],
+                'gallery_id' => [
+                    'type'  => 'integer',
+                    'array' => false,
+                    'null'  => true
+                ],
+                'name' => [
+                    'type'    => 'string',
+                    'array'   => false,
+                    'null'    => true
+                ],
+                'title' => [
+                    'type'    => 'string',
+                    'length'  => 50,
+                    'array'   => false,
+                    'null'    => true
+                ],
+                'score' => [
+                    'type'    => 'float',
+                    'array'   => false,
+                    'null'    => true
+                ]
+            ]);
+
+        });
+
+    });
+
     it("returns defaults", function() {
 
         $this->schema->set('name', ['type' => 'string', 'default' => 'Enter The Name Here']);

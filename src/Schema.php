@@ -338,6 +338,24 @@ class Schema
         return $fields;
     }
 
+
+    /**
+     * Gets all columns (i.e fields + data).
+     *
+     * @return array
+     */
+    public function columns()
+    {
+        $columns = [];
+        foreach ($this->_fields as $name => $field) {
+            if (!empty($field['virtual'])) {
+                continue;
+            }
+            $columns[$name] = $field;
+        }
+        return $columns;
+    }
+
     /**
      * Returns a schema field attribute.
      *
