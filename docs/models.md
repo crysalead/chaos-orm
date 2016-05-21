@@ -23,7 +23,7 @@ namespace My\Project\Model;
 
 class Gallery extends \Chaos\Model
 {
-    protected static $_schema = 'Chaos\Database\Schema';
+    protected static $_definition = 'Chaos\Database\Schema';
 
     ...
 }
@@ -36,8 +36,7 @@ namespace My\Project\Model;
 
 class Gallery extends \Chaos\Model
 {
-
-    protected static $_schema = 'Chaos\Database\Schema';
+    protected static $_definition = 'Chaos\Database\Schema';
 
     protected static function _define($schema)
     {
@@ -67,25 +66,23 @@ Note: Composite primary keys have not been implemented in Chaos to minimize the 
 
 In the previous example you noticed that fields and relations are defined using the `::_define()` method. More informations on [how to define a schema can by found here](schemas.md)
 
-Once defined, model's schema is available through `::schema()` and relations through `::relations()`:
+Once defined, model's schema is available through `::definition()`:
 
 ```php
-$relations = Gallery::relations(); // ['images']
+$relations = Gallery::definition()->relations(); // ['images']
 ```
 
-To get a specific relation use `::relation()`:
+To get a specific relation use `->relation()`:
 
 ```php
-$relation = Gallery::relation('images'); // A `HasMany` instance
+$relation = Gallery::definition()->relation('images'); // A `HasMany` instance
 ```
 
-It's also possible to check the availability of a specific relation using `::hasRelation()`:
+It's also possible to check the availability of a specific relation using `->hasRelation()`:
 
 ```php
-$relation = Gallery::hasRelation('images'); // A boolean
+$relation = Gallery::definition()->hasRelation('images'); // A boolean
 ```
-
-Note: under the hood, `::relations()`, `::relation()` and `::hasRelation()` are simple shorcuts on `::schema()->relations()`, `::schema()->relation()` and `::schema()->hasRelation()`.
 
 ### <a name="entities"></a>Entities
 
@@ -136,7 +133,7 @@ namespace My\Project\Model;
 
 class Image extends \Chaos\Model
 {
-    protected static $_schema = 'Chaos\Database\Schema';
+    protected static $_definition = 'Chaos\Database\Schema';
 
     protected static function _define($schema)
     {
@@ -366,9 +363,9 @@ Gets/sets the model's connection.
 
 Gets/sets the model's conventions.
 
-#### ::schema()
+#### ::definition()
 
-Gets/sets the model's schema.
+Gets/sets the model's schema definition.
 
 #### ::validator()
 

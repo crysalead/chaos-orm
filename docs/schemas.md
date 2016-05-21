@@ -27,8 +27,8 @@ Example of schema definition:
 use Chaos\Schema;
 
 $schema = new Schema();
-$schema->set('id',   ['type' => 'serial']);
-$schema->set('name', ['type' => 'string']);
+$schema->column('id',   ['type' => 'serial']);
+$schema->column('name', ['type' => 'string']);
 ```
 
 `'type'` is an abstract type. For example `'type' => 'serial'` will be translated into `INT NOT NULL AUTO_INCREMENT` for a MySQL connection and into `SERIAL` for PostgreSQL.
@@ -59,11 +59,11 @@ Moreover with Chaos you are not limited to "scalar" types and you can also deal 
 use Chaos\Schema;
 
 $schema = new Schema();
-$schema->set('id',             ['type' => 'serial']);
-$schema->set('user',           ['type' => 'object']);
-$schema->set('user.firstname', ['type' => 'string']);
-$schema->set('user.lastname',  ['type' => 'string']);
-$schema->set('comments',       ['type' => 'id', 'array' => true]);
+$schema->column('id',             ['type' => 'serial']);
+$schema->column('user',           ['type' => 'object']);
+$schema->column('user.firstname', ['type' => 'string']);
+$schema->column('user.lastname',  ['type' => 'string']);
+$schema->column('comments',       ['type' => 'id', 'array' => true]);
 ```
 
 Note: no persistant layer support this high level feature yet as the time I'm writing this documentation but it's planned for PostgreSQL.
@@ -80,7 +80,7 @@ Field definition can have the following options:
 There's two way to set up a relation:
 
 * `->bind()`: is used to define external relations (i.e via foreign keys).
-* `->set()`: is used to define embeded relations (i.e same method as for fields).
+* `->column()`: is used to define embeded relations (i.e same method as for fields).
 
 The first parameter of methods will be the name of the relation (which mean the name of the field name used to store the relationship data). And the second parameter is an array of options. Possible values are:
 
@@ -97,7 +97,7 @@ use Chaos\Schema;
 $schema = new Schema();
 
 // Embeded relation
-$schema->set('author', [
+$schema->column('author', [
     'relation' => 'hasOne',
     'to'       => 'myproject\model\Author'
 ]);
@@ -132,7 +132,7 @@ use Myproject\Model\Gallery;
 $schema = Gallery::schema();
 
 // Just to make sure created is of type date.
-$schema->set('created', ['type' => 'date']);
+$schema->column('created', ['type' => 'date']);
 
 $entity = Gallery::create([
     'name'    => 'My Gallery',
@@ -161,7 +161,7 @@ use My\Project\Model\Gallery;
 $schema = Gallery::schema();
 
 // Just to make sure created is of type date.
-$schema->set('created', ['type' => 'date']);
+$schema->column('created', ['type' => 'date']);
 
 // Override the date handler (casting context)
 $schema->formatter('cast', 'date', function($value, $options = []) {
@@ -214,7 +214,7 @@ use My\Project\Model\Gallery;
 $schema = Gallery::schema();
 
 // To make sure created is of type date.
-$schema->set('created', ['type' => 'date']);
+$schema->column('created', ['type' => 'date']);
 
 $entity = Gallery::create([
     'name'   => 'My Gallery',
@@ -260,7 +260,7 @@ $schema->formatter('datasource', 'customtype', function($value, $options = []) {
 });
 
 // Now you can use your custom type.
-$schema->set('custom', ['type' => 'customtype']);
+$schema->column('custom', ['type' => 'customtype']);
 
 $schema->custom = "customdata";
 ```
