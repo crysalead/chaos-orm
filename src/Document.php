@@ -411,7 +411,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             return;
         }
 
-        $field = $schema->field($fieldname);
+        $field = $schema->column($fieldname);
 
         if (!empty($field['getter'])) {
             $value = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);

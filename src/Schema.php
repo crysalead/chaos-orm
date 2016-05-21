@@ -78,7 +78,7 @@ class Schema
      *
      * @var array
      */
-    protected $_fields = [];
+    protected $_columns = [];
 
     /**
      * Casting handlers.
@@ -117,7 +117,7 @@ class Schema
      *                      - `'model'`       _string_ : The fully namespaced model class name (defaults to `null`).
      *                      - `'locked'`      _boolean_: set the ability to dynamically add/remove fields (defaults to `false`).
      *                      - `'key'`         _string_ : The primary key value (defaults to `id`).
-     *                      - `'fields'`      _array_  : array of field definition where keys are field names and values are arrays
+     *                      - `'columns'      _array_  : array of field definition where keys are field names and values are arrays
      *                                                   with the following keys. All properties are optionnal except the `'type'`:
      *                                                   - `'type'`      _string_ : the type of the field.
      *                                                   - `'default'`   _mixed_  : the default value (default to '`null`').
@@ -147,7 +147,7 @@ class Schema
             'source'       => null,
             'model'        => Document::class,
             'locked'       => true,
-            'fields'       => [],
+            'columns'      => [],
             'meta'         => [],
             'handlers'     => [],
             'conventions'  => null,
@@ -167,13 +167,13 @@ class Schema
             'key' => $this->_conventions->apply('key')
         ];
 
-        $this->_fields = $config['fields'];
+        $this->_columns = $config['columns'];
         $this->_source = $config['source'];
         $this->_model = $config['model'];
         $this->_key = $config['key'];
 
-        foreach ($config['fields'] as $key => $value) {
-            $this->_fields[$key] = $this->_initField($value);
+        foreach ($config['columns'] as $key => $value) {
+            $this->_columns[$key] = $this->_initColumn($value);
         }
 
         if ($this->_connection) {
@@ -318,7 +318,7 @@ class Schema
      */
     public function names()
     {
-        return array_keys($this->_fields);
+        return array_keys($this->_columns);
     }
 
     /**
@@ -329,7 +329,7 @@ class Schema
     public function fields()
     {
         $fields = [];
-        foreach ($this->_fields as $name => $field) {
+        foreach ($this->_columns as $name => $field) {
             if (!empty($field['virtual'])) {
                 continue;
             }
@@ -347,33 +347,13 @@ class Schema
     public function columns()
     {
         $columns = [];
-        foreach ($this->_fields as $name => $field) {
+        foreach ($this->_columns as $name => $field) {
             if (!empty($field['virtual'])) {
                 continue;
             }
             $columns[$name] = $field;
         }
         return $columns;
-    }
-
-    /**
-     * Returns a schema field attribute.
-     *
-     * @param  string $name      A field name.
-     * @param  mixed  $attribute An attribute name. If `null` returns all attributes.
-     * @return mixed
-     */
-    public function field($name, $attribute = null)
-    {
-        if (!isset($this->_fields[$name])) {
-            return;
-        }
-        $field = $this->_fields[$name];
-
-        if ($attribute) {
-            return isset($field[$attribute]) ? $field[$attribute] : null;
-        }
-        return $field;
     }
 
     /**
@@ -385,10 +365,10 @@ class Schema
     public function defaults($name = null)
     {
         if ($name) {
-            return isset($this->_fields[$name]['default']) ? $this->_fields[$name]['default'] : null;
+            return isset($this->_columns[$name]['default']) ? $this->_columns[$name]['default'] : null;
         }
         $defaults = [];
-        foreach ($this->_fields as $key => $value) {
+        foreach ($this->_columns as $key => $value) {
             if (isset($value['default'])) {
                 $defaults[$key] = $value['default'];
             }
@@ -404,7 +384,11 @@ class Schema
      */
     public function type($name)
     {
-        return $this->field($name, 'type');
+        if (!$this->has($name)) {
+            return;
+        }
+        $column = $this->column($name);
+        return isset($column['type']) ? $column['type'] : null;
     }
 
     /**
@@ -413,47 +397,53 @@ class Schema
      * @param  string $name The field name.
      * @return object       Returns `$this`.
      */
-    public function set($name, $params = [])
+    public function column($name, $params = [])
     {
-        $field = $this->_initField($params);
+        if (func_num_args() === 1) {
+            if (!isset($this->_columns[$name])) {
+                throw new ChaosException("Unexisting column `'{$name}'`");
+            }
+            return $this->_columns[$name];
+        }
+        $column = $this->_initColumn($params);
 
-        if ($field['type'] !== 'object') {
-            $this->_fields[$name] = $field;
+        if ($column['type'] !== 'object') {
+            $this->_columns[$name] = $column;
             return $this;
         }
         $relationship = $this->_classes['relationship'];
 
         $this->bind($name, [
-            'type'     => $field['array'] ? 'set' : 'entity',
-            'relation' => $field['array'] ? 'hasMany' : 'hasOne',
-            'to'       => isset($field['model']) ? $field['model'] : $this->model(),
+            'type'     => $column['array'] ? 'set' : 'entity',
+            'relation' => $column['array'] ? 'hasMany' : 'hasOne',
+            'to'       => isset($column['model']) ? $column['model'] : $this->model(),
             'link'     => $relationship::LINK_EMBEDDED
         ]);
 
-        $this->_fields[$name] = $field;
+        $this->_columns[$name] = $column;
         return $this;
     }
 
     /**
-     * Normalizes a field.
+     * Normalizes a column.
      *
-     * @param  array $field A field array.
-     * @return array        A normalized field array.
+     * @param  array $column A column definition.
+     * @return array         A normalized column array.
      */
-    protected function _initField($field)
+    protected function _initColumn($column)
     {
         $defaults = [
             'type'  => 'string',
             'array' => false
         ];
-        if (is_string($field)) {
-            $field = ['type' => $field];
-        } elseif (isset($field[0])) {
-            $field['type'] = $field[0];
-            unset($field[0]);
+        if (is_string($column)) {
+            $column = ['type' => $column];
+        } elseif (isset($column[0])) {
+            $column['type'] = $column[0];
+            unset($column[0]);
         }
-        $field += $defaults;
-        return $field + ['null' => ($field['type'] !== 'serial')];
+        $column += $defaults;
+        return $column + ['null' => ($column['type'] !== 'serial')];
     }
 
     /**
@@ -466,7 +456,7 @@ class Schema
     {
         $names = $name ? (array) $name : [];
         foreach ($names as $name) {
-            unset($this->_fields[$name]);
+            unset($this->_columns[$name]);
         }
         return $this;
     }
@@ -480,9 +470,9 @@ class Schema
     public function has($name)
     {
         if (!is_array($name)) {
-            return isset($this->_fields[$name]);
+            return isset($this->_columns[$name]);
         }
-        return array_intersect($name, array_keys($this->_fields)) === $name;
+        return array_intersect($name, array_keys($this->_columns)) === $name;
     }
 
     /**
@@ -497,11 +487,11 @@ class Schema
     {
         if (is_array($fields)) {
             foreach ($fields as $key => $value) {
-                $this->_fields[$key] = $this->_initField($value);
+                $this->_columns[$key] = $this->_initColumn($value);
             }
         } else {
             foreach ($fields->fields() as $name) {
-                $this->_fields[$name] = $fields->field($name);
+                $this->_columns[$name] = $fields->column($name);
             }
         }
         return $this;
@@ -515,7 +505,7 @@ class Schema
     public function virtuals($attribute = null)
     {
         $fields = [];
-        foreach ($this->_fields as $name => $field) {
+        foreach ($this->_columns as $name => $field) {
             if (empty($field['virtual'])) {
                 continue;
             }
@@ -533,7 +523,7 @@ class Schema
     public function isVirtual($name)
     {
         if (!is_array($name)) {
-            return !empty($this->_fields[$name]['virtual']);
+            return !empty($this->_columns[$name]['virtual']);
         }
         foreach ($name as $field) {
             if (!$this->isVirtual($field)) {
@@ -888,8 +878,8 @@ class Schema
             return $this->_cast($data, $options);
         }
 
-        if (isset($this->_fields[$name])) {
-            $options = $this->_fields[$name] + $options;
+        if (isset($this->_columns[$name])) {
+            $options = $this->_columns[$name] + $options;
             if (!empty($options['setter'])) {
                 $data = $options['setter']($options['parent'], $data, $name);
             }

@@ -34,14 +34,14 @@ describe("Schema", function() {
             Stub::on($connection)->method('formatters')->andReturn([]);
 
             $schema = new Schema([
-                'connection'   => $connection,
-                'source'       => 'image',
-                'model'        => Image::class,
+                'connection'  => $connection,
+                'source'      => 'image',
+                'model'       => Image::class,
                 'key'         => 'key',
-                'locked'       => false,
-                'fields'       => ['id' => 'serial', 'age' => 'integer'],
-                'meta'         => ['some' => ['meta']],
-                'conventions'  => $conventions
+                'locked'      => false,
+                'columns'     => ['id' => 'serial', 'age' => 'integer'],
+                'meta'        => ['some' => ['meta']],
+                'conventions' => $conventions
             ]);
 
             expect($schema->connection())->toBe($connection);
@@ -158,7 +158,7 @@ describe("Schema", function() {
 
         it("filters out virtual fields", function() {
 
-            $this->schema->set('virtualField', ['virtual' => true]);
+            $this->schema->column('virtualField', ['virtual' => true]);
             $fields = $this->schema->fields();
             expect(isset($fields['virtualField']))->toBe(false);
 
@@ -205,52 +205,13 @@ describe("Schema", function() {
 
     it("returns defaults", function() {
 
-        $this->schema->set('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
-        $this->schema->set('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
+        $this->schema->column('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
+        $this->schema->column('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
 
         expect($this->schema->defaults())->toBe([
             'name'       => 'Enter The Name Here',
             'title'      => 'Enter The Title Here'
         ]);
-
-    });
-
-    describe("->field()", function() {
-
-        it("gets the field", function() {
-
-            expect($this->schema->field('id'))->toBe([
-                'type'  => 'serial',
-                'array' => false,
-                'null'  => false
-            ]);
-
-            expect($this->schema->field('gallery_id'))->toBe([
-                'type'  => 'integer',
-                'array' => false,
-                'null'  => true
-            ]);
-
-            expect($this->schema->field('name'))->toBe([
-                'type'  => 'string',
-                'array' => false,
-                'null'  => true
-            ]);
-
-            expect($this->schema->field('title'))->toBe([
-                'type'  => 'string',
-                'length'  => 50,
-                'array' => false,
-                'null'  => true
-            ]);
-
-            expect($this->schema->field('score'))->toBe([
-                'type'  => 'float',
-                'array' => false,
-                'null'  => true
-            ]);
-
-        });
 
     });
 
@@ -264,27 +225,53 @@ describe("Schema", function() {
 
     });
 
-    describe("->set()", function() {
+    describe("->column()", function() {
 
         beforeEach(function() {
             $this->schema = new Schema();
         });
 
-        it("sets a field with default values", function() {
+        it("gets the field", function() {
 
-            $this->schema->set('name');
-            expect($this->schema->field('name'))->toBe([
-                'type' => 'string',
+            $schema = Image::definition();
+
+            expect($schema->column('id'))->toBe([
+                'type'  => 'serial',
                 'array' => false,
-                'null' => true
+                'null'  => false
+            ]);
+
+            expect($schema->column('gallery_id'))->toBe([
+                'type'  => 'integer',
+                'array' => false,
+                'null'  => true
+            ]);
+
+            expect($schema->column('name'))->toBe([
+                'type'  => 'string',
+                'array' => false,
+                'null'  => true
+            ]);
+
+            expect($schema->column('title'))->toBe([
+                'type'  => 'string',
+                'length'  => 50,
+                'array' => false,
+                'null'  => true
+            ]);
+
+            expect($schema->column('score'))->toBe([
+                'type'  => 'float',
+                'array' => false,
+                'null'  => true
             ]);
 
         });
 
         it("sets a field with a specific type", function() {
 
-            $this->schema->set('age', ['type' => 'integer']);
-            expect($this->schema->field('age'))->toBe([
+            $this->schema->column('age', ['type' => 'integer']);
+            expect($this->schema->column('age'))->toBe([
                 'type' => 'integer',
                 'array' => false,
                 'null' => true
@@ -294,8 +281,8 @@ describe("Schema", function() {
 
         it("sets a field with a specific type using the array syntax", function() {
 
-            $this->schema->set('age', ['integer']);
-            expect($this->schema->field('age'))->toBe([
+            $this->schema->column('age', ['integer']);
+            expect($this->schema->column('age'))->toBe([
                 'type' => 'integer',
                 'array' => false,
                 'null' => true
@@ -305,8 +292,8 @@ describe("Schema", function() {
 
         it("sets a field with a specific type using the string syntax", function() {
 
-            $this->schema->set('age', 'integer');
-            expect($this->schema->field('age'))->toBe([
+            $this->schema->column('age', 'integer');
+            expect($this->schema->column('age'))->toBe([
                 'type' => 'integer',
                 'array' => false,
                 'null' => true
@@ -316,8 +303,8 @@ describe("Schema", function() {
 
         it("sets a field as an array", function() {
 
-            $this->schema->set('ids', ['type' => 'integer', 'array' => true]);
-            expect($this->schema->field('ids'))->toBe([
+            $this->schema->column('ids', ['type' => 'integer', 'array' => true]);
+            expect($this->schema->column('ids'))->toBe([
                 'type' => 'integer',
                 'array' => true,
                 'null' => true
@@ -327,8 +314,8 @@ describe("Schema", function() {
 
         it("sets a field with custom options", function() {
 
-            $this->schema->set('name', ['type' => 'integer', 'length' => 11, 'use' => 'bigint']);
-            expect($this->schema->field('name'))->toBe([
+            $this->schema->column('name', ['type' => 'integer', 'length' => 11, 'use' => 'bigint']);
+            expect($this->schema->column('name'))->toBe([
                 'type'   => 'integer',
                 'length' => 11,
                 'use'    => 'bigint',
@@ -341,12 +328,12 @@ describe("Schema", function() {
         it("sets nested fields", function() {
 
             $schema = new Schema();
-            $schema->set('preferences', ['type' => 'object']);
-            $schema->set('preferences.blacklist', ['type' => 'object']);
-            $schema->set('preferences.blacklist.projects', ['type' => 'id', 'array' => true, 'default' => []]);
-            $schema->set('preferences.mail', ['type' => 'object']);
-            $schema->set('preferences.mail.enabled', ['type' => 'boolean', 'default' => true]);
-            $schema->set('preferences.mail.frequency', ['type' => 'integer', 'default' => 24]);
+            $schema->column('preferences', ['type' => 'object']);
+            $schema->column('preferences.blacklist', ['type' => 'object']);
+            $schema->column('preferences.blacklist.projects', ['type' => 'id', 'array' => true, 'default' => []]);
+            $schema->column('preferences.mail', ['type' => 'object']);
+            $schema->column('preferences.mail.enabled', ['type' => 'boolean', 'default' => true]);
+            $schema->column('preferences.mail.frequency', ['type' => 'integer', 'default' => 24]);
 
             $document = $schema->cast(null, []);
 
@@ -374,9 +361,9 @@ describe("Schema", function() {
                 beforeEach(function() {
 
                     $this->schema = new Schema();
-                    $this->schema->set('date', ['type' => 'string']);
-                    $this->schema->set('time', ['type' => 'string']);
-                    $this->schema->set('datetime', [
+                    $this->schema->column('date', ['type' => 'string']);
+                    $this->schema->column('time', ['type' => 'string']);
+                    $this->schema->column('datetime', [
                         'type' => 'datetime',
                         'getter' => function($entity, $data, $name) {
                             return $entity['date'] . ' ' . $entity['time'];
@@ -417,9 +404,9 @@ describe("Schema", function() {
                 beforeEach(function() {
 
                     $this->schema = new Schema();
-                    $this->schema->set('date', ['type' => 'string']);
-                    $this->schema->set('time', ['type' => 'string']);
-                    $this->schema->set('datetime', [
+                    $this->schema->column('date', ['type' => 'string']);
+                    $this->schema->column('time', ['type' => 'string']);
+                    $this->schema->column('datetime', [
                         'type'    => 'datetime',
                         'virtual' => true,
                         'getter'  => function($entity, $data, $name) {
@@ -465,9 +452,9 @@ describe("Schema", function() {
                 beforeEach(function() {
 
                     $this->schema = new Schema();
-                    $this->schema->set('date', ['type' => 'string']);
-                    $this->schema->set('time', ['type' => 'string']);
-                    $this->schema->set('datetime', [
+                    $this->schema->column('date', ['type' => 'string']);
+                    $this->schema->column('time', ['type' => 'string']);
+                    $this->schema->column('datetime', [
                         'type'   => 'string',
                         'setter' => function($entity, $data, $name) {
                             $parts = explode(' ', $data);
@@ -511,9 +498,9 @@ describe("Schema", function() {
                 beforeEach(function() {
 
                     $this->schema = new Schema();
-                    $this->schema->set('date', ['type' => 'string']);
-                    $this->schema->set('time', ['type' => 'string']);
-                    $this->schema->set('datetime', [
+                    $this->schema->column('date', ['type' => 'string']);
+                    $this->schema->column('time', ['type' => 'string']);
+                    $this->schema->column('datetime', [
                         'type'    => 'string',
                         'virtual' => true,
                         'setter'  => function($entity, $data, $name) {
@@ -580,7 +567,7 @@ describe("Schema", function() {
 
         it("checks if a schema contain a virtual field name", function() {
 
-            $this->schema->set('virtualField', ['virtual' => true]);
+            $this->schema->column('virtualField', ['virtual' => true]);
             expect($this->schema->has('virtualField'))->toBe(true);
 
         });
@@ -591,7 +578,7 @@ describe("Schema", function() {
 
         beforeEach(function() {
             $this->schema = new Schema();
-            $this->schema->set('id', ['type' => 'serial']);
+            $this->schema->column('id', ['type' => 'serial']);
         });
 
         context("using an array", function() {
@@ -619,8 +606,8 @@ describe("Schema", function() {
             it("adds some fields to a schema", function() {
 
                 $extra = new Schema();
-                $extra->set('name', ['type' => 'string']);
-                $extra->set('title', ['type' => 'string']);
+                $extra->column('name', ['type' => 'string']);
+                $extra->column('title', ['type' => 'string']);
 
                 $this->schema->append($extra);
 
@@ -639,8 +626,8 @@ describe("Schema", function() {
 
         it("returns all virtual fields", function() {
 
-            $this->schema->set('virtualField1', ['virtual' => true]);
-            $this->schema->set('virtualField2', ['virtual' => true]);
+            $this->schema->column('virtualField1', ['virtual' => true]);
+            $this->schema->column('virtualField2', ['virtual' => true]);
 
             expect($this->schema->virtuals())->toBe(['virtualField1', 'virtualField2']);
 
@@ -696,7 +683,7 @@ describe("Schema", function() {
             $model = Stub::classname(['extends' => Model::class]);
 
             $schema = new Schema(['model' => $model]);
-            $schema->set('embedded', [
+            $schema->column('embedded', [
                 'type' => 'object',
                 'model' => $model
             ]);

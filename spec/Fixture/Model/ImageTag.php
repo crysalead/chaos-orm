@@ -5,9 +5,9 @@ class ImageTag extends \Chaos\Model
 {
     protected static function _define($schema)
     {
-        $schema->set('id', ['type' => 'serial']);
-        $schema->set('image_id', ['type' => 'integer']);
-        $schema->set('tag_id', ['type' => 'integer']);
+        $schema->column('id', ['type' => 'serial']);
+        $schema->column('image_id', ['type' => 'integer']);
+        $schema->column('tag_id', ['type' => 'integer']);
 
         $schema->belongsTo('image', Image::class, [
             'keys' => ['image_id' => 'id']

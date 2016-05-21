@@ -24,7 +24,7 @@ describe("Entity", function() {
         $this->model = Stub::classname(['extends' => Model::class]);
         $model = $this->model;
         $schema = $model::definition();
-        $schema->set('id', ['type' => 'serial']);
+        $schema->column('id', ['type' => 'serial']);
         $schema->locked(false);
     });
 
@@ -309,7 +309,7 @@ describe("Entity", function() {
 
             $model = $this->model;
             $schema = $model::definition();
-            $schema->set('hello_boy', [
+            $schema->column('hello_boy', [
                 'setter' => function($entity, $data, $name) {
                     return 'Hi ' . $data;
                 }
@@ -326,7 +326,7 @@ describe("Entity", function() {
 
             $model = $this->model;
             $schema = $model::definition();
-            $schema->set('hello_boy', [
+            $schema->column('hello_boy', [
                 'getter' => function($entity, $data, $name) {
                     return 'Hi Boy!';
                 }
@@ -350,7 +350,7 @@ describe("Entity", function() {
                 $childEntity::definition()->locked(false);
 
                 $schema = new Schema(['model' => $model]);
-                $schema->set('child', [
+                $schema->column('child', [
                     'type' => 'object',
                     'model' => $childEntity
                 ]);
@@ -519,7 +519,7 @@ describe("Entity", function() {
             $model = $this->model;
 
             $schema = $model::definition();
-            $schema->set('created', ['type' => 'date']);
+            $schema->column('created', ['type' => 'date']);
 
             $entity = new $model(['data' => [
                 'title'   => 'Hello',
