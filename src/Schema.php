@@ -186,7 +186,7 @@ class Schema
         $this->formatter('array', 'serial',    $handlers['array']['integer']);
         $this->formatter('array', 'integer',   $handlers['array']['integer']);
         $this->formatter('array', 'float',     $handlers['array']['float']);
-        $this->formatter('array', 'decimal',   $handlers['array']['float']);
+        $this->formatter('array', 'decimal',   $handlers['array']['string']);
         $this->formatter('array', 'date',      $handlers['array']['date']);
         $this->formatter('array', 'datetime',  $handlers['array']['date']);
         $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
@@ -195,7 +195,7 @@ class Schema
 
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
         $this->formatter('cast', 'float',    $handlers['cast']['float']);
-        $this->formatter('cast', 'decimal',  $handlers['cast']['float']);
+        $this->formatter('cast', 'decimal',  $handlers['cast']['decimal']);
         $this->formatter('cast', 'date',     $handlers['cast']['datetime']);
         $this->formatter('cast', 'datetime', $handlers['cast']['datetime']);
         $this->formatter('cast', 'boolean',  $handlers['cast']['boolean']);
@@ -886,7 +886,7 @@ class Schema
             if ($options['array'] && $field) {
                 return $this->_castArray($name, $data, $options);
             }
-            return $this->format('cast', $name, $data);
+            return $this->format('cast', $name, $data, $this->_columns[$name]);
         }
 
         if ($this->locked()) {
@@ -990,7 +990,7 @@ class Schema
                 },
                 'decimal' => function($value, $options = []) {
                     $options += ['precision' => 2];
-                    return (float) number_format($value, $options['precision']);
+                    return number_format($value, $options['precision']);
                 },
                 'boolean' => function($value, $options = []) {
                     return !!$value;

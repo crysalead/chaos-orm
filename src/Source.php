@@ -73,8 +73,8 @@ class Source
                     return (float) $value;
                 },
                 'decimal' => function($value, $options = []) {
-                    $options += ['precision' => 2];
-                    return (float) number_format($value, $options['precision']);
+                    $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                    return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
                 },
                 'boolean' => function($value, $options = []) {
                     return !!$value;

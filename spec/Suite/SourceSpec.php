@@ -77,7 +77,7 @@ describe("Source", function() {
             expect($this->source->format('cast', 'serial', '123'))->toBe(123);
             expect($this->source->format('cast', 'integer', '123'))->toBe(123);
             expect($this->source->format('cast', 'float', '12.3'))->toBe(12.3);
-            expect($this->source->format('cast', 'decimal', '12.3'))->toBe(12.3);
+            expect($this->source->format('cast', 'decimal', '12.3'))->toBe('12.30');
             $date = DateTime::createFromFormat('Y-m-d', '2014-11-21');
             expect($this->source->format('cast', 'date', $date)->format('Y-m-d'))->toBe('2014-11-21');
             expect($this->source->format('cast', 'date', '2014-11-21')->format('Y-m-d'))->toBe('2014-11-21');
