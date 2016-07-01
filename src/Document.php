@@ -6,7 +6,6 @@ use ArrayAccess;
 use Chaos\Contrat\DataStoreInterface;
 use Chaos\Contrat\HasParentsInterface;
 
-use Ramsey\Uuid\Uuid;
 use Lead\Set\Set;
 use Chaos\Collection\Collection;
 
@@ -308,7 +307,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return $this;
         }
         if (!$this->_uuid) {
-            $this->_uuid = Uuid::uuid4();
+            $this->_uuid = spl_object_hash($this);
         }
         return $this->_uuid;
     }
