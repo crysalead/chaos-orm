@@ -880,6 +880,26 @@ describe("Schema", function() {
             $this->schema->column('created',    ['type' => 'datetime']);
         });
 
+        it("formats according default `'cast'` handlers", function() {
+
+            expect($this->schema->format('cast', 'id', 123))->toBe(123);
+            expect($this->schema->format('cast', 'value', 123))->toBe(123);
+            expect($this->schema->format('cast', 'double', 12.3))->toBe(12.3);
+            expect($this->schema->format('cast', 'revenue', 12.3))->toBe('12.30');
+            $date = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 00:00:00');
+            expect($this->schema->format('cast', 'registered', $date))->toEqual($date);
+            expect($this->schema->format('cast', 'registered', '2014-11-21'))->toEqual($date);
+            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
+            expect($this->schema->format('cast', 'created', $datetime))->toEqual($datetime);
+            expect($this->schema->format('cast', 'created', '2014-11-21 10:20:45'))->toEqual($datetime);
+            expect($this->schema->format('cast', 'active', true))->toBe(true);
+            expect($this->schema->format('cast', 'active', false))->toBe(false);
+            expect($this->schema->format('cast', 'null', null))->toBe(null);
+            expect($this->schema->format('cast', 'name', 'abc'))->toBe('abc');
+            expect($this->schema->format('cast', 'unexisting', 123))->toBe(123);
+
+        });
+
         it("formats according default `'array'` handlers", function() {
 
             expect($this->schema->format('array', 'id', 123))->toBe(123);
