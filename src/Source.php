@@ -51,6 +51,10 @@ class Source
         $this->formatter('cast', 'null',     $handlers['cast']['null']);
         $this->formatter('cast', 'string',   $handlers['cast']['string']);
 
+        $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
+        $this->formatter('datasource', 'datetime',  $handlers['datasource']['datetime']);
+        $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
+        $this->formatter('datasource', 'null',      $handlers['datasource']['null']);
         $this->formatter('datasource', '_default_', $handlers['datasource']['string']);
     }
 
@@ -80,7 +84,7 @@ class Source
                     return !!$value;
                 },
                 'date'    => function($value, $options = []) {
-                    return $this->format('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
                 'datetime'    => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
@@ -97,8 +101,26 @@ class Source
                 }
             ],
             'datasource' => [
-                'string' => function($value, $options = []) {
-                    return $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : (string) $value;
+                'string'   => function($value, $options = []) {
+                    return (string) $value;
+                },
+                'date'     => function($value, $options = []) {
+                    if (!$value instanceof DateTime) {
+                        $value = new DateTime($value);
+                    }
+                    return $value->format('Y-m-d');
+                },
+                'datetime' => function($value, $options = []) {
+                    if (!$value instanceof DateTime) {
+                        $value = new DateTime($value);
+                    }
+                    return $value->format('Y-m-d H:i:s');
+                },
+                'boolean'  => function($value, $options = []) {
+                    return !!$value ? '1' : '0';
+                },
+                'null'     => function($value, $options = []) {
+                    return '';
                 }
             ]
         ];
@@ -147,7 +169,7 @@ class Source
      * @param   mixed  $value The value to format.
      * @return  mixed         The formated value.
      */
-    public function format($mode, $type, $value, $options = [])
+    public function convert($mode, $type, $value, $options = [])
     {
         $formatter = null;
 

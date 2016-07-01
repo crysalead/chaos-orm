@@ -934,7 +934,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 $result[$field] = Collection::toArray($value, $options);
             } else {
                 $options['basePath'] = $basePath ? $basePath . '.' . $field : $field;
-                $result[$field] = $schema->has($options['basePath']) ? $schema->format($format, $options['basePath'], $value, $options) : $value;
+                $result[$field] = $schema->has($options['basePath']) ? $schema->format($format, $options['basePath'], $value) : $value;
             }
         }
         return $result;

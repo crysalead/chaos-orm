@@ -552,7 +552,7 @@ describe("Entity", function() {
                 'created' => new DateTime('2014-10-26 00:25:15')
             ]);
 
-            expect($entity->data(['format' => 'Y-m-d']))->toBe([
+            expect($entity->data())->toBe([
                 'title'   => 'Hello',
                 'body'    => 'World',
                 'created' => '2014-10-26'

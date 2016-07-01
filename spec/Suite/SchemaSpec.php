@@ -861,4 +861,45 @@ describe("Schema", function() {
 
     });
 
+    describe(".format()", function() {
+
+        beforeEach(function() {
+            $this->schema = new Schema();
+            $this->schema->column('id',         ['type' => 'serial']);
+            $this->schema->column('name',       ['type' => 'string']);
+            $this->schema->column('null',       ['type' => 'string']);
+            $this->schema->column('value',      ['type' => 'integer']);
+            $this->schema->column('double',     ['type' => 'float']);
+            $this->schema->column('revenue',    [
+                'type'      => 'decimal',
+                'length'    =>  20,
+                'precision' =>  2
+            ]);
+            $this->schema->column('active',     ['type' => 'boolean']);
+            $this->schema->column('registered', ['type' => 'date']);
+            $this->schema->column('created',    ['type' => 'datetime']);
+        });
+
+        it("formats according default `'array'` handlers", function() {
+
+            expect($this->schema->format('array', 'id', 123))->toBe(123);
+            expect($this->schema->format('array', 'value', 123))->toBe(123);
+            expect($this->schema->format('array', 'double', 12.3))->toBe(12.3);
+            expect($this->schema->format('array', 'revenue', 12.3))->toBe('12.3');
+            $date = DateTime::createFromFormat('Y-m-d', '2014-11-21');
+            expect($this->schema->format('array', 'registered', $date))->toBe('2014-11-21');
+            expect($this->schema->format('array', 'registered', '2014-11-21'))->toBe('2014-11-21');
+            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
+            expect($this->schema->format('array', 'created', $datetime))->toBe('2014-11-21 10:20:45');
+            expect($this->schema->format('array', 'created', '2014-11-21 10:20:45'))->toBe('2014-11-21 10:20:45');
+            expect($this->schema->format('array', 'active', true))->toBe(true);
+            expect($this->schema->format('array', 'active', false))->toBe(false);
+            expect($this->schema->format('array', 'null', null))->toBe(null);
+            expect($this->schema->format('array', 'name', 'abc'))->toBe('abc');
+            expect($this->schema->format('array', 'unexisting', 123))->toBe('123');
+
+        });
+
+    });
+
 });

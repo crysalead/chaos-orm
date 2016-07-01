@@ -188,7 +188,7 @@ class Schema
         $this->formatter('array', 'float',     $handlers['array']['float']);
         $this->formatter('array', 'decimal',   $handlers['array']['string']);
         $this->formatter('array', 'date',      $handlers['array']['date']);
-        $this->formatter('array', 'datetime',  $handlers['array']['date']);
+        $this->formatter('array', 'datetime',  $handlers['array']['datetime']);
         $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
         $this->formatter('array', 'null',      $handlers['array']['null']);
         $this->formatter('array', '_default_', $handlers['array']['string']);
@@ -886,7 +886,7 @@ class Schema
             if ($options['array'] && $field) {
                 return $this->_castArray($name, $data, $options);
             }
-            return $this->format('cast', $name, $data, $this->_columns[$name]);
+            return $this->format('cast', $name, $data);
         }
 
         if ($this->locked()) {
@@ -967,6 +967,9 @@ class Schema
                     return (float) $value;
                 },
                 'date' => function($value, $options = []) {
+                    return $this->convert('array', 'datetime', $value, ['format' => 'Y-m-d']);
+                },
+                'datetime' => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
                     $format = $options['format'];
                     if ($value instanceof DateTime) {
@@ -999,7 +1002,7 @@ class Schema
                     return !!$value;
                 },
                 'date' => function($value, $options = []) {
-                    return $this->format('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
                 'datetime' => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
@@ -1024,13 +1027,25 @@ class Schema
      * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
      * @param   string $name    The field name.
      * @param   mixed  $value   The value to format.
+     * @return  mixed           The formated value.
+     */
+    public function format($mode, $name, $value)
+    {
+        $type = $value === null ? 'null' : $this->type($name);
+        return $this->convert($mode, $type, $value, isset($this->_columns[$name]) ? $this->_columns[$name] : []);
+    }
+
+    /**
+     * Formats a value according to its type.
+     *
+     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param   string $type    The field name.
+     * @param   mixed  $value   The value to format.
      * @param   mixed  $options The options array to pass the the formatter handler.
      * @return  mixed           The formated value.
      */
-    public function format($mode, $name, $value, $options = [])
+    public function convert($mode, $type, $value, $options = [])
     {
-        $type = $value === null ? 'null' : $this->type($name);
-
         $formatter = null;
 
         if (isset($this->_formatters[$mode][$type])) {
