@@ -42,23 +42,12 @@ describe("Document", function() {
 
     });
 
-    describe("->exists()", function() {
-
-        it("returns the exists value", function() {
-
-            $document = Document::create([], ['exists' => true]);
-            expect($document->exists())->toBe(true);
-
-        });
-
-    });
-
     describe("->parent()", function() {
 
         it("sets a parent", function() {
 
             $parent = Stub::create();
-            $document = Document::create();
+            $document = new Document();
             $document->parent($parent);
             expect($document->parent())->toBe($parent);
 
@@ -67,7 +56,7 @@ describe("Document", function() {
         it("returns the parent", function() {
 
             $parent = Stub::create();
-            $document = Document::create([], ['parent' => $parent]);
+            $document = new Document(['parent' => $parent]);
             expect($document->parent())->toBe($parent);
 
         });
@@ -78,7 +67,7 @@ describe("Document", function() {
 
         it("returns the root path", function() {
 
-            $document = Document::create([], ['rootPath' => 'items']);
+            $document = new Document(['rootPath' => 'items']);
             expect($document->rootPath())->toBe('items');
 
         });
@@ -91,7 +80,7 @@ describe("Document", function() {
 
             $date = new DateTime('2014-10-26 00:25:15');
 
-            $document = Document::create();
+            $document = new Document();
             expect($document->set('title', 'Hello'))->toBe($document);
             expect($document->set('body', 'World'))->toBe($document);
             expect($document->set('created', $date))->toBe($document);
@@ -105,7 +94,7 @@ describe("Document", function() {
 
         it("sets nested arbitraty value in cascade when locked is `false`", function() {
 
-            $image = Document::create();
+            $image = new Document();
             $image->set('a.nested.value', 'hello');
 
             expect($image->data())->toEqual([
@@ -120,7 +109,7 @@ describe("Document", function() {
 
         it("returns `null` for undefined fields", function() {
 
-            $document = Document::create();
+            $document = new Document();
             expect($document->foo)->toBe(null);
 
         });
@@ -129,7 +118,7 @@ describe("Document", function() {
 
             $date = new DateTime('2014-10-26 00:25:15');
 
-            $document = Document::create();
+            $document = new Document();
             expect($document->set([
                 'title'   => 'Hello',
                 'body'    => 'World',
@@ -145,10 +134,12 @@ describe("Document", function() {
         it("returns all raw datas with no parameter", function() {
 
             $date = time();
-            $document = Document::create([
-                'title'   => 'Hello',
-                'body'    => 'World',
-                'created' => $date
+            $document = new Document([
+                'data' => [
+                    'title'   => 'Hello',
+                    'body'    => 'World',
+                    'created' => $date
+                ]
             ]);
             expect($document->get())->toBe([
                 'title'   => 'Hello',
@@ -174,7 +165,7 @@ describe("Document", function() {
 
         it("sets value", function() {
 
-            $document = Document::create();
+            $document = new Document();
             $document->hello = 'world';
             expect($document->hello)->toBe('world');
 
@@ -186,7 +177,7 @@ describe("Document", function() {
 
         it("gets value", function() {
 
-            $document = Document::create();
+            $document = new Document();
             $document->hello = 'world';
             expect($document->hello)->toBe('world');
 
@@ -198,7 +189,7 @@ describe("Document", function() {
 
         it("returns true if a element exist", function() {
 
-            $document = Document::create();
+            $document = new Document();
             $document['field1'] = 'foo';
             $document['field2'] = null;
 
@@ -222,7 +213,7 @@ describe("Document", function() {
 
         it("returns false if a element doesn't exist", function() {
 
-            $document = Document::create();
+            $document = new Document();
             expect(isset($document['undefined']))->toBe(false);
 
         });
@@ -233,7 +224,7 @@ describe("Document", function() {
 
         it("allows array access", function() {
 
-            $document = Document::create();
+            $document = new Document();
             $document['field1'] = 'foo';
             expect($document['field1'])->toBe('foo');
             expect($document)->toHaveLength(1);
@@ -242,7 +233,7 @@ describe("Document", function() {
 
         it("sets at a specific key", function() {
 
-            $document = Document::create();
+            $document = new Document();
             $document['mykey'] = 'foo';
             expect($document['mykey'])->toBe('foo');
             expect($document)->toHaveLength(1);
@@ -251,7 +242,7 @@ describe("Document", function() {
 
         it("throws an exception for invalid key", function() {
             $closure = function() {
-                $document = Document::create();
+                $document = new Document();
                 $document[] = 'foo';
             };
             expect($closure)->toThrow(new ChaosException("Field name can't be empty."));
@@ -271,7 +262,7 @@ describe("Document", function() {
                 'enabled' => true
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
             unset($document['body']);
             unset($document['enabled']);
 
@@ -303,7 +294,7 @@ describe("Document", function() {
                 'field2' => 'Delete me'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
 
             foreach ($document as $i => $word) {
                 unset($document[$i]);
@@ -321,7 +312,7 @@ describe("Document", function() {
                 'field3' => 'Delete me'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
 
             foreach ($document as $i => $word) {
                 if ($word === 'Delete me') {
@@ -344,7 +335,7 @@ describe("Document", function() {
                 'field3' => 'Hello again!'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
 
             foreach ($document as $i => $word) {
                 if ($word === 'Delete me') {
@@ -368,7 +359,7 @@ describe("Document", function() {
                 'field4' => 'Hello again!'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
 
             $loop = 0;
             foreach ($document as $i => $word) {
@@ -393,11 +384,13 @@ describe("Document", function() {
 
         it("returns persisted data", function() {
 
-            $document = Document::create([
-                'id'    => 1,
-                'title' => 'Hello',
-                'body'  => 'World'
-            ], ['exists' => true]);
+            $document = new Document([
+                'data' => [
+                    'id'    => 1,
+                    'title' => 'Hello',
+                    'body'  => 'World'
+                ]
+            ]);
 
             $document->set([
                 'id'    => 1,
@@ -418,11 +411,13 @@ describe("Document", function() {
 
         it("returns all persisted data with no parameter", function() {
 
-            $document = Document::create([
-                'id'     => 1,
-                'title'  => 'Hello',
-                'body'   => 'World'
-            ], ['exists' => true]);
+            $document = new Document([
+                'data' => [
+                    'id'     => 1,
+                    'title'  => 'Hello',
+                    'body'   => 'World'
+                ]
+            ]);
 
             $document->set([
                 'id'    => 1,
@@ -444,7 +439,11 @@ describe("Document", function() {
 
         it("returns a boolean indicating if a field has been modified", function() {
 
-            $document = Document::create(['title' => 'original'], ['exists' => true]);
+            $document = new Document([
+                'data' => [
+                    'title' => 'original'
+                ]
+            ]);
 
             expect($document->modified('title'))->toBe(false);
 
@@ -455,7 +454,11 @@ describe("Document", function() {
 
         it("returns `false` if a field has been updated with a same scalar value", function() {
 
-            $document = Document::create(['title' => 'original'], ['exists' => true]);
+            $document = new Document([
+                'data' => [
+                    'title' => 'original'
+                ]
+            ]);
 
             expect($document->modified('title'))->toBe(false);
 
@@ -466,7 +469,11 @@ describe("Document", function() {
 
         it("returns `false` if a field has been updated with a similar object value", function() {
 
-            $document = Document::create(['body'  => (object) 'body'], ['exists' => true]);
+            $document = new Document([
+                'data' => [
+                    'body' => (object) 'body'
+                ]
+            ]);
 
             expect($document->modified('body'))->toBe(false);
 
@@ -477,9 +484,13 @@ describe("Document", function() {
 
         it("delegates the job for values which has a `modified()` method", function() {
 
-            $childDocument = Document::create(['field' => 'value'], ['exists' => true]);
+            $childDocument = new Document([
+                'data' => [
+                    'field' => 'value'
+                ]
+            ]);
 
-            $document = Document::create(['child' => $childDocument], ['exists' => true]);
+            $document = Document::create(['child' => $childDocument]);
 
             expect($document->modified())->toBe(false);
 
@@ -490,7 +501,7 @@ describe("Document", function() {
 
         it("returns `true` when an unexisting field has been added", function() {
 
-            $document = Document::create([], ['exists' => true]);
+            $document = new Document();
 
             $document->modified = 'modified';
 
@@ -500,7 +511,11 @@ describe("Document", function() {
 
         it("returns `true` when a field is removed", function() {
 
-            $document = Document::create(['title' => 'original'], ['exists' => true]);
+            $document = new Document([
+                'data' => [
+                    'title' => 'original'
+                ]
+            ]);
 
             expect($document->modified('title'))->toBe(false);
 
@@ -511,7 +526,7 @@ describe("Document", function() {
 
         it("returns `false` when an unexisting field is checked", function() {
 
-            $document = Document::create([], ['exists' => true]);
+            $document = new Document();
             expect($document->modified('unexisting'))->toBe(false);
 
         });
@@ -523,7 +538,7 @@ describe("Document", function() {
         it("returns current key", function() {
 
             $data = ['field' => 'value'];
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
             $value = $document->key();
             expect($value)->toBe('field');
 
@@ -531,7 +546,7 @@ describe("Document", function() {
 
         it("returns null if non valid", function() {
 
-            $document = Document::create();
+            $document = new Document();
             $value = $document->key();
             expect($value)->toBe(null);
 
@@ -544,7 +559,7 @@ describe("Document", function() {
         it("returns the current value", function() {
 
             $data = ['field' => 'value'];
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
             $value = $document->current();
             expect($value)->toBe('value');
 
@@ -561,7 +576,7 @@ describe("Document", function() {
                 'field2' => 'value2'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
             $value = $document->next();
             expect($value)->toBe('value2');
 
@@ -579,7 +594,7 @@ describe("Document", function() {
                 'body'  => 'test body'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
 
             $document->rewind();
             expect($document->next())->toBe('test record');
@@ -605,7 +620,7 @@ describe("Document", function() {
                 'body'  => 'test body'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
 
             expect($document->end())->toBe('test body');
             expect($document->rewind())->toBe(1);
@@ -620,7 +635,7 @@ describe("Document", function() {
 
         it("returns true only when the collection is valid", function() {
 
-            $document = Document::create();
+            $document = new Document();
             expect($document->valid())->toBe(false);
 
             $data = [
@@ -628,7 +643,7 @@ describe("Document", function() {
                 'title' => 'test record',
                 'body'  => 'test body'
             ];
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
             expect($document->valid())->toBe(true);
 
         });
@@ -639,7 +654,7 @@ describe("Document", function() {
 
         it("returns 0 on empty", function() {
 
-            $document = Document::create();
+            $document = new Document();
             expect($document)->toHaveLength(0);
 
         });
@@ -655,7 +670,7 @@ describe("Document", function() {
                 'onject'  => new stdClass()
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
             expect($document)->toHaveLength(6);
 
         });
@@ -671,7 +686,7 @@ describe("Document", function() {
                 'title' => 'test record'
             ];
 
-            $document = Document::create($data);
+            $document = new Document(['data' => $data]);
             expect($document->to('array'))->toBe($data);
 
         });
@@ -686,24 +701,8 @@ describe("Document", function() {
                 ]
             ];
 
-            $image = Document::create($data);
+            $image = new Document(['data' => $data]);
             expect($image->data())->toEqual($data);
-
-        });
-
-    });
-
-    describe("->__toString()", function() {
-
-        it("returns the title field", function() {
-
-            $data = [
-                'id'    => 1,
-                'title' => 'test record'
-            ];
-
-            $document = Document::create($data);
-            expect((string) $document)->toBe('test record');
 
         });
 

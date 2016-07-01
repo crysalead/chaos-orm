@@ -9,6 +9,27 @@ use Chaos\collection\Collection;
 class Model extends Document
 {
     /**
+     * MUST BE re-defined in sub-classes which require some different conventions.
+     *
+     * @var object A naming conventions.
+     */
+    protected static $_conventions = null;
+
+    /**
+     * MUST BE re-defined in sub-classes which require a different connection.
+     *
+     * @var object The connection instance.
+     */
+    protected static $_connection = null;
+
+    /**
+     * MUST BE re-defined in sub-classes which require a different schema.
+     *
+     * @var string
+     */
+    protected static $_definition = 'Chaos\Schema';
+
+    /**
      * Class dependencies.
      *
      * @var array
@@ -42,13 +63,6 @@ class Model extends Document
      * @var array
      */
     protected static $_query = [];
-
-    /**
-     * MUST BE re-defined in sub-classes which require a different connection.
-     *
-     * @var object The connection instance.
-     */
-    protected static $_connection = null;
 
     /**************************
      *
@@ -260,6 +274,28 @@ class Model extends Document
     }
 
     /**
+     * Gets/sets the validator instance.
+     *
+     * @param  object $validator The validator instance to set or none to get it.
+     * @return mixed             The validator instance on get.
+     */
+    public static function validator($validator = null)
+    {
+        if (func_num_args()) {
+            static::$_validators[static::class] = $validator;
+            return;
+        }
+        $self = static::class;
+        if (isset(static::$_validators[$self])) {
+            return static::$_validators[$self];
+        }
+        $class = static::$_classes['validator'];
+        $validator = static::$_validators[$self] = new $class();
+        static::_rules($validator);
+        return $validator;
+    }
+
+    /**
      * Gets/sets the default query parameters used on finds.
      *
      * @param  array $query The query parameters.
@@ -313,22 +349,29 @@ class Model extends Document
      * Creates a new record object with default values.
      *
      * @param array $config Possible options are:
-     *                      - `'collector'`  _object_ : A collector instance.
-     *                      - `'parent'`     _object_ : The parent instance.
-     *                      - `'rootPath'`   _string_ : A dotted field names path (for embedded entities).
      *                      - `'exists'`     _boolean_: A boolean or `null` indicating if the entity exists.
      *                      - `'autoreload'` _boolean_: If `true` and exists is `null`, autoreload the entity
      *                                                  from the datasource
-     *                      - `'data'`       _array_  : The entity's data.
      *
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'autoreload' => true
+            'exists'     => false,
+            'autoreload' => true,
+            'data'       => []
         ];
         $config += $defaults;
         parent::__construct($config);
+
+        /**
+         * Cached value indicating whether or not this instance exists somehow. If this instance has been loaded
+         * from the database, or has been created and subsequently saved this value should be automatically
+         * setted to `true`.
+         *
+         * @var Boolean
+         */
+        $this->exists($config['exists']);
 
         if ($this->exists() === false) {
             return;
@@ -348,14 +391,20 @@ class Model extends Document
         }
 
         if (!$id = $this->id()) {
-            return; // TODO: would probaly better to throw an exception here.
+          throw new ChaosException("Existing entities must have a valid ID.");
         }
-
         $source = $this->schema()->source();
-        $collector = $this->collector();
-        if (!$collector->exists($source, $id)) {
-            $collector->set($source, $id, $this);
-        }
+        $this->uuid($source . ':' . $id);
+    }
+
+    /**
+     * Returns a string representation of the instance.
+     *
+     * @return string
+     */
+    public function title()
+    {
+        return $this->title ?: $this->name;
     }
 
     /**
@@ -371,6 +420,21 @@ class Model extends Document
             throw new ChaosException("No primary key has been defined for `{$class}`'s schema.");
         }
         return $this->{$key};
+    }
+
+    /**
+     * Gets/sets whether or not this instance has been persisted somehow.
+     *
+     * @param  boolean $exists The exists value to set or `null` to get the current one.
+     * @return mixed           Returns the exists value on get or `$this` otherwise.
+     */
+    public function exists($exists = null)
+    {
+        if (!func_num_args()) {
+            return $this->_exists;
+        }
+        $this->_exists = $exists;
+        return $this;
     }
 
     /**
@@ -492,5 +556,106 @@ class Model extends Document
             return true;
         }
         return false;
+    }
+
+    /**
+     * Validates the entity data.
+     *
+     * @param  array  $options Available options:
+     *                         - `'events'` _mixed_    : A string or array defining one or more validation
+     *                           events. Events are different contexts in which data events can occur, and
+     *                           correspond to the optional `'on'` key in validation rules. For example, by
+     *                           default, `'events'` is set to either `'create'` or `'update'`, depending on
+     *                           whether the entity already exists. Then, individual rules can specify
+     *                           `'on' => 'create'` or `'on' => 'update'` to only be applied at certain times.
+     *                           You can also set up custom events in your rules as well, such as `'on' => 'login'`.
+     *                           Note that when defining validation rules, the `'on'` key can also be an array of
+     *                           multiple events.
+     *                         - `'required'` _boolean_ : Sets the validation rules `'required'` default value.
+     *                         - `'embed'`    _array_   : List of relations to validate.
+     * @return boolean         Returns `true` if all validation rules on all fields succeed, otherwise
+     *                         `false`. After validation, the messages for any validation failures are assigned
+     *                         to the entity, and accessible through the `errors()` method of the entity object.
+     */
+    public function validate($options = [])
+    {
+        $defaults = [
+            'events'   => $this->exists() !== false ? 'update' : 'create',
+            'required' => $this->exists() !== false ? false : true,
+            'embed'     => true
+        ];
+        $options += $defaults;
+        $validator = static::validator();
+
+        $valid = $this->_validate($options);
+
+        $success = $validator->validate($this->get(), $options);
+        $this->_errors = $validator->errors();
+        return $success && $valid;
+    }
+
+    /**
+     * Validates a relation.
+     *
+     * @param  array   $options Available options:
+     *                          - `'embed'` _array_ : List of relations to validate.
+     * @return boolean          Returns `true` if all validation rules on all fields succeed, otherwise `false`.
+     */
+    protected function _validate($options)
+    {
+        $defaults = ['embed' => true];
+        $options += $defaults;
+
+        if ($options['embed'] === true) {
+            $options['embed'] = $this->hierarchy();
+        }
+
+        $schema = static::schema();
+        $tree = $schema->treeify($options['embed']);
+        $success = true;
+
+        foreach ($tree as $field => $value) {
+            if (isset($this->{$field})) {
+                $rel = $schema->relation($field);
+                $success = $success && $rel->validate($this, ['embed' => $value] + $options);
+            }
+        }
+        return $success;
+    }
+
+    /**
+     * Returns the errors from the last `->validate()` call.
+     *
+     * @return array The occured errors.
+     */
+    public function errors($options = [])
+    {
+        $defaults = ['embed' => true];
+        $options += $defaults;
+
+        if ($options['embed'] === true) {
+            $options['embed'] = $this->hierarchy();
+        }
+
+        $schema = static::schema();
+        $tree = $schema->treeify($options['embed']);
+        $errors = $this->_errors;
+
+        foreach ($tree as $field => $value) {
+            if (isset($this->{$field})) {
+                $errors[$field] = $this->{$field}->errors(['embed' => $value] + $options);
+            }
+        }
+        return $errors;
+    }
+
+    /**
+     * Returns a string representation of the instance.
+     *
+     * @return string Returns the generated title of the object.
+     */
+    public function __toString()
+    {
+        return (string) $this->title();
     }
 }

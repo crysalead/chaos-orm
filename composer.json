@@ -9,7 +9,8 @@
         "crysalead/set": "~2.0",
         "crysalead/text": "~2.0",
         "crysalead/inflector": "~2.0",
-        "crysalead/validator": "~2.0"
+        "crysalead/validator": "~2.0",
+        "ramsey/uuid": "^3.4"
     },
     "require-dev": {
         "crysalead/kahlan": "~2.0"

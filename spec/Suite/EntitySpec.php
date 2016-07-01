@@ -35,11 +35,11 @@ describe("Entity", function() {
             $date = new DateTime('2014-10-26 00:25:15');
 
             $model = $this->model;
-            $entity = new $model(['data' => [
+            $entity = $model::create([
                 'title'   => 'Hello',
                 'body'    => 'World',
                 'created' => $date
-            ]]);
+            ]);
             expect($entity->title)->toBe('Hello');
             expect($entity->body)->toBe('World');
             expect($entity->created)->toBe($date);
@@ -72,8 +72,20 @@ describe("Entity", function() {
         it("returns the model class name", function() {
 
             $model = $this->model;
-            $entity = new $model();
+            $entity = $model::create();
             expect($entity->model())->toBe($model);
+
+        });
+
+    });
+
+    describe("->exists()", function() {
+
+        it("returns the exists value", function() {
+
+            $model = $this->model;
+            $entity = $model::create(['id' => 123], ['exists' => true]);
+            expect($entity->exists())->toBe(true);
 
         });
 
@@ -110,6 +122,17 @@ describe("Entity", function() {
                 $entity->id();
             };
             expect($closure)->toThrow(new ChaosException("No primary key has been defined for `{$model}`'s schema."));
+
+        });
+
+        it("throws an exception when trying to update an entity with no ID data", function() {
+
+            $closure = function() {
+                $model = $this->model;
+                $entity = $model::create([], ['exists' => true]);
+                $entity->id();
+            };
+            expect($closure)->toThrow(new ChaosException("Existing entities must have a valid ID."));
 
         });
 
@@ -521,11 +544,11 @@ describe("Entity", function() {
             $schema = $model::definition();
             $schema->column('created', ['type' => 'date']);
 
-            $entity = new $model(['data' => [
+            $entity = $model::create([
                 'title'   => 'Hello',
                 'body'    => 'World',
                 'created' => new DateTime('2014-10-26 00:25:15')
-            ]]);
+            ]);
 
             expect($entity->data(['format' => 'Y-m-d']))->toBe([
                 'title'   => 'Hello',
@@ -593,6 +616,23 @@ describe("Entity", function() {
             expect($image->to('array', ['embed' => false]))->toBe([
                 'title' => 'Amiga 1200'
             ]);
+        });
+
+    });
+
+    describe("->__toString()", function() {
+
+        it("returns the title field", function() {
+
+            $data = [
+                'id'    => 1,
+                'title' => 'test record'
+            ];
+
+            $model = $this->model;
+            $entity = $model::create($data);
+            expect((string) $entity)->toBe('test record');
+
         });
 
     });

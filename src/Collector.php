@@ -16,39 +16,45 @@ class Collector
     /**
      * Collects an object.
      *
-     * @param string $scope The scope name.
-     * @param string $id    The ID to look up.
-     * @param mixed         The data to collect.
+     * @param string $uuid The UUID to look up.
+     * @param mixed        The data to collect.
      */
-    public function set($scope, $id, $data)
+    public function set($uuid, $data)
     {
-        $this->_data[$scope][$id] = $data;
-    }
-
-    /**
-     * Checks if an object with a specific ID has already been collected.
-     *
-     * @param  string $scope The scope name.
-     * @param  string $id    The ID to look up.
-     * @return boolean       Returns `true` if exists, `false` otherwise.
-     */
-    public function exists($scope, $id)
-    {
-        return isset($this->_data[$scope][$id]);
+        $this->_data[$uuid] = $data;
     }
 
     /**
      * Gets a collected object.
      *
-     * @param  string $scope The scope name.
-     * @param  string $id    The ID to look up.
-     * @return mixed         The collected data.
+     * @param  string $uuid The UUID to look up.
+     * @return mixed        The collected data.
      */
-    public function get($scope, $id)
+    public function get($uuid)
     {
-        if (isset($this->_data[$scope][$id])) {
-            return $this->_data[$scope][$id];
+        if (isset($this->_data[$uuid])) {
+            return $this->_data[$uuid];
         }
-        throw new ChaosException("No collected data for `'{$scope}'` with ID `'{$id}'` in this collector.");
+        throw new ChaosException("No collected data with UUID `'{$uuid}'` in this collector.");
+    }
+
+    /**
+     * Uncollects an object.
+     *
+     * @param string $uuid The UUID to remove.
+     */
+    public function remove($uuid) {
+       unset($uuid);
+    }
+
+    /**
+     * Checks if an object with a specific ID has already been collected.
+     *
+     * @param  string  $uuid The UUID to look up.
+     * @return boolean       Returns `true` if exists, `false` otherwise.
+     */
+    public function exists($uuid)
+    {
+        return isset($this->_data[$uuid]);
     }
 }

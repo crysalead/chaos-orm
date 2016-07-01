@@ -2,31 +2,12 @@
 namespace Chaos;
 
 use Traversable;
+use Ramsey\Uuid\Uuid;
 use Lead\Set\Set;
 use Chaos\Collection\Collection;
 
 class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
 {
-    /**
-     * Class dependencies.
-     *
-     * @var array
-     */
-    protected static $_classes = [
-        'collector'   => 'Chaos\Collector',
-        'set'         => 'Chaos\Collection\Collection',
-        'through'     => 'Chaos\Collection\Through',
-        'conventions' => 'Chaos\Conventions',
-        'validator'   => 'Lead\Validator\Validator'
-    ];
-
-    /**
-     * Stores validator instances.
-     *
-     * @var array
-     */
-    protected static $_validators = [];
-
     /**
      * MUST BE re-defined in sub-classes which require some different conventions.
      *
@@ -40,6 +21,25 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      * @var string
      */
     protected static $_definition = 'Chaos\Schema';
+
+    /**
+     * Class dependencies.
+     *
+     * @var array
+     */
+    protected static $_classes = [
+        'collector'   => 'Chaos\Collector',
+        'set'         => 'Chaos\Collection\Collection',
+        'through'     => 'Chaos\Collection\Through',
+        'conventions' => 'Chaos\Conventions'
+    ];
+
+    /**
+     * Stores validator instances.
+     *
+     * @var array
+     */
+    protected static $_validators = [];
 
     /**
      * The collector instance.
@@ -61,6 +61,13 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      * @var object
      */
     protected $_schema = null;
+
+    /**
+     * The UUID value.
+     *
+     * @var string
+     */
+    protected $_uuid = null;
 
     /**
      * If this instance has a parent, this value indicates the parent field path.
@@ -176,13 +183,6 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      * @param  array  $data    Any data that this object should be populated with initially.
      * @param  array  $options Options to be passed to item.
      *                         - `'type'`       _string_ : can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection
-     *                           of entities. Default to `'entity'`.
-     *                         - `'exists'`     _mixed_  : corresponds whether the entity is present in the datastore or not.
-     *                         - `'autoreload'` _boolean_: sets the specific behavior when exists is `null`. A '`true`' value will perform a
-     *                           reload of the entity from the datasource. Default to `'true'`.
-     *                         - `'defaults'`   _boolean_: indicates whether the entity needs to be populated with their defaults values on creation.
-     *                         - `'model'`      _string_ : the model to use for instantiating the entity. Can be useful for implementing
-     *                                                     som Single Table Inheritance.
      * @return object          Returns a new, un-saved record or document object. In addition to
      *                         the values passed to `$data`, the object will also contain any values
      *                         assigned to the `'default'` key of each field defined in the schema.
@@ -190,49 +190,21 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
     public static function create($data = [], $options = [])
     {
         $defaults = [
-            'type'   => 'entity',
-            'exists' => false,
-            'schema' => null,
-            'model'  => static::class
+            'type'   => 'entity'
         ];
         $options += $defaults;
-        $options['defaults'] = !$options['exists'];
 
         $type = $options['type'];
 
         if ($type === 'entity') {
-            $classname = $options['model'];
-            $options['schema'] = $options['model'] === Document::class ? $options['schema'] : null;
+            $classname = static::class;
         } else {
-            $classname = static::$_classes[$options['type']];
-            $model = $options['model'];
-            $options['schema'] = $model::definition();
+            $options['schema'] = static::definition();
+            $classname = static::$_classes[$type];
         }
         $options = ['data' => $data] + $options;
 
         return new $classname($options);
-    }
-
-    /**
-     * Gets/sets the validator instance.
-     *
-     * @param  object $validator The validator instance to set or none to get it.
-     * @return mixed             The validator instance on get.
-     */
-    public static function validator($validator = null)
-    {
-        if (func_num_args()) {
-            static::$_validators[static::class] = $validator;
-            return;
-        }
-        $self = static::class;
-        if (isset(static::$_validators[$self])) {
-            return static::$_validators[$self];
-        }
-        $class = static::$_classes['validator'];
-        $validator = static::$_validators[$self] = new $class();
-        static::_rules($validator);
-        return $validator;
     }
 
     /***************************
@@ -246,30 +218,28 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      *
      * @param array $config Possible options are:
      *                      - `'collector'`  _object_ : A collector instance.
+     *                      - `'uuid'`       _object_ : The object UUID.
      *                      - `'parent'`     _object_ : The parent instance.
+     *                      - `'schema'`     _object_ : The schema instance.
      *                      - `'rootPath'`   _string_ : A dotted field names path (for embedded entities).
-     *                      - `'exists'`     _boolean_: A boolean or `null` indicating if the entity exists.
-     *                      - `'autoreload'` _boolean_: If `true` and exists is `null`, autoreload the entity
-     *                                                  from the datasource
+     *                      - `'defaults'`   _boolean_  Populates or not the fields default values.
      *                      - `'data'`       _array_  : The entity's data.
      *
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'collector'  => null,
-            'parent'     => null,
-            'schema'     => null,
-            'rootPath'   => null,
-            'exists'     => false,
-            'defaults'   => false,
-            'data'       => [],
-            'autoreload' => true
+            'collector' => null,
+            'uuid'      => null,
+            'parent'    => null,
+            'schema'    => null,
+            'rootPath'  => null,
+            'defaults'  => true,
+            'data'      => []
         ];
         $config += $defaults;
         $this->collector($config['collector']);
         $this->parent($config['parent']);
-        $this->exists($config['exists']);
         $this->rootPath($config['rootPath']);
         $this->schema($config['schema']);
 
@@ -279,6 +249,8 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
 
         $this->set($config['data']);
         $this->_persisted = $this->_data;
+
+        $this->uuid($config['uuid']);
     }
 
     /**
@@ -295,7 +267,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      * Gets/sets the schema instance.
      *
      * @param  object schema The schema instance to set or none to get it.
-     * @return mixed         The schema instance or `$this` on set.
+     * @return mixed         The schema instance on get or `$this` otherwise.
      */
     public function schema($schema = null)
     {
@@ -307,6 +279,35 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             $this->_schema = static::definition();
         }
         return $this->_schema;
+    }
+
+    /**
+      * Gets/sets the instance uuid.
+      *
+      * @param  string $uuid The uuid to set or none to get it.
+      * @return mixed        The uuid on get or `this` otherwise.
+      */
+    public function uuid($uuid = null)
+    {
+        if (func_num_args()) {
+            if ($this->_uuid === $uuid) {
+                return $this;
+            }
+
+            $collector = $this->collector();
+            if ($this->_uuid) {
+                $collector->remove($this->_uuid);
+            }
+            $this->_uuid = $uuid;
+            if ($this->_uuid) {
+                $collector->set($this->uuid(), $this);
+            }
+            return $this;
+        }
+        if (!$this->_uuid) {
+            $this->_uuid = Uuid::uuid4();
+        }
+        return $this->_uuid;
     }
 
     /**
@@ -340,21 +341,6 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             return $this->_parent;
         }
         $this->_parent = $parent;
-        return $this;
-    }
-
-    /**
-     * Gets/sets whether or not this instance has been persisted somehow.
-     *
-     * @param  boolean $exists The exists value to set or `null` to get the current one.
-     * @return mixed           Returns the exists value on get or `$this` otherwise.
-     */
-    public function exists($exists = null)
-    {
-        if (!func_num_args()) {
-            return $this->_exists;
-        }
-        $this->_exists = $exists;
         return $this;
     }
 
@@ -402,24 +388,17 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $schema = $this->schema();
         $fieldname = $this->rootPath() ? $this->rootPath() . '.' . $name : $name;
 
-        if (!$schema->has($fieldname)) {
-            if (array_key_exists($name, $this->_data)) {
-                return $this->_data[$name];
-            } elseif ($schema->hasRelation($fieldname)) {
-                return $this->_data[$name] = $schema->relation($fieldname)->get($this);
-            }
-            return;
-        }
+        $field = $schema->has($fieldname) ? $schema->column($fieldname) : [];
 
-        $field = $schema->column($fieldname);
+        $self = Model::class;
 
         if (!empty($field['getter'])) {
             $value = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
-        } elseif ($schema->hasRelation($fieldname)) {
+        } elseif ($this instanceof $self && $schema->hasRelation($fieldname)) {
             return $this->_data[$name] = $schema->relation($fieldname)->get($this);
-        } elseif ($field['type'] === 'object') {
+        } elseif (isset($field['type']) && $field['type'] === 'object') {
             $value = [];
         } else {
             return;
@@ -429,8 +408,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             'collector' => $this->collector(),
             'parent'    => $this,
             'rootPath'  => $this->rootPath(),
-            'defaults'  => true,
-            'exists'    => $this->exists()
+            'defaults'  => true
         ]);
         if (!empty($field['virtual'])) {
             return $value;
@@ -524,8 +502,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             'collector' => $this->collector(),
             'parent'    => $this,
             'rootPath'  => $this->rootPath(),
-            'defaults'  => true,
-            'exists'    => $this->exists()
+            'defaults'  => true
         ]);
 
         $fieldname = $this->rootPath() ? $this->rootPath() . '.' . $name : $name;
@@ -604,16 +581,6 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             return;
         }
         unset($this->{$offset});
-    }
-
-    /**
-     * Returns a string representation of the instance.
-     *
-     * @return string
-     */
-    public function title()
-    {
-        return $this->title ?: $this->name;
     }
 
     /**
@@ -782,9 +749,6 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      */
     public function modified($field = null)
     {
-        if (!$this->exists()) {
-            return true;
-        }
         $schema = $this->schema();
 
         $result = [];
@@ -825,97 +789,6 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
     }
 
     /**
-     * Validates the entity data.
-     *
-     * @param  array  $options Available options:
-     *                         - `'events'` _mixed_    : A string or array defining one or more validation
-     *                           events. Events are different contexts in which data events can occur, and
-     *                           correspond to the optional `'on'` key in validation rules. For example, by
-     *                           default, `'events'` is set to either `'create'` or `'update'`, depending on
-     *                           whether the entity already exists. Then, individual rules can specify
-     *                           `'on' => 'create'` or `'on' => 'update'` to only be applied at certain times.
-     *                           You can also set up custom events in your rules as well, such as `'on' => 'login'`.
-     *                           Note that when defining validation rules, the `'on'` key can also be an array of
-     *                           multiple events.
-     *                         - `'required'` _boolean_ : Sets the validation rules `'required'` default value.
-     *                         - `'embed'`    _array_   : List of relations to validate.
-     * @return boolean         Returns `true` if all validation rules on all fields succeed, otherwise
-     *                         `false`. After validation, the messages for any validation failures are assigned
-     *                         to the entity, and accessible through the `errors()` method of the entity object.
-     */
-    public function validate($options = [])
-    {
-        $defaults = [
-            'events'   => $this->exists() !== false ? 'update' : 'create',
-            'required' => $this->exists() !== false ? false : true,
-            'embed'     => true
-        ];
-        $options += $defaults;
-        $validator = static::validator();
-
-        $valid = $this->_validate($options);
-
-        $success = $validator->validate($this->get(), $options);
-        $this->_errors = $validator->errors();
-        return $success && $valid;
-    }
-
-    /**
-     * Validates a relation.
-     *
-     * @param  array   $options Available options:
-     *                          - `'embed'` _array_ : List of relations to validate.
-     * @return boolean          Returns `true` if all validation rules on all fields succeed, otherwise `false`.
-     */
-    protected function _validate($options)
-    {
-        $defaults = ['embed' => true];
-        $options += $defaults;
-
-        if ($options['embed'] === true) {
-            $options['embed'] = $this->hierarchy();
-        }
-
-        $schema = static::schema();
-        $tree = $schema->treeify($options['embed']);
-        $success = true;
-
-        foreach ($tree as $field => $value) {
-            if (isset($this->{$field})) {
-                $rel = $schema->relation($field);
-                $success = $success && $rel->validate($this, ['embed' => $value] + $options);
-            }
-        }
-        return $success;
-    }
-
-    /**
-     * Returns the errors from the last `->validate()` call.
-     *
-     * @return array The occured errors.
-     */
-    public function errors($options = [])
-    {
-        $defaults = ['embed' => true];
-        $options += $defaults;
-
-        if ($options['embed'] === true) {
-            $options['embed'] = $this->hierarchy();
-        }
-
-        $schema = static::schema();
-        $tree = $schema->treeify($options['embed']);
-        $errors = $this->_errors;
-
-        foreach ($tree as $field => $value) {
-            if (isset($this->{$field})) {
-                $errors[$field] = $this->{$field}->errors(['embed' => $value] + $options);
-            }
-        }
-        return $errors;
-    }
-
-    /**
      * Returns all included relations accessible through this entity.
      *
      * @param  string $prefix The parent relation path.
@@ -950,16 +823,6 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             }
         }
         return $result;
-    }
-
-    /**
-     * Returns a string representation of the instance.
-     *
-     * @return string Returns the generated title of the object.
-     */
-    public function __toString()
-    {
-        return (string) $this->title();
     }
 
     /**

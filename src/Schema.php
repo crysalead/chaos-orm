@@ -918,9 +918,11 @@ class Schema
             $data->rootPath($options['rootPath']);
             return $data;
         }
-        $options['type'] = 'entity';
+        $options['data'] = $data ? $data : [];
+        $options['schema'] = $options['model'] === Document::class ? $options['schema'] : null;
+
         $model = $options['model'];
-        return $model::create($data, $options);
+        return new $model($options);
     }
 
     /**
@@ -942,7 +944,10 @@ class Schema
             return $data;
         }
         $model = $options['model'];
-        return $model::create($data, $options);
+        $options['data'] = $data ? $data : [];
+        $options['schema'] = $model::definition();
+
+        return new $collection($options);
     }
 
     /**
@@ -989,8 +994,8 @@ class Schema
                     return (float) $value;
                 },
                 'decimal' => function($value, $options = []) {
-                    $options += ['precision' => 2];
-                    return number_format($value, $options['precision']);
+                    $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                    return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
                 },
                 'boolean' => function($value, $options = []) {
                     return !!$value;
