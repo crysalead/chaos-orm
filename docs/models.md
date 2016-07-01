@@ -40,8 +40,8 @@ class Gallery extends \Chaos\Model
 
     protected static function _define($schema)
     {
-        $schema->set('id', ['type' => 'serial']);
-        $schema->set('name', ['type' => 'string']);
+        $schema->column('id', ['type' => 'serial']);
+        $schema->column('name', ['type' => 'string']);
 
         $schema->hasMany('images', 'My\Project\Model\Image');
     }
