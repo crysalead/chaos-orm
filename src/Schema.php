@@ -1151,13 +1151,13 @@ class Schema
      * @param mixed    $conditions An array of key/value pairs representing the scope of the records or
      *                             documents to be deleted.
      * @param array    $options    Any database-specific options to use when performing the operation. See
-     *                             the `delete()` method of the corresponding backend database for available
+     *                             the `truncate()` method of the corresponding backend database for available
      *                             options.
      * @return boolean             Returns `true` if the remove operation succeeded, otherwise `false`.
      */
-    public function delete($options = [])
+    public function truncate($options = [])
     {
-        throw new ChaosException("Missing `delete()` implementation for `{$this->_model}`'s schema.");
+        throw new ChaosException("Missing `truncate()` implementation for `{$this->_model}`'s schema.");
     }
 
     /**

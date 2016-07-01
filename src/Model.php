@@ -520,7 +520,7 @@ class Model extends Document
         if ((!$key = $schema->key()) || $this->exists() === false) {
             return false;
         }
-        if($schema->delete([$key => $this->id()])) {
+        if($schema->truncate([$key => $this->id()])) {
             $this->_exists = false;
             $this->_persisted = [];
             return true;
