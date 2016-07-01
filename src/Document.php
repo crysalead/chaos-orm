@@ -74,7 +74,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      *
      * @var string
      */
-    protected $_rootPath = '';
+    protected $_basePath = '';
 
     /**
      * Cached value indicating whether or not this instance exists somehow. If this instance has been loaded
@@ -221,7 +221,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      *                      - `'uuid'`       _object_ : The object UUID.
      *                      - `'parent'`     _object_ : The parent instance.
      *                      - `'schema'`     _object_ : The schema instance.
-     *                      - `'rootPath'`   _string_ : A dotted field names path (for embedded entities).
+     *                      - `'basePath'`   _string_ : A dotted field names path (for embedded entities).
      *                      - `'defaults'`   _boolean_  Populates or not the fields default values.
      *                      - `'data'`       _array_  : The entity's data.
      *
@@ -233,17 +233,17 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             'uuid'      => null,
             'parent'    => null,
             'schema'    => null,
-            'rootPath'  => null,
+            'basePath'  => null,
             'defaults'  => true,
             'data'      => []
         ];
         $config += $defaults;
         $this->collector($config['collector']);
         $this->parent($config['parent']);
-        $this->rootPath($config['rootPath']);
+        $this->basePath($config['basePath']);
         $this->schema($config['schema']);
 
-        if ($config['defaults'] && !$config['rootPath']) {
+        if ($config['defaults'] && !$config['basePath']) {
             $config['data'] = Set::merge($this->schema()->defaults(), $config['data']);
         }
 
@@ -345,17 +345,17 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
     }
 
     /**
-     * Gets/sets the rootPath (embedded entities).
+     * Gets/sets the basePath (embedded entities).
      *
-     * @param  string $rootPath The rootPath value to set or `null` to get the current one.
-     * @return mixed            Returns the rootPath value on get or `$this` otherwise.
+     * @param  string $basePath The basePath value to set or `null` to get the current one.
+     * @return mixed            Returns the basePath value on get or `$this` otherwise.
      */
-    public function rootPath($rootPath = null)
+    public function basePath($basePath = null)
     {
         if (!func_num_args()) {
-            return $this->_rootPath;
+            return $this->_basePath;
         }
-        $this->_rootPath = $rootPath;
+        $this->_basePath = $basePath;
         return $this;
     }
 
@@ -386,7 +386,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         }
 
         $schema = $this->schema();
-        $fieldname = $this->rootPath() ? $this->rootPath() . '.' . $name : $name;
+        $fieldname = $this->basePath() ? $this->basePath() . '.' . $name : $name;
 
         $field = $schema->has($fieldname) ? $schema->column($fieldname) : [];
 
@@ -407,7 +407,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $value = $schema->cast($name, $value, [
             'collector' => $this->collector(),
             'parent'    => $this,
-            'rootPath'  => $this->rootPath(),
+            'basePath'  => $this->basePath(),
             'defaults'  => true
         ]);
         if (!empty($field['virtual'])) {
@@ -501,11 +501,11 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $value = $this->schema()->cast($name, $data, [
             'collector' => $this->collector(),
             'parent'    => $this,
-            'rootPath'  => $this->rootPath(),
+            'basePath'  => $this->basePath(),
             'defaults'  => true
         ]);
 
-        $fieldname = $this->rootPath() ? $this->rootPath() . '.' . $name : $name;
+        $fieldname = $this->basePath() ? $this->basePath() . '.' . $name : $name;
         if ($schema->isVirtual($fieldname)) {
             return;
         }
@@ -840,7 +840,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $defaults = [
             'embed' => true,
             'verbose' => false,
-            'rootPath' => null
+            'basePath' => null
         ];
         $options += $defaults;
 
@@ -850,7 +850,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
 
         $schema = $this->schema();
         $tree = $schema->treeify($options['embed']);
-        $rootPath = $options['rootPath'];
+        $basePath = $options['basePath'];
 
         $result = [];
         $fields = array_keys($this->_data);
@@ -869,13 +869,13 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             }
             $value = $this[$field];
             if ($value instanceof Document) {
-                $options['rootPath'] = $value->rootPath();
+                $options['basePath'] = $value->basePath();
                 $result[$field] = $value->to($format, $options);
             } elseif ($value instanceof Traversable) {
                 $result[$field] = Collection::toArray($value, $options);
             } else {
-                $options['rootPath'] = $rootPath ? $rootPath . '.' . $field : $field;
-                $result[$field] = $schema->has($options['rootPath']) ? $schema->format($format, $options['rootPath'], $value, $options) : $value;
+                $options['basePath'] = $basePath ? $basePath . '.' . $field : $field;
+                $result[$field] = $schema->has($options['basePath']) ? $schema->format($format, $options['basePath'], $value, $options) : $value;
             }
         }
         return $result;

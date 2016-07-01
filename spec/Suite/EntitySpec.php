@@ -393,7 +393,7 @@ describe("Entity", function() {
 
                 expect($child)->toBeAnInstanceOf($childEntity);
                 expect($child->parent())->toBe($entity);
-                expect($child->rootPath())->toBe('child');
+                expect($child->basePath())->toBe('child');
 
             });
 

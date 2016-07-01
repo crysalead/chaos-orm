@@ -843,7 +843,7 @@ class Schema
         $defaults = [
             'collector' => null,
             'parent'    => null,
-            'rootPath'  => null,
+            'basePath'  => null,
             'exists'    => false
         ];
         $options += $defaults;
@@ -852,9 +852,9 @@ class Schema
         $options['schema'] = $this;
 
         if ($field) {
-            $name = $options['rootPath'] ? $options['rootPath'] . '.' . $field : $field;
+            $name = $options['basePath'] ? $options['basePath'] . '.' . $field : $field;
         } else {
-            $name = $options['rootPath'];
+            $name = $options['basePath'];
         }
 
         if ($name === null) {
@@ -863,7 +863,7 @@ class Schema
 
         if (isset($this->_relations[$name])) {
             $options = $this->_relations[$name] + $options;
-            $options['rootPath'] = $options['embedded'] ? $name : null;
+            $options['basePath'] = $options['embedded'] ? $name : null;
 
             if ($options['relation'] !== 'hasManyThrough') {
                 $options['model'] = $options['to'];
@@ -915,7 +915,7 @@ class Schema
         if ($data instanceof Document) {
             $data->collector($options['collector']);
             $data->parent($options['parent']);
-            $data->rootPath($options['rootPath']);
+            $data->basePath($options['basePath']);
             return $data;
         }
         $options['data'] = $data ? $data : [];
@@ -940,7 +940,7 @@ class Schema
         if ($data instanceof $collection) {
             $data->collector($options['collector']);
             $data->parent($options['parent']);
-            $data->rootPath($options['rootPath']);
+            $data->basePath($options['basePath']);
             return $data;
         }
         $model = $options['model'];

@@ -134,11 +134,11 @@ class Through implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets the base rootPath.
+     * Gets the base basePath.
      *
      * @return string
      */
-    public function rootPath()
+    public function basePath()
     {
         return '';
     }

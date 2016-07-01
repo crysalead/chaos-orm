@@ -41,7 +41,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
      *
      * @var string
      */
-    protected $_rootPath = null;
+    protected $_basePath = null;
 
     /**
      * Cached value indicating whether or not this instance exists somehow. If this instance has been loaded
@@ -100,7 +100,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
      *                      - `'collector'` _object_ : A collector instance.
      *                      - `'parent'`    _object_ : The parent instance.
      *                      - `'schema'`    _object_ : The attached schema.
-     *                      - `'rootPath'`  _string_ : A dotted string field path.
+     *                      - `'basePath'`  _string_ : A dotted string field path.
      *                      - `'meta'`      _array_  : Some meta data.
      *                      - `'data'`      _array_  : The collection data.
      */
@@ -110,7 +110,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
             'collector' => null,
             'parent'    => null,
             'schema'    => null,
-            'rootPath'  => null,
+            'basePath'  => null,
             'meta'      => [],
             'data'      => [],
             'exists'    => false
@@ -120,7 +120,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
         $this->collector($config['collector']);
         $this->parent($config['parent']);
         $this->exists($config['exists']);
-        $this->rootPath($config['rootPath']);
+        $this->basePath($config['basePath']);
         $this->schema($config['schema']);
         $this->meta($config['meta']);
 
@@ -194,17 +194,17 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
     }
 
     /**
-     * Gets/sets the rootPath (embedded entities).
+     * Gets/sets the basePath (embedded entities).
      *
-     * @param  string $rootPath The rootPath value to set or none to get the current one.
-     * @return mixed            Returns the rootPath value on get or `$this` otherwise.
+     * @param  string $basePath The basePath value to set or none to get the current one.
+     * @return mixed            Returns the basePath value on get or `$this` otherwise.
      */
-    public function rootPath($rootPath = null)
+    public function basePath($basePath = null)
     {
         if (!func_num_args()) {
-            return $this->_rootPath;
+            return $this->_basePath;
         }
-        $this->_rootPath = $rootPath;
+        $this->_basePath = $basePath;
         return $this;
     }
 
@@ -299,7 +299,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
             $data = $schema->cast(null, $data, [
                 'collector' => $this->collector(),
                 'parent'    => $this,
-                'rootPath'  => $this->rootPath(),
+                'basePath'  => $this->basePath(),
                 'exists'    => $this->exists(),
                 'defaults'  => true
             ]);

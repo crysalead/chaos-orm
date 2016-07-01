@@ -48,12 +48,12 @@ describe("Collection", function() {
 
     });
 
-    describe("->rootPath()", function() {
+    describe("->basePath()", function() {
 
         it("returns the root path", function() {
 
-            $collection = new Collection(['rootPath' => 'items']);
-            expect($collection->rootPath())->toBe('items');
+            $collection = new Collection(['basePath' => 'items']);
+            expect($collection->basePath())->toBe('items');
 
         });
 
@@ -293,7 +293,7 @@ describe("Collection", function() {
                 $entity = $collection[0];
                 expect($entity)->toBeAnInstanceOf($this->model);
                 expect($entity->parent())->toBe($collection);
-                expect($entity->rootPath())->toBe(null);
+                expect($entity->basePath())->toBe(null);
 
             });
 

@@ -63,12 +63,12 @@ describe("Document", function() {
 
     });
 
-    describe("->rootPath()", function() {
+    describe("->basePath()", function() {
 
         it("returns the root path", function() {
 
-            $document = new Document(['rootPath' => 'items']);
-            expect($document->rootPath())->toBe('items');
+            $document = new Document(['basePath' => 'items']);
+            expect($document->basePath())->toBe('items');
 
         });
 
