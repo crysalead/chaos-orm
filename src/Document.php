@@ -2,11 +2,15 @@
 namespace Chaos;
 
 use Traversable;
+use ArrayAccess;
+use Chaos\Contrat\DataStoreInterface;
+use Chaos\Contrat\HasParentsInterface;
+
 use Ramsey\Uuid\Uuid;
 use Lead\Set\Set;
 use Chaos\Collection\Collection;
 
-class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
+class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess, \Iterator, \Countable
 {
     /**
      * MUST BE re-defined in sub-classes which require some different conventions.
@@ -49,11 +53,11 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
     protected $_collector = null;
 
     /**
-     * If this record is chained off of another, contains the origin object.
+     * A reference to `Document`'s parents object.
      *
      * @var object
      */
-    protected $_parent = null;
+    protected $_parents = null;
 
     /**
      * Stores the document schema.
@@ -219,7 +223,6 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
      * @param array $config Possible options are:
      *                      - `'collector'`  _object_ : A collector instance.
      *                      - `'uuid'`       _object_ : The object UUID.
-     *                      - `'parent'`     _object_ : The parent instance.
      *                      - `'schema'`     _object_ : The schema instance.
      *                      - `'basePath'`   _string_ : A dotted field names path (for embedded entities).
      *                      - `'defaults'`   _boolean_  Populates or not the fields default values.
@@ -231,15 +234,15 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $defaults = [
             'collector' => null,
             'uuid'      => null,
-            'parent'    => null,
             'schema'    => null,
             'basePath'  => null,
             'defaults'  => true,
             'data'      => []
         ];
         $config += $defaults;
+        $this->_parents = new Map();
+
         $this->collector($config['collector']);
-        $this->parent($config['parent']);
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
 
@@ -330,17 +333,40 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
     }
 
     /**
-     * Gets/sets the parent.
+     * Get parents.
      *
-     * @param  object $parent The parent instance to set or `null` to get it.
-     * @return mixed          Returns the parent value on get or `$this` otherwise.
+     * @return DocumentMap Returns the parents map.
      */
-    public function parent($parent = null)
+    public function parents()
     {
-        if (!func_num_args()) {
-            return $this->_parent;
+        return $this->_parents;
+    }
+
+    /**
+     * Set a parent.
+     *
+     * @param  object $parent The parent instance to set.
+     * @param  string $from   The parent from field to set.
+     * @return self
+     */
+    public function setParent($parent, $from)
+    {
+        $this->_parents->set($parent, $from);
+        return $this;
+    }
+
+    /**
+     * Unset a parent.
+     *
+     * @param  pbject $parent The parent instance to unset.
+     * @return self
+     */
+    public function unsetParent($parent)
+    {
+        $this->_parents->remove($parent);
+        if ($this->_parents->count() === 0) {
+            $this->collector()->remove($this->uuid());
         }
-        $this->_parent = $parent;
         return $this;
     }
 
@@ -390,13 +416,11 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
 
         $field = $schema->has($fieldname) ? $schema->column($fieldname) : [];
 
-        $self = Model::class;
-
         if (!empty($field['getter'])) {
             $value = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
-        } elseif ($this instanceof $self && $schema->hasRelation($fieldname)) {
+        } elseif ($this instanceof Model && $schema->hasRelation($fieldname)) {
             return $this->_data[$name] = $schema->relation($fieldname)->get($this);
         } elseif (isset($field['type']) && $field['type'] === 'object') {
             $value = [];
@@ -510,7 +534,15 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             return;
         }
 
+        $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
         $this->_data[$name] = $value;
+
+        if ($value instanceof HasParentsInterface) {
+            $value->setParent($this, $name);
+        }
+        if ($previous instanceof HasParentsInterface) {
+            $previous->unsetParent($this);
+        }
     }
 
     /**
@@ -552,7 +584,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $offset = array_shift($keys);
         if ($keys) {
             $value = $this->get($offset);
-            if ($value instanceof Document) {
+            if ($value instanceof ArrayAccess) {
                 return $value->offsetExists($keys);
             }
             return false;
@@ -572,15 +604,23 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
             return;
         }
 
-        $offset = array_shift($keys);
+        $name = array_shift($keys);
         if ($keys) {
-            $value = $this->get($offset);
-            if ($value instanceof Document) {
+            $value = $this->get($name);
+            if ($value instanceof ArrayAccess) {
                 $value->offsetUnset($keys);
             }
             return;
         }
-        unset($this->{$offset});
+        if (!array_key_exists($name, $this->_data)) {
+            return;
+        }
+        $value = $this->_data[$name];
+        if ($value instanceof HasParentsInterface) {
+            $value->unsetParent($this);
+        }
+        $this->_skipNext = $name === key($this->_data);
+        unset($this->_data[$name]);
     }
 
     /**
@@ -710,7 +750,7 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
     public function __unset($name)
     {
         $this->_skipNext = $name === key($this->_data);
-        unset($this->_data[$name]);
+        $this->offsetUnset($name);
     }
 
     /**
@@ -800,9 +840,8 @@ class Document implements DataStoreInterface, \ArrayAccess, \Iterator, \Countabl
         $hash = spl_object_hash($this);
         if (isset($ignore[$hash])) {
             return false;
-        } else {
-            $ignore[$hash] = true;
         }
+        $ignore[$hash] = true;
 
         $tree = array_fill_keys($this->schema()->relations(), true);
         $result = [];

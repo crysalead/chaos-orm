@@ -1,16 +1,20 @@
 <?php
 namespace Chaos\Collection;
 
+use ArrayAccess;
 use Traversable;
+use Chaos\Contrat\DataStoreInterface;
+use Chaos\Contrat\HasParentsInterface;
+
 use InvalidArgumentException;
-use Chaos\DataStoreInterface;
 use Chaos\ChaosException;
 use Chaos\Document;
+use Chaos\Map;
 
 /**
  * `Collection` provide context-specific features for working with sets of data persisted by a backend data store.
  */
-class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
+class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAccess, \Iterator, \Countable
 {
     /**
      * Class dependencies.
@@ -29,11 +33,11 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
     protected $_collector = null;
 
     /**
-     * A reference to this object's parent `Document` object.
+     * A reference to `Document`'s parents object.
      *
      * @var object
      */
-    protected $_parent = null;
+    protected $_parents = null;
 
     /**
      * If this `Collection` instance has a parent document (see `$_parent`), this value indicates
@@ -108,7 +112,6 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
     {
         $defaults = [
             'collector' => null,
-            'parent'    => null,
             'schema'    => null,
             'basePath'  => null,
             'meta'      => [],
@@ -118,7 +121,6 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
         $config += $defaults;
 
         $this->collector($config['collector']);
-        $this->parent($config['parent']);
         $this->exists($config['exists']);
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
@@ -128,6 +130,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
             $this->set($key, $value);
         }
         $this->_loaded = $this->_data;
+        $this->_parents = new Map();
     }
 
     /**
@@ -150,19 +153,40 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
     }
 
     /**
-     * Gets/sets the parent.
+     * Get parents.
      *
-     * @param  object $parent The parent instance to set or none to get it.
-     * @return mixed          Returns the parent value on get or `$this` otherwise.
+     * @return DocumentMap Returns the parents map.
      */
-    public function parent($parent = null)
+    public function parents()
     {
-        if (!func_num_args()) {
-            return $this->_parent;
-        }
-        $this->_parent = $parent;
+        return $this->_parents;
+    }
+
+    /**
+     * Set a parent.
+     *
+     * @param  object $parent The parent instance to set.
+     * @param  string $from   The parent from field to set.
+     * @return self
+     */
+    public function setParent($parent, $from)
+    {
+        $this->_parents->set($parent, $from);
         return $this;
     }
+
+    /**
+     * Unset a parent.
+     *
+     * @param  pbject $parent The parent instance to unset.
+     * @return self
+     */
+    public function unsetParent($parent)
+    {
+        $this->_parents->remove($parent);
+        return $this;
+    }
+
 
     /**
      * Gets/sets whether or not this instance has been persisted somehow.
@@ -267,7 +291,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
                 throw new ChaosException("Missing index `" . $name . "` for collection.");
             }
             $value = $this->_data[$name];
-            if (!$value instanceof Document) {
+            if (!$value instanceof DataStoreInterface) {
                 throw new ChaosException("The field: `" . $name . "` is not a valid document or entity.");
             }
             return $value->get($keys);
@@ -308,9 +332,17 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
             if (!is_numeric($name)) {
                 throw new ChaosException("Invalid index `" . $name . "` for a collection, must be a numeric value.");
             }
+            $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
             $this->_data[$name] = $data;
+            if ($previous instanceof HasParentsInterface) {
+                $previous->unsetParent($this);
+            }
         } else {
             $this->_data[] = $data;
+            $name = key($this->_data);
+        }
+        if ($data instanceof HasParentsInterface) {
+            $data->setParent($this, $name);
         }
         return $this;
     }
@@ -359,7 +391,7 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
                 return false;
             }
             $value = $this->_data[$name];
-            if ($value instanceof Document) {
+            if ($value instanceof ArrayAccess) {
                 return $value->offsetExists($keys);
             }
             return false;
@@ -386,13 +418,17 @@ class Collection implements DataStoreInterface, \ArrayAccess, \Iterator, \Counta
                 return false;
             }
             $value = $this->_data[$name];
-            if ($value instanceof Document) {
+            if ($value instanceof ArrayAccess) {
                 $value->offsetUnset($keys);
             }
             return;
         }
         $this->_skipNext = (integer) $name === key($this->_data);
+        $value = $this->_data[$name];
         unset($this->_data[$name]);
+        if ($value instanceof HasParentsInterface) {
+            $value->unsetParent($this);
+        }
     }
 
     /**

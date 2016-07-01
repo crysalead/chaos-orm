@@ -914,7 +914,6 @@ class Schema
     {
         if ($data instanceof Document) {
             $data->collector($options['collector']);
-            $data->parent($options['parent']);
             $data->basePath($options['basePath']);
             return $data;
         }
@@ -939,7 +938,6 @@ class Schema
         $collection = $this->_classes[$options['type']];
         if ($data instanceof $collection) {
             $data->collector($options['collector']);
-            $data->parent($options['parent']);
             $data->basePath($options['basePath']);
             return $data;
         }

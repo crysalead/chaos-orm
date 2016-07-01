@@ -4,6 +4,7 @@ namespace Chaos\Spec\Suite\Collection;
 use InvalidArgumentException;
 use Chaos\Model;
 use Chaos\Schema;
+use Chaos\Document;
 use Chaos\Collection\Collection;
 
 use Kahlan\Plugin\Stub;
@@ -27,22 +28,28 @@ describe("Collection", function() {
 
     });
 
-    describe("->parent()", function() {
+    describe("->parents()", function() {
 
-        it("gets the parent", function() {
+        it("gets the parents", function() {
 
-            $parent = Stub::create();
-            $collection = new Collection(['parent' => $parent]);
-            expect($collection->parent())->toBe($parent);
+            $parent = new Document();
+            $collection = new Collection();
+            $parent->value = $collection;
+            expect($collection->parents()->has($parent))->toBe(true);
+            expect($collection->parents()->get($parent))->toBe('value');
 
         });
+    });
 
-        it("sets a parent", function() {
+    describe("->unsetParent()", function() {
 
-            $parent = Stub::create();
+        it("unsets a parent", function() {
+
+            $parent = new Document();
             $collection = new Collection();
-            $collection->parent($parent);
-            expect($collection->parent())->toBe($parent);
+            $parent->value = $collection;
+            unset($parent->value);
+            expect($collection->parents()->has($parent))->toBe(false);
 
         });
 
@@ -292,7 +299,7 @@ describe("Collection", function() {
                 ];
                 $entity = $collection[0];
                 expect($entity)->toBeAnInstanceOf($this->model);
-                expect($entity->parent())->toBe($collection);
+                expect($entity->parents()->get($collection))->toBe(0);
                 expect($entity->basePath())->toBe(null);
 
             });

@@ -1,14 +1,16 @@
 <?php
 namespace Chaos\Collection;
 
+use Chaos\Contrat\DataStoreInterface;
+use Chaos\Contrat\HasParentsInterface;
+
 use Chaos\ChaosException;
-use Chaos\DataStoreInterface;
 use Chaos\Collection\Collection;
 
 /**
  * `Through` provide context-specific features for working with sets of data persisted by a backend data store.
  */
-class Through implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
+class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, \Iterator, \Countable
 {
     /**
      * A reference to this object's parent `Document` object.
@@ -93,17 +95,37 @@ class Through implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
     }
 
     /**
-     * Gets/sets the parent.
+     * Get parents.
      *
-     * @param  object $parent The parent instance to set or none to get it.
-     * @return mixed          Returns the parent value on get or `$this` otherwise.
+     * @return Map Returns the parents map.
      */
-    public function parent($parent = null)
+    public function parents()
     {
-        if (!func_num_args()) {
-            return $this->_parent->{$this->_through}->parent();
-        }
-        $this->_parent->{$this->_through}->parent($parent);
+        return $this->_parent->{$this->_through}->parents();
+    }
+
+    /**
+     * Set a parent.
+     *
+     * @param  pbject $parent The parent instance to set.
+     * @param  string $from   The parent from field to set.
+     * @return self
+     */
+    public function setParent($parent, $from)
+    {
+        $this->_parent->{$this->_through}->setParent($parent, $from);
+        return $this;
+    }
+
+    /**
+     * Unset a parent.
+     *
+     * @param  pbject $parent The parent instance to unset.
+     * @return self
+     */
+    public function unsetParent($parent)
+    {
+        $this->_parent->{$this->_through}->unsetParent($parent);
         return $this;
     }
 
@@ -200,7 +222,7 @@ class Through implements DataStoreInterface, \ArrayAccess, \Iterator, \Countable
     public function set($offset = null, $data = [])
     {
         $name = $this->_through;
-        $parent = $this->parent();
+        $parent = $this->_parent;
         $relThrough = $parent->schema()->relation($name);
         $through = $relThrough->to();
 

@@ -42,22 +42,28 @@ describe("Document", function() {
 
     });
 
-    describe("->parent()", function() {
+    describe("->parents()", function() {
 
-        it("sets a parent", function() {
+        it("gets the parents", function() {
 
-            $parent = Stub::create();
+            $parent = new Document();
             $document = new Document();
-            $document->parent($parent);
-            expect($document->parent())->toBe($parent);
+            $parent->value = $document;
+            expect($document->parents()->has($parent))->toBe(true);
+            expect($document->parents()->get($parent))->toBe('value');
 
         });
+    });
 
-        it("returns the parent", function() {
+    describe("->unsetParent()", function() {
 
-            $parent = Stub::create();
-            $document = new Document(['parent' => $parent]);
-            expect($document->parent())->toBe($parent);
+        it("unsets a parent", function() {
+
+            $parent = new Document();
+            $document = new Document();
+            $parent->value = $document;
+            unset($parent->value);
+            expect($document->parents()->has($parent))->toBe(false);
 
         });
 
