@@ -41,9 +41,9 @@ describe("Collection", function() {
         });
     });
 
-    describe("->unsetParent()", function() {
+    describe("->removeParent()", function() {
 
-        it("unsets a parent", function() {
+        it("removes a parent", function() {
 
             $parent = new Document();
             $collection = new Collection();
@@ -404,6 +404,30 @@ describe("Collection", function() {
             }
 
             expect($loop)->toBe(4);
+
+        });
+
+    });
+
+    describe("->has()", function() {
+
+        it("delegates to `offsetExists`", function() {
+
+            $collection = new Collection();
+            expect($collection)->toReceive('offsetExists')->with(0);
+            $collection->has(0);
+
+        });
+
+    });
+
+    describe("->remove()", function() {
+
+        it("delegates to `offsetUnset`", function() {
+
+            $collection = new Collection();
+            expect($collection)->toReceive('offsetUnset')->with(0);
+            $collection->remove(0);
 
         });
 

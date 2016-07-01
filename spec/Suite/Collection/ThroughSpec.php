@@ -71,9 +71,9 @@ describe("Through", function() {
 
     });
 
-    describe("->unsetParent()", function() {
+    describe("->removeParent()", function() {
 
-        it("unsets a parent", function() {
+        it("removes a parent", function() {
 
             unset($this->image->tags);
             expect($this->through->parents()->has($this->image))->toBe(false);
@@ -290,6 +290,28 @@ describe("Through", function() {
                 ['name' => "3"],
                 ['name' => "4"]
             ]);
+
+        });
+
+    });
+
+    describe("->has()", function() {
+
+        it("delegates to `offsetExists`", function() {
+
+            expect($this->through)->toReceive('offsetExists')->with(0);
+            $this->through->has(0);
+
+        });
+
+    });
+
+    describe("->remove()", function() {
+
+        it("delegates to `offsetUnset`", function() {
+
+            expect($this->through)->toReceive('offsetUnset')->with(0);
+            $this->through->remove(0);
 
         });
 

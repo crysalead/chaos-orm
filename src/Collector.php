@@ -16,12 +16,14 @@ class Collector
     /**
      * Collects an object.
      *
-     * @param string $uuid The UUID to look up.
-     * @param mixed        The data to collect.
+     * @param  string $uuid The UUID to look up.
+     * @param  mixed        The data to collect.
+     * @return self         Return `$this`.
      */
     public function set($uuid, $data)
     {
         $this->_data[$uuid] = $data;
+        return $this;
     }
 
     /**
@@ -41,10 +43,13 @@ class Collector
     /**
      * Uncollects an object.
      *
-     * @param string $uuid The UUID to remove.
+     * @param  string $uuid The UUID to remove.
+     * @return self         Return `$this`.
      */
-    public function remove($uuid) {
-       unset($uuid);
+    public function remove($uuid)
+    {
+        unset($this->_data[$uuid]);
+        return $this;
     }
 
     /**
@@ -53,7 +58,7 @@ class Collector
      * @param  string  $uuid The UUID to look up.
      * @return boolean       Returns `true` if exists, `false` otherwise.
      */
-    public function exists($uuid)
+    public function has($uuid)
     {
         return isset($this->_data[$uuid]);
     }

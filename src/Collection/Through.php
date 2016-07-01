@@ -120,12 +120,12 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     /**
      * Unset a parent.
      *
-     * @param  pbject $parent The parent instance to unset.
+     * @param  pbject $parent The parent instance to remove.
      * @return self
      */
-    public function unsetParent($parent)
+    public function removeParent($parent)
     {
-        $this->_parent->{$this->_through}->unsetParent($parent);
+        $this->_parent->{$this->_through}->removeParent($parent);
         return $this;
     }
 
@@ -277,6 +277,28 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     public function offsetUnset($offset)
     {
         unset($this->_parent->{$this->_through}[$offset]);
+    }
+
+    /**
+     * Alias to `offsetExists()`.
+     *
+     * @param  string  $name Property name.
+     * @return boolean
+     */
+    public function has($name)
+    {
+        return $this->offsetExists($name);
+    }
+
+    /**
+     * Alias to `offsetUnset()`.
+     *
+     * @param  string  $name Property name.
+     * @return boolean
+     */
+    public function remove($name)
+    {
+        return $this->offsetUnset($name);
     }
 
     /**

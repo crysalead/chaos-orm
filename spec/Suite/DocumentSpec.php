@@ -55,7 +55,7 @@ describe("Document", function() {
         });
     });
 
-    describe("->unsetParent()", function() {
+    describe("->removeParent()", function() {
 
         it("unsets a parent", function() {
 
@@ -381,6 +381,30 @@ describe("Document", function() {
                 'field2' => 'Hello',
                 'field4' => 'Hello again!'
             ]);
+
+        });
+
+    });
+
+    describe("->has()", function() {
+
+        it("delegates to `offsetExists`", function() {
+
+            $document = new Document();
+            expect($document)->toReceive('offsetExists')->with(0);
+            $document->has(0);
+
+        });
+
+    });
+
+    describe("->remove()", function() {
+
+        it("delegates to `offsetUnset`", function() {
+
+            $document = new Document();
+            expect($document)->toReceive('offsetUnset')->with(0);
+            $document->remove(0);
 
         });
 

@@ -360,7 +360,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @param  pbject $parent The parent instance to unset.
      * @return self
      */
-    public function unsetParent($parent)
+    public function removeParent($parent)
     {
         $this->_parents->remove($parent);
         if ($this->_parents->count() === 0) {
@@ -540,7 +540,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $value->setParent($this, $name);
         }
         if ($previous instanceof HasParentsInterface) {
-            $previous->unsetParent($this);
+            $previous->removeParent($this);
         }
     }
 
@@ -580,15 +580,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return false;
         }
 
-        $offset = array_shift($keys);
+        $name = array_shift($keys);
         if ($keys) {
-            $value = $this->get($offset);
+            $value = $this->get($name);
             if ($value instanceof ArrayAccess) {
                 return $value->offsetExists($keys);
             }
             return false;
         }
-        return array_key_exists($offset, $this->_data);
+        return array_key_exists($name, $this->_data);
     }
 
     /**
@@ -616,7 +616,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
         $value = $this->_data[$name];
         if ($value instanceof HasParentsInterface) {
-            $value->unsetParent($this);
+            $value->removeParent($this);
         }
         $this->_skipNext = $name === key($this->_data);
         unset($this->_data[$name]);
@@ -731,6 +731,17 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     }
 
     /**
+     * Alias to `offsetExists()`.
+     *
+     * @param  string  $name Property name.
+     * @return boolean
+     */
+    public function has($name)
+    {
+        return $this->offsetExists($name);
+    }
+
+    /**
      * Overloading for calling `isset()` or `empty()` on inaccessible properties.
      *
      * @param  string  $name Property name.
@@ -738,7 +749,18 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function __isset($name)
     {
-        return array_key_exists($name, $this->_data);
+        return $this->offsetExists($name);
+    }
+
+    /**
+     * Alias to `offsetUnset()`.
+     *
+     * @param  string  $name Property name.
+     * @return boolean
+     */
+    public function remove($name)
+    {
+        $this->offsetUnset($name);
     }
 
     /**
@@ -748,7 +770,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function __unset($name)
     {
-        $this->_skipNext = $name === key($this->_data);
         $this->offsetUnset($name);
     }
 

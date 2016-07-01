@@ -178,10 +178,10 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Unset a parent.
      *
-     * @param  pbject $parent The parent instance to unset.
+     * @param  pbject $parent The parent instance to remove.
      * @return self
      */
-    public function unsetParent($parent)
+    public function removeParent($parent)
     {
         $this->_parents->remove($parent);
         return $this;
@@ -335,7 +335,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
             $this->_data[$name] = $data;
             if ($previous instanceof HasParentsInterface) {
-                $previous->unsetParent($this);
+                $previous->removeParent($this);
             }
         } else {
             $this->_data[] = $data;
@@ -424,11 +424,38 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             return;
         }
         $this->_skipNext = (integer) $name === key($this->_data);
+
+        if (!array_key_exists($name, $this->_data)) {
+            return;
+        }
+
         $value = $this->_data[$name];
         unset($this->_data[$name]);
         if ($value instanceof HasParentsInterface) {
-            $value->unsetParent($this);
+            $value->removeParent($this);
         }
+    }
+
+    /**
+     * Alias to `offsetExists()`.
+     *
+     * @param  string  $name Property name.
+     * @return boolean
+     */
+    public function has($name)
+    {
+        return $this->offsetExists($name);
+    }
+
+    /**
+     * Alias to `offsetUnset()`.
+     *
+     * @param  string  $name Property name.
+     * @return boolean
+     */
+    public function remove($name)
+    {
+        return $this->offsetUnset($name);
     }
 
     /**
