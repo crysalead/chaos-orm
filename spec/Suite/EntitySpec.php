@@ -106,11 +106,12 @@ describe("Entity", function() {
         });
 
         it("throws an exception if the schema has no primary key defined", function() {
+
             $schema = new Schema(['key' => null]);
             $schema->locked(false);
 
             $model = $this->model;
-            $model::config(compact('schema'));
+            $model::definition($schema);
 
             $closure = function() {
                 $model = $this->model;
@@ -122,6 +123,7 @@ describe("Entity", function() {
                 $entity->id();
             };
             expect($closure)->toThrow(new ChaosException("No primary key has been defined for `{$model}`'s schema."));
+            $model::reset();
 
         });
 
@@ -378,7 +380,7 @@ describe("Entity", function() {
                     'model' => $childEntity
                 ]);
 
-                $model::config(compact('schema'));
+                $model::definition($schema);
 
                 $entity = $model::create();
 
@@ -410,8 +412,8 @@ describe("Entity", function() {
         });
 
         afterEach(function() {
-            Gallery::config();
-            Image::config();
+            Gallery::reset();
+            Image::reset();
         });
 
         it("validate an entity", function() {

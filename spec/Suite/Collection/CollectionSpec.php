@@ -570,12 +570,14 @@ describe("Collection", function() {
             $model = Stub::classname(['extends' => Model::class]);
             $schema = Stub::create();
 
-            $model::config(['schema' => $schema]);
+            $model::definition($schema);
 
             $galleries = $model::create([], ['type' => 'set']);
 
             expect($schema)->toReceive('embed')->with($galleries, ['relation1.relation2']);
             $galleries->embed(['relation1.relation2']);
+
+            $model::reset();
 
         });
 

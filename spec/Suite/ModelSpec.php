@@ -23,40 +23,6 @@ describe("Model", function() {
         $model::definition()->locked(false);
     });
 
-    describe("::config()", function() {
-
-        it("configures the model", function() {
-
-            $model = $this->model;
-            $model::config([
-                'schema'      => $schema = Stub::create(),
-                'validator'   => $validator = Stub::create(),
-                'finders'     => $finders = Stub::create(),
-                'query'       => $query = ['option' => 'value'],
-                'connection'  => $connection = Stub::create(),
-                'conventions' => $conventions = Stub::create()
-            ]);
-
-            expect($model::definition())->toBe($schema);
-            expect($model::validator())->toBe($validator);
-            expect($model::finders())->toBe($finders);
-            expect($model::query())->toBe($query);
-            expect($model::connection())->toBe($connection);
-            expect($model::conventions())->toBe($conventions);
-
-            $model::reset();
-
-            expect($model::definition())->not->toBe($schema);
-            expect($model::validator())->not->toBe($validator);
-            expect($model::finders())->not->toBe($finders);
-            expect($model::query())->toBe([]);
-            expect($model::connection())->toBe(null);
-            expect($model::conventions())->not->toBe($conventions);
-
-        });
-
-    });
-
     describe("::conventions()", function() {
 
         it("gets/sets a conventions", function() {

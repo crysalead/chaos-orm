@@ -71,41 +71,6 @@ class Model extends Document
      **************************/
 
     /**
-     * Configures the Model.
-     *
-     * @param array $config Possible options are:
-     *                      - `'classes'`     _array_ : The classes dependency array.
-     *                      - `'schema'`      _object_: The schema instance to use.
-     *                      - `'validator'`   _object_: The validator instance to use.
-     *                      - `'finders'`     _object_: The finders instance to use.
-     *                      - `'connection'`  _object_: The connection instance to use.
-     *                      - `'conventions'` _object_: The conventions instance to use.
-     */
-    public static function config($config = [])
-    {
-        $defaults = [
-            'classes'     => static::$_classes,
-            'schema'      => null,
-            'validator'   => null,
-            'finders'     => null,
-            'query'       => [],
-            'connection'  => null,
-            'conventions' => null
-        ];
-        $config = Set::merge($defaults, $config);
-
-        static::$_classes = $config['classes'];
-
-        static::conventions($config['conventions']);
-        static::connection($config['connection']);
-
-        static::definition($config['schema']);
-        static::validator($config['validator']);
-        static::finders($config['finders']);
-        static::query($config['query']);
-    }
-
-    /**
      * Gets/sets the schema instance.
      *
      * @param  object $schema The schema instance to set or none to get it.
@@ -336,7 +301,12 @@ class Model extends Document
      */
     public static function reset()
     {
-        static::config();
+        static::conventions(null);
+        static::connection(null);
+        static::definition(null);
+        static::validator(null);
+        static::query([]);
+        unset(static::$_definitions[static::class]);
     }
 
     /***************************
