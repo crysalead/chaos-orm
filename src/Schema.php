@@ -1002,7 +1002,7 @@ class Schema
                     return !!$value;
                 },
                 'date' => function($value, $options = []) {
-                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d'])->setTime(0, 0, 0);
                 },
                 'datetime' => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
