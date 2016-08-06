@@ -394,7 +394,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public function get($name = null)
     {
         if (!func_num_args()) {
-            return $this->_data;
+            $data = [];
+            foreach ($this->_data as $key => $value) {
+                $data[$key] = $this->{$key};
+            }
+            return $data;
         }
         $keys = is_array($name) ? $name : explode('.', $name);
         $name = array_shift($keys);
@@ -410,9 +414,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return $value->get($keys);
         }
 
-        $schema = $this->schema();
         $fieldname = $this->basePath() ? $this->basePath() . '.' . $name : $name;
-
+        $schema = $this->schema();
         $field = $schema->has($fieldname) ? $schema->column($fieldname) : [];
 
         if (!empty($field['getter'])) {
@@ -521,20 +524,22 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $schema = $this->schema();
 
+        $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
         $value = $this->schema()->cast($name, $data, [
             'collector' => $this->collector(),
             'parent'    => $this,
             'basePath'  => $this->basePath(),
             'defaults'  => true
         ]);
-
+        if ($previous !== null && $previous === $value) {
+            return;
+        }
         $fieldname = $this->basePath() ? $this->basePath() . '.' . $name : $name;
+        $this->_data[$name] = $value;
+
         if ($schema->isVirtual($fieldname)) {
             return;
         }
-
-        $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
-        $this->_data[$name] = $value;
 
         if ($value instanceof HasParentsInterface) {
             $value->setParent($this, $name);

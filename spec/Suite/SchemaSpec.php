@@ -546,7 +546,6 @@ describe("Schema", function() {
                     $document->datetime = '2015-05-20 21:50:00';
                     expect($document->date)->toBe('2015-05-20');
                     expect($document->time)->toBe('21:50:00');
-                    expect(isset($document->datetime))->toBe(false);
 
                 });
 
@@ -556,12 +555,10 @@ describe("Schema", function() {
                     $document->datetime = '2015-05-20 21:50:00';
                     expect($document->date)->toBe('2015-05-20');
                     expect($document->time)->toBe('21:50:00');
-                    expect(isset($document->datetime))->toBe(false);
 
                     $document->datetime = '2015-05-20 22:15:00';
                     expect($document->date)->toBe('2015-05-20');
                     expect($document->time)->toBe('22:15:00');
-                    expect(isset($document->datetime))->toBe(false);
 
                 });
 

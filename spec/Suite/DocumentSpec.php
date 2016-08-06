@@ -6,6 +6,7 @@ use DateTime;
 use InvalidArgumentException;
 use Chaos\ChaosException;
 use Chaos\Document;
+use Chaos\Schema;
 
 use Kahlan\Plugin\Stub;
 
@@ -80,7 +81,49 @@ describe("Document", function() {
 
     });
 
-    describe("->get()/->set()", function() {
+    describe("->get()", function() {
+
+        it("gets a value", function() {
+
+            $document = new Document();
+            expect($document->set('title', 'Hello'))->toBe($document);
+            expect($document->get('title'))->toBe('Hello');
+
+        });
+
+        it("gets a virtual value", function() {
+
+            $schema = new Schema();
+            $schema->column('a', ['type' => 'string', 'virtual' => true]);
+
+            $document = new Document(['schema' => $schema]);
+
+            $document['a'] = 1;
+            expect($document->get('a'))->toBe('1');
+
+        });
+
+        it("gets all values", function() {
+
+            $document = new Document();
+
+            $document->set([
+                'a' => 1,
+                'b' => 2,
+                'c' => 3
+            ]);
+
+            expect($document->get())->toBe([
+                'a' => 1,
+                'b' => 2,
+                'c' => 3
+            ]);
+
+        });
+
+    });
+
+    describe("->set()", function() {
 
         it("sets values", function() {
 
@@ -198,8 +241,6 @@ describe("Document", function() {
             $document = new Document();
             $document['field1'] = 'foo';
             $document['field2'] = null;
-
-            print_r($document['field2']);
 
             expect(isset($document['field1']))->toBe(true);
             expect(isset($document['field2']))->toBe(true);
