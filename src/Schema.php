@@ -316,9 +316,23 @@ class Schema
      *
      * @return array An array of field names.
      */
-    public function names()
+    public function names($basePath = '')
     {
-        return array_keys($this->_columns);
+        $fields = [];
+        foreach ($this->_columns as $name => $field) {
+            $fields[$name] = null;
+        }
+        $names = Set::expand($fields);
+        if ($basePath) {
+            $parts = explode('.', $basePath);
+            foreach ($parts as $part) {
+                if (!isset($names[$part])) {
+                    return [];
+                }
+                $names = $names[$part];
+            }
+        }
+        return array_keys($names);
     }
 
     /**

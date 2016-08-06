@@ -898,7 +898,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     {
         $defaults = [
             'embed' => true,
-            'verbose' => false,
             'basePath' => null
         ];
         $options += $defaults;
@@ -908,17 +907,23 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
 
         $schema = $this->schema();
+
         $tree = $schema->treeify($options['embed']);
         $basePath = $options['basePath'];
 
         $result = [];
-        $fields = array_keys($this->_data);
-        if ($options['verbose'] && $schema->locked()) {
-            $fields += array_keys($schema->fields());
+
+        if ($schema->locked()) {
+            $fields = array_merge($schema->names($options['basePath']), $schema->relations());
+        } else {
+            $fields = array_keys($this->_data);
         }
+
         foreach ($fields as $field) {
-            if ($schema->hasRelation($field)) {
-                $rel = $schema->relation($field);
+            $path = $basePath ? $basePath . '.' . $field : $field;
+            $rel = null;
+            if ($schema->hasRelation($path)) {
+                $rel = $schema->relation($path);
                 if (!$rel->embedded()) {
                     if (!array_key_exists($field, $tree)) {
                         continue;
@@ -926,14 +931,18 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                     $options['embed'] = $tree[$field];
                 }
             }
+            if (!$this->has($field)) {
+                continue;
+            }
             $value = $this[$field];
             if ($value instanceof Document) {
-                $options['basePath'] = $value->basePath();
+                $options['basePath'] = $rel && $rel->embedded() ? $value->basePath() : '';
                 $result[$field] = $value->to($format, $options);
             } elseif ($value instanceof Traversable) {
+                $options['basePath'] = $rel && $rel->embedded() ? $value->basePath() : '';
                 $result[$field] = Collection::toArray($value, $options);
             } else {
-                $options['basePath'] = $basePath ? $basePath . '.' . $field : $field;
+                $options['basePath'] = $path;
                 $result[$field] = $schema->has($options['basePath']) ? $schema->format($format, $options['basePath'], $value) : $value;
             }
         }

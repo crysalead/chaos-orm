@@ -599,15 +599,15 @@ describe("Entity", function() {
 
             expect($image->to('array'))->toBe([
                 'title' => 'Amiga 1200',
-                'tags'  => [
-                    ['name' => 'Computer'],
-                    ['name' => 'Science']
-                ],
+                'gallery' => ['name' => 'Gallery 1'],
                 'images_tags' => [
                     ['tag' => ['name' => 'Computer']],
                     ['tag' => ['name' => 'Science']]
                 ],
-                'gallery' => ['name' => 'Gallery 1']
+                'tags'  => [
+                    ['name' => 'Computer'],
+                    ['name' => 'Science']
+                ]
             ]);
 
             expect($image->to('array', ['embed' => ['gallery']]))->toBe([
