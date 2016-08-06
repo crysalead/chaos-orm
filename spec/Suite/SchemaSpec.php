@@ -18,6 +18,14 @@ describe("Schema", function() {
 
     beforeEach(function() {
         $this->schema = Image::definition();
+
+        $this->preferences = new Schema();
+        $this->preferences->column('preferences', ['type' => 'object']);
+        $this->preferences->column('preferences.blacklist', ['type' => 'object']);
+        $this->preferences->column('preferences.blacklist.projects', ['type' => 'id', 'array' => true, 'default' => []]);
+        $this->preferences->column('preferences.mail', ['type' => 'object']);
+        $this->preferences->column('preferences.mail.enabled', ['type' => 'boolean', 'default' => true]);
+        $this->preferences->column('preferences.mail.frequency', ['type' => 'integer', 'default' => 24]);
     });
 
     afterEach(function() {
@@ -138,11 +146,30 @@ describe("Schema", function() {
 
     describe("->names()", function() {
 
-        it("gets the schema field names", function() {
+        it("returns all column names", function() {
 
-            $names = $this->schema->names();
-            sort($names);
-            expect($names)->toBe(['gallery_id', 'id', 'name', 'score', 'title']);
+            expect($this->schema->names())->toBe(['id', 'gallery_id', 'name', 'title', 'score']);
+
+        });
+
+        it("returns all column names and nested ones", function() {
+
+          expect($this->preferences->names())->toBe([
+            'preferences',
+            'preferences.blacklist',
+            'preferences.blacklist.projects',
+            'preferences.mail',
+            'preferences.mail.enabled',
+            'preferences.mail.frequency'
+          ]);
+
+        });
+
+        it("filters out virtual fields", function() {
+
+            $this->schema->column('virtualField', ['virtual' => true]);
+            $fields = $this->schema->names();
+            expect(isset($fields['virtualField']))->toBe(false);
 
         });
 
@@ -153,6 +180,14 @@ describe("Schema", function() {
         it("returns all fields", function() {
 
             expect($this->schema->fields())->toBe(['id', 'gallery_id', 'name', 'title', 'score']);
+
+        });
+
+        it("returns fields according the base path", function() {
+
+            expect($this->preferences->fields())->toBe(['preferences']);
+            expect($this->preferences->fields('preferences'))->toBe(['blacklist', 'mail']);
+            expect($this->preferences->fields('preferences.mail'))->toBe(['enabled', 'frequency']);
 
         });
 
@@ -327,15 +362,7 @@ describe("Schema", function() {
 
         it("sets nested fields", function() {
 
-            $schema = new Schema();
-            $schema->column('preferences', ['type' => 'object']);
-            $schema->column('preferences.blacklist', ['type' => 'object']);
-            $schema->column('preferences.blacklist.projects', ['type' => 'id', 'array' => true, 'default' => []]);
-            $schema->column('preferences.mail', ['type' => 'object']);
-            $schema->column('preferences.mail.enabled', ['type' => 'boolean', 'default' => true]);
-            $schema->column('preferences.mail.frequency', ['type' => 'integer', 'default' => 24]);
-
-            $document = $schema->cast(null, []);
+            $document = $this->preferences->cast(null, []);
 
             expect($document->data())->toEqual([
                 'preferences' => [

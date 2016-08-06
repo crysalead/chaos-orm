@@ -312,14 +312,32 @@ class Schema
     }
 
     /**
-     * Returns all schema field names.
+     * Returns all schema column names.
      *
-     * @return array An array of field names.
+     * @return array An array of column names.
      */
-    public function names($basePath = '')
+    public function names()
     {
         $fields = [];
         foreach ($this->_columns as $name => $field) {
+            if (!empty($field['virtual'])) {
+                continue;
+            }
+            $fields[] = $name;
+        }
+        return $fields;
+    }
+
+    /**
+     * Gets all fields.
+     *
+     * @param  String basePath The dotted base path to extract fields from.
+     * @return array
+     */
+    public function fields($basePath = '')
+    {
+        $fields = [];
+        foreach ($this->names() as $name) {
             $fields[$name] = null;
         }
         $names = Set::expand($fields);
@@ -334,24 +352,6 @@ class Schema
         }
         return array_keys($names);
     }
-
-    /**
-     * Gets all fields.
-     *
-     * @return array
-     */
-    public function fields()
-    {
-        $fields = [];
-        foreach ($this->_columns as $name => $field) {
-            if (!empty($field['virtual'])) {
-                continue;
-            }
-            $fields[] = $name;
-        }
-        return $fields;
-    }
-
 
     /**
      * Gets all columns (i.e fields + data).

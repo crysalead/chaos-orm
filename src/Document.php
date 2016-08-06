@@ -914,7 +914,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $result = [];
 
         if ($schema->locked()) {
-            $fields = array_merge($schema->names($options['basePath']), $schema->relations());
+            $fields = array_merge($schema->fields($options['basePath']), $schema->relations());
         } else {
             $fields = array_keys($this->_data);
         }
