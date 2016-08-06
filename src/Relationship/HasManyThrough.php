@@ -134,9 +134,9 @@ class HasManyThrough extends \Chaos\Relationship
                 }
             } else {
                 foreach ($entity[$through] as $key => $item) {
-                    if (isset($indexes[$item[$fromKey]])) {
-                        $collection[$index][$name][] = $related[$indexes[$item[$fromKey]]];
-                        $collection[$index][$through][$key][$using] = $related[$indexes[$item[$fromKey]]];
+                    if ($indexes->has($item[$fromKey])) {
+                        $collection[$index][$name][] = $related[$indexes->get($item[$fromKey])];
+                        $collection[$index][$through][$key][$using] = $related[$indexes->get($item[$fromKey])];
                     }
                 }
             }
@@ -163,7 +163,7 @@ class HasManyThrough extends \Chaos\Relationship
      * @param  array   $options Saving options.
      * @return boolean
      */
-    public function validate($entity, $options = [])
+    public function validates($entity, $options = [])
     {
         return true;
     }

@@ -698,11 +698,11 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  array   $options Validates option.
      * @return boolean
      */
-    public function validate($options = [])
+    public function validates($options = [])
     {
         $success = true;
         foreach ($this as $entity) {
-            if (!$entity->validate($options)) {
+            if (!$entity->validates($options)) {
                 $success = false;
             }
         }

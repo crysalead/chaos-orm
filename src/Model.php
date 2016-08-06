@@ -474,7 +474,7 @@ class Model extends Document
     {
         $defaults = ['validate' => true];
         $options += $defaults;
-        if ($options['validate'] && !$this->validate($options)) {
+        if ($options['validate'] && !$this->validates($options)) {
             return false;
         }
         $schema = $this->schema();
@@ -547,7 +547,7 @@ class Model extends Document
      *                         `false`. After validation, the messages for any validation failures are assigned
      *                         to the entity, and accessible through the `errors()` method of the entity object.
      */
-    public function validate($options = [])
+    public function validates($options = [])
     {
         $defaults = [
             'events'   => $this->exists() !== false ? 'update' : 'create',
@@ -557,21 +557,21 @@ class Model extends Document
         $options += $defaults;
         $validator = static::validator();
 
-        $valid = $this->_validate($options);
+        $valid = $this->_validates($options);
 
-        $success = $validator->validate($this->get(), $options);
+        $success = $validator->validates($this->get(), $options);
         $this->_errors = $validator->errors();
         return $success && $valid;
     }
 
     /**
-     * Validates a relation.
+     * Check if nested relations are valid.
      *
      * @param  array   $options Available options:
      *                          - `'embed'` _array_ : List of relations to validate.
-     * @return boolean          Returns `true` if all validation rules on all fields succeed, otherwise `false`.
+     * @return boolean          Returns `true` if all validation rules on all fields succeed, `false` otherwise.
      */
-    protected function _validate($options)
+    protected function _validates($options)
     {
         $defaults = ['embed' => true];
         $options += $defaults;
@@ -587,14 +587,14 @@ class Model extends Document
         foreach ($tree as $field => $value) {
             if (isset($this->{$field})) {
                 $rel = $schema->relation($field);
-                $success = $success && $rel->validate($this, ['embed' => $value] + $options);
+                $success = $success && $rel->validates($this, ['embed' => $value] + $options);
             }
         }
         return $success;
     }
 
     /**
-     * Returns the errors from the last `->validate()` call.
+     * Returns the errors from the last `->validates()` call.
      *
      * @return array The occured errors.
      */

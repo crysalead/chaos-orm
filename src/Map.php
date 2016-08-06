@@ -7,7 +7,14 @@ namespace Chaos;
 class Map
 {
     /**
-     * The map array scoped by names.
+     * The keys array.
+     *
+     * @var array
+     */
+    protected $_keys = [];
+
+    /**
+     * The map array.
      *
      * @var array
      */
@@ -16,13 +23,14 @@ class Map
     /**
      * Collects an object.
      *
-     * @param  string $instance An instance.
-     * @param  mixed  $data     The data to map to the document.
-     * @return self             Return `$this`.
+     * @param  mixed $value A value.
+     * @param  mixed $data  The data to map to the value.
+     * @return self         Return `$this`.
      */
-    public function set($instance, $data)
+    public function set($value, $data)
     {
-        $id = spl_object_hash($instance);
+        $id = is_object($value) ? spl_object_hash($value) : $value;
+        $this->_keys[$id] = $value;
         $this->_data[$id] = $data;
         return $this;
     }
@@ -30,12 +38,12 @@ class Map
     /**
      * Gets a collected object.
      *
-     * @param  string $instance The instance to look up.
-     * @return mixed            The collected data.
+     * @param  mixed $value A value.
+     * @return mixed        The collected data.
      */
-    public function get($instance)
+    public function get($value)
     {
-        $id = spl_object_hash($instance);
+        $id = is_object($value) ? spl_object_hash($value) : $value;
         if (isset($this->_data[$id])) {
             return $this->_data[$id];
         }
@@ -45,12 +53,13 @@ class Map
     /**
      * Uncollects an object.
      *
-     * @param string $instance The instance to remove.
-     * @return self             Return `$this`.
+     * @param  mixed $value A value.
+     * @return self         Return `$this`.
      */
-    public function remove($instance)
+    public function remove($value)
     {
-        $id = spl_object_hash($instance);
+        $id = is_object($value) ? spl_object_hash($value) : $value;
+        unset($this->_keys[$id]);
         unset($this->_data[$id]);
         return $this;
     }
@@ -58,13 +67,23 @@ class Map
     /**
      * Checks if an object with a specific ID has already been collected.
      *
-     * @param  string  $instance The instance to look up.
-     * @return boolean           Returns `true` if exists, `false` otherwise.
+     * @param  mixed   $value A value.
+     * @return boolean        Returns `true` if exists, `false` otherwise.
      */
-    public function has($instance)
+    public function has($value)
     {
-        $id = spl_object_hash($instance);
+        $id = is_object($value) ? spl_object_hash($value) : $value;
         return isset($this->_data[$id]);
+    }
+
+    /**
+     * Return the keys.
+     *
+     * @return array Returns the contained keys.
+     */
+    public function keys()
+    {
+        return array_values($this->_keys);
     }
 
     /**

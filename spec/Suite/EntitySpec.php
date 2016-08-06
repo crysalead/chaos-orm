@@ -401,7 +401,7 @@ describe("Entity", function() {
 
     });
 
-    describe("->validate()", function() {
+    describe("->validates()", function() {
 
         beforeEach(function() {
             $validator = Gallery::validator();
@@ -419,15 +419,15 @@ describe("Entity", function() {
         it("validate an entity", function() {
 
             $gallery = Gallery::create();
-            expect($gallery->validate())->toBe(false);
+            expect($gallery->validates())->toBe(false);
             expect($gallery->errors())->toBe(['name' => ['is required']]);
 
             $gallery->name = '';
-            expect($gallery->validate())->toBe(false);
+            expect($gallery->validates())->toBe(false);
             expect($gallery->errors())->toBe(['name' => ['must not be a empty']]);
 
             $gallery->name = 'new gallery';
-            expect($gallery->validate())->toBe(true);
+            expect($gallery->validates())->toBe(true);
             expect($gallery->errors())->toBe([]);
 
         });
@@ -438,7 +438,7 @@ describe("Entity", function() {
             $gallery->images[] = Image::create();
             $gallery->images[] = Image::create();
 
-            expect($gallery->validate())->toBe(false);
+            expect($gallery->validates())->toBe(false);
             expect($gallery->errors())->toBe([
                 'name'   => ['is required'],
                 'images' => [
@@ -450,7 +450,7 @@ describe("Entity", function() {
             $gallery->name = '';
             $gallery->images[0]->name = '';
             $gallery->images[1]->name = '';
-            expect($gallery->validate())->toBe(false);
+            expect($gallery->validates())->toBe(false);
             expect($gallery->errors())->toBe([
                 'name'   => ['must not be a empty'],
                 'images' => [
@@ -462,7 +462,7 @@ describe("Entity", function() {
             $gallery->name = 'new gallery';
             $gallery->images[0]->name = 'image1';
             $gallery->images[1]->name = 'image2';
-            expect($gallery->validate())->toBe(true);
+            expect($gallery->validates())->toBe(true);
             expect($gallery->errors())->toBe([
                 'images' => [
                     [],

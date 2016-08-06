@@ -2,6 +2,7 @@
 namespace Chaos;
 
 use Lead\Set\Set;
+use Chaos\Map;
 
 /**
  * The `Relationship` class encapsulates the data and functionality necessary to link two model together.
@@ -378,20 +379,20 @@ class Relationship
      *
      * @param  mixed  $collection An collection to extract index from.
      * @param  string $name       The field name to build index for.
-     * @return array              An array of indexes where keys are `$name` values and
+     * @return Map                An array of indexes where keys are `$name` values and
      *                            values the corresponding index in the collection.
      */
     protected function _index($collection, $name)
     {
-        $indexes = [];
+        $indexes = new Map();
         foreach ($collection as $key => $entity) {
             if (is_object($entity)) {
                 if ($entity->{$name}) {
-                    $indexes[$entity->{$name}] = $key;
+                    $indexes->set($entity->{$name}, $key);
                 }
             } else {
                 if (isset($entity[$name])) {
-                    $indexes[$entity[$name]] = $key;
+                    $indexes->set($entity[$name], $key);
                 }
             }
         }
@@ -428,19 +429,19 @@ class Relationship
     }
 
     /**
-     * Validating an entity relation.
+     * Check if an entity is valid or not.
      *
      * @param  object  $entity  The relation's entity.
      * @param  array   $options The validation options.
      * @return boolean
      */
-    public function validate($entity, $options = [])
+    public function validates($entity, $options = [])
     {
         $fieldname = $this->name();
 
         if (!isset($entity->{$fieldname})) {
             return true;
         }
-        return $entity->{$fieldname}->validate($options);
+        return $entity->{$fieldname}->validates($options);
     }
 }

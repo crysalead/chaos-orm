@@ -1,8 +1,10 @@
 <?php
 namespace Chaos\Relationship;
 
+use Traversable;
 use Lead\Set\Set;
 use Chaos\ChaosException;
+use Chaos\Model;
 
 /**
  * The `HasMany` relationship.
@@ -67,7 +69,7 @@ class HasMany extends \Chaos\Relationship
     public function embed(&$collection, $options = [])
     {
         $indexes = $this->_index($collection, $this->keys('from'));
-        $related = $this->_find(array_keys($indexes), Set::merge(['fetchOptions' => [
+        $related = $this->_find($indexes->keys(), Set::merge(['fetchOptions' => [
             'collector' => $this->_collector($collection)
         ]], $options));
 
@@ -76,16 +78,16 @@ class HasMany extends \Chaos\Relationship
         $this->_cleanup($collection);
 
         foreach ($related as $index => $entity) {
-            if (is_object($entity)) {
-                $value = $entity->{$this->keys('to')};
-                if (isset($indexes[$value])) {
-                    $source = $collection[$indexes[$value]];
-                    $source->{$name}[] = $entity;
-                }
-            } else {
-                $value = $entity[$this->keys('to')];
-                if (isset($indexes[$value])) {
-                    $collection[$indexes[$value]][$name][] = $entity;
+            $values = is_object($entity) ? $entity->{$this->keys('to')} : $entity[$this->keys('to')];
+            $values = is_array($values) || $values instanceof Traversable ? $values : [$values];
+            foreach ($values as $value) {
+                if ($indexes->has($value)) {
+                    if (is_object($collection[$indexes->get($value)])) {
+                        $source = $collection[$indexes->get($value)];
+                        $source->{$name}[] = $entity;
+                    } else {
+                        $collection[$indexes->get($value)][$name][] = $entity;
+                    }
                 }
             }
         }
@@ -118,8 +120,8 @@ class HasMany extends \Chaos\Relationship
         $result = true;
 
         foreach ($entity->{$name} as $item) {
-            if ($item->exists() && isset($indexes[$item->id()])) {
-                unset($previous[$indexes[$item->id()]]);
+            if ($item->exists() && $indexes->has($item->id())) {
+                unset($previous[$indexes->get($item->id())]);
             }
             $item->set($conditions);
             $result = $result && $item->save($options);
