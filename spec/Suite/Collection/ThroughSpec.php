@@ -512,11 +512,11 @@ describe("Through", function() {
 
     describe("->data()", function() {
 
-        it("calls `toArray()`", function() {
+        it("calls `to()`", function() {
 
-            expect(Collection::class)->toReceive('::toArray')->with($this->through);
+            expect($this->through)->toReceive('to')->with('array', []);
 
-            $this->through->data();
+            $this->through->data([]);
 
         });
 

@@ -51,6 +51,7 @@ class Source
         $this->formatter('cast', 'null',     $handlers['cast']['null']);
         $this->formatter('cast', 'string',   $handlers['cast']['string']);
 
+        $this->formatter('datasource', 'object',    $handlers['datasource']['object']);
         $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
         $this->formatter('datasource', 'datetime',  $handlers['datasource']['datetime']);
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
@@ -101,6 +102,9 @@ class Source
                 }
             ],
             'datasource' => [
+                'object'   => function($value, $options = []) {
+                    return $value->to('datasource', $options);
+                },
                 'string'   => function($value, $options = []) {
                     return (string) $value;
                 },

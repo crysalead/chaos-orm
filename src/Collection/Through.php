@@ -525,6 +525,42 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      */
     public function data($options = [])
     {
-        return array_values(Collection::toArray($this, $options));
+        return $this->to('array', $options);
+    }
+
+    /**
+     * Exports a `Collection` object to another format.
+     *
+     * The supported values of `format` depend on the registered handlers.
+     *
+     * Once the appropriate handlers are registered, a `Collection` instance can be converted into
+     * any handler-supported format, i.e.:
+     *
+     * ```php
+     * $collection->to('json'); // returns a JSON string
+     * $collection->to('xml'); // returns an XML string
+     * ```
+     *
+     * @param  string $format  By default the only supported value is `'array'`. However, additional
+     *                         format handlers can be registered using the `formats()` method.
+     * @param  array  $options Options for converting the collection.
+     * @return mixed           The converted collection.
+     */
+    public function to($format, $options = [])
+    {
+        $defaults = [
+        'cast' => true
+        ];
+
+        $options += $defaults;
+
+        $data = $options['cast'] ? Collection::toArray($this, $options) : $this;
+
+        if (is_callable($format)) {
+            return $format($data, $options);
+        } elseif ($formatter = Collection::formats($format)) {
+            return $formatter($data, $options);
+        }
+        return $data;
     }
 }

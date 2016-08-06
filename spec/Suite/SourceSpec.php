@@ -4,6 +4,8 @@ namespace Chaos\Database\Spec\Suite;
 use DateTime;
 use DateTimeZone;
 use Chaos\Source;
+use Chaos\Document;
+use Chaos\Collection\Collection;
 
 describe("Source", function() {
 
@@ -68,6 +70,8 @@ describe("Source", function() {
             expect($this->source->convert('datasource', 'boolean', false))->toBe('0');
             expect($this->source->convert('datasource', 'null', null))->toBe('');
             expect($this->source->convert('datasource', 'string', 'abc'))->toBe('abc');
+            expect($this->source->convert('datasource', 'object', new Document()))->toBe([]);
+            expect($this->source->convert('datasource', 'object', new Collection()))->toBe([]);
             expect($this->source->convert('datasource', '_default_', 123))->toBe('123');
             expect($this->source->convert('datasource', '_undefined_', 123))->toBe('123');
 

@@ -616,14 +616,14 @@ describe("Collection", function() {
 
     describe("->data()", function() {
 
-        it("calls `toArray()`", function() {
+        it("calls `to()`", function() {
 
             $collection = new Collection(['data' => [
                 1 => 1
             ]]);
-            expect(Collection::class)->toReceive('::toArray')->with($collection);
+            expect($collection)->toReceive('to')->with('array', []);
 
-            $collection->data();
+            $collection->data([]);
 
         });
 
@@ -633,12 +633,8 @@ describe("Collection", function() {
 
         it("converts a collection to an array", function() {
 
-            $collection = new Collection(['data' => [
-                1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5
-            ]]);
-            expect(Collection::toArray($collection))->toBe([
-                1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5
-            ]);
+            $collection = new Collection(['data' => [1, 2, 3, 4, 5]]);
+            expect(Collection::toArray($collection))->toBe([1, 2, 3, 4, 5]);
 
         });
 
