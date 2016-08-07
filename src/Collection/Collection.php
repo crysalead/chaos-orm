@@ -72,13 +72,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     protected $_schema = null;
 
     /**
-     * Loaded items on construct.
-     *
-     * @var array
-     */
-    protected $_loaded = [];
-
-    /**
      * The items contained in the collection.
      *
      * @var array
@@ -136,7 +129,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         foreach ($config['data'] as $key => $value) {
             $this->set($key, $value);
         }
-        $this->_loaded = $this->_data;
         $this->_parents = new Map();
     }
 
@@ -690,6 +682,69 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function data($options = [])
     {
         return $this->to('array', $options);
+    }
+
+    /**
+     * Creates and/or updates a collection and its direct relationship data in the datasource.
+     *
+     *
+     * @param  array    $options Options:
+     *                           - `'validate'`  _boolean_: If `false`, validation will be skipped, and the record will
+     *                                                      be immediately saved. Defaults to `true`.
+     * @return boolean           Returns `true` on a successful save operation, `false` otherwise.
+     */
+    public function broadcast($options = [])
+    {
+        $defaults = ['validate' => true];
+        $options += $defaults;
+        if ($options['validate'] && !$this->validates($options)) {
+            return false;
+        }
+        $schema = $this->schema();
+        return $schema->broadcast($this, $options);
+    }
+
+    /**
+     * Similar to `->broadcast()` except the relationships has not been saved by default.
+     *
+     * @param  array   $options Same options as `->save()`.
+     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
+     */
+    public function save($options = [])
+    {
+        return $this->broadcast($options + ['embed' => false]);
+    }
+
+    /**
+     * Deletes the data associated with the current `Model`.
+     *
+     * @param array $options Options.
+     * @return boolean Success.
+     * @filter
+     */
+    public function delete($options = [])
+    {
+        $schema = $this->schema();
+        if (!$key = $schema->key()) {
+            return false;
+        }
+        $keys = [];
+
+        foreach ($this as $entity) {
+            if ($entity->exists()) {
+                $keys[] = $entity->id();
+            }
+        }
+
+        if (!$keys) {
+            return true;
+        }
+
+        if ($schema->truncate([$key => $keys])) {
+            $this->_exists = false;
+            return true;
+        }
+        return false;
     }
 
     /**

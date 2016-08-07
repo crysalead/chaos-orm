@@ -169,13 +169,13 @@ describe("BelongsTo", function() {
 
     });
 
-    describe("->save()", function() {
+    describe("->broadcast()", function() {
 
         it("bails out if no relation data hasn't been setted", function() {
 
             $belongsTo = Image::definition()->relation('gallery');
             $image = Image::create(['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200']);
-            expect($belongsTo->save($image))->toBe(true);
+            expect($belongsTo->broadcast($image))->toBe(true);
 
         });
 
@@ -186,13 +186,13 @@ describe("BelongsTo", function() {
             $image = Image::create(['id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
             $image->gallery = ['name' => 'Foo Gallery'];
 
-            Stub::on($image->gallery)->method('save', function() use ($image) {
+            Stub::on($image->gallery)->method('broadcast', function() use ($image) {
                 $image->gallery->id = 1;
                 return true;
             });
 
-            expect($image->gallery)->toReceive('save');
-            expect($belongsTo->save($image))->toBe(true);
+            expect($image->gallery)->toReceive('broadcast');
+            expect($belongsTo->broadcast($image))->toBe(true);
             expect($image->gallery_id)->toBe($image->gallery->id);
 
         });
@@ -205,11 +205,11 @@ describe("BelongsTo", function() {
                 $image = Image::create(['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
                 $image->gallery = ['name' => 'Foo Gallery'];
 
-                Stub::on($image->gallery)->method('save', function() {
+                Stub::on($image->gallery)->method('broadcast', function() {
                     return true;
                 });
 
-                $belongsTo->save($image);
+                $belongsTo->broadcast($image);
             };
 
             expect($closure)->toThrow(new ChaosException("The `'id'` key is missing from related data."));

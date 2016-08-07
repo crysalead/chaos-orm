@@ -151,7 +151,7 @@ class HasManyThrough extends \Chaos\Relationship
      * @param  array   $options Saving options.
      * @return boolean
      */
-    public function save($entity, $options = [])
+    public function broadcast($entity, $options = [])
     {
         return true;
     }

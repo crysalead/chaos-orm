@@ -4,8 +4,8 @@ namespace Chaos;
 use Iterator;
 use DateTime;
 use Lead\Set\Set;
+use Chaos\ChaosException;
 use Chaos\Model;
-use Chaos\Document;
 
 class Schema
 {
@@ -1118,6 +1118,130 @@ class Schema
     }
 
     /**
+     * Inserts and/or updates an entity or a collection of entities and its direct relationship data.
+     *
+     * @param object   $instance  The entity or collection instance to save.
+     * @param array    $options   Options:
+     *                            - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
+     *                            - `'locked'`    _boolean_: Lock data to the schema fields.
+     *                            - `'embed'`     _array_  : List of relations to save.
+     * @return boolean            Returns `true` on a successful save operation, `false` otherwise.
+     */
+    public function broadcast($instance, $options = [])
+    {
+        $defaults = [
+            'whitelist' => null,
+            'locked' => $this->locked(),
+            'embed' => $instance->schema()->relations()
+        ];
+        $options += $defaults;
+
+        $options['validate'] = false;
+
+        if ($options['embed'] === true) {
+            $options['embed'] = $instance->hierarchy();
+        }
+
+        $options['embed'] = $this->treeify($options['embed']);
+
+        if (!$this->persist($instance, 'belongsTo', $options)) {
+            return false;
+        }
+
+        $success = $this->save($instance, $options);
+
+        return $success && $this->persist($instance, ['hasMany', 'hasOne'], $options);
+    }
+
+    /**
+     * Inserts and/or updates an entity or a collection of entities.
+     *
+     * @param object   $instance  The entity or collection instance to save.
+     * @param array    $options   Options:
+     *                            - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
+     *                            - `'locked'`    _boolean_: Lock data to the schema fields.
+     *                            - `'embed'`     _array_  : List of relations to save.
+     * @return boolean            Returns `true` on a successful save operation, `false` otherwise.
+     */
+    public function save($instance, $options = [])
+    {
+        $defaults = [
+            'whitelist' => null,
+            'locked' => $this->locked(),
+            'embed' => $instance->schema()->relations()
+        ];
+        $options += $defaults;
+
+        if (!$options['whitelist']) {
+            $whitelist = $options['locked'] ? $this->fields() : [];
+        } else if ($options['locked']) {
+            $whitelist = array_intersect($this->fields(), $options['whitelist']);
+        } else {
+            $whitelist = $options['whitelist'];
+        }
+
+        $collection = $instance instanceof Model ? [$instance] : $instance;
+
+        $inserts = [];
+        $updates = [];
+
+        $filter = function($entity) use ($whitelist) {
+            $fields = array_diff($whitelist ? $whitelist : array_keys($entity->get()), $this->relations());
+            $values = [];
+            foreach ($fields as $field) {
+                if ($entity->has($field)) {
+                    $values[$field] = $entity->get($field);
+                }
+            }
+            return $values;
+        };
+
+        foreach ($collection as $entity) {
+            $exists = $entity->exists();
+            if ($exists === false) {
+                $inserts[] = $entity;
+            } elseif ($entity->modified()) {
+                if ($exists) {
+                    $updates[] = $entity;
+                } else {
+                    throw new ChaosException("Entites must have a valid `false`/`true` existing value to be either inserted or updated.");
+                }
+            }
+        }
+        return $this->bulkInsert($inserts, $filter) && $this->bulkUpdate($updates, $filter);
+    }
+
+    /**
+     * Save data related to relations.
+     *
+     * @param  object  $instance The entity instance.
+     * @param  array   $types    Type of relations to save.
+     * @param  array   $options  Options array.
+     * @return boolean           Returns `true` on a successful save operation, `false` on failure.
+     */
+    public function persist($instance, $types, $options = [])
+    {
+        $defaults = ['embed' => []];
+        $options += $defaults;
+        $types = (array) $types;
+
+        $collection = $instance instanceof Model ? [$instance] : $instance;
+
+        $success = true;
+        foreach ($collection as $entity) {
+            foreach ($types as $type) {
+                foreach ($options['embed'] as $relName => $value) {
+                    if (!($rel = $this->relation($relName)) || $rel->type() !== $type) {
+                        continue;
+                    }
+                    $success = $success && $rel->broadcast($entity, ['embed' => $value] + $options);
+                }
+            }
+        }
+        return $success;
+    }
+
+    /**
      * Returns a query to retrieve data from the connected data source.
      *
      * @param  array  $options Query options.
@@ -1125,24 +1249,35 @@ class Schema
      */
     public function query($options = [])
     {
-
         throw new ChaosException("Missing `query()` implementation for this schema.");
     }
 
     /**
-     * Inserts and/or updates an entity and its direct relationship data in the datasource.
+     * Bulk inserts
      *
-     * @param object   $entity  The entity instance to save.
-     * @param array    $options Options.
-     * @return boolean          Returns `true` on a successful save operation, `false` otherwise.
+     * @param  array   $inserts An array of entities to insert.
+     * @param  Closure $filter  The filter handler for which extract entities values for the insertion.
+     * @return boolean          Returns `true` if insert operations succeeded, `false` otherwise.
      */
-    public function save($entity, $options = [])
+    public function bulkInsert($inserts, $filter)
     {
-        throw new ChaosException("Missing `save()` implementation for `{$this->_model}`'s schema.");
+        throw new ChaosException("Missing `bulkInsert()` implementation for `{$this->_model}`'s schema.");
     }
 
     /**
-     * Inserts a records  with the given data.
+     * Bulk updates
+     *
+     * @param  array   $updates An array of entities to update.
+     * @param  Closure $filter  The filter handler for which extract entities values to update.
+     * @return boolean          Returns `true` if update operations succeeded, `false` otherwise.
+     */
+    public function bulkUpdate($updates, $filter)
+    {
+        throw new ChaosException("Missing `bulkUpdate()` implementation for `{$this->_model}`'s schema.");
+    }
+
+    /**
+     * Inserts a records with the given data.
      *
      * @param  mixed   $data       Typically an array of key/value pairs that specify the new data with which
      *                             the records will be updated. For SQL databases, this can optionally be
@@ -1187,16 +1322,6 @@ class Schema
     public function truncate($options = [])
     {
         throw new ChaosException("Missing `truncate()` implementation for `{$this->_model}`'s schema.");
-    }
-
-    /**
-     * Returns the last insert id from the database.
-     *
-     * @return mixed Returns the last insert id.
-     */
-    public function lastInsertId()
-    {
-        throw new ChaosException("Missing `lastInsertId()` implementation for `{$this->_model}`'s schema.");
     }
 
 }

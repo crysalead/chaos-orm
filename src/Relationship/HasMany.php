@@ -101,7 +101,7 @@ class HasMany extends \Chaos\Relationship
      * @param  array   $options Saving options.
      * @return boolean
      */
-    public function save($entity, $options = [])
+    public function broadcast($entity, $options = [])
     {
         if ($this->link() !== static::LINK_KEY) {
             return true;
@@ -124,7 +124,7 @@ class HasMany extends \Chaos\Relationship
                 unset($previous[$indexes->get($item->id())]);
             }
             $item->set($conditions);
-            $result = $result && $item->save($options);
+            $result = $result && $item->broadcast($options);
         }
 
         $junction = $this->junction();

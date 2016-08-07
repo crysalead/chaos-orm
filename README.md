@@ -34,7 +34,7 @@ use My\Project\Model\Images;
 // Adding a many-to-many relation
 $image = Image::load(123);
 $image->tags[] = ['name' => 'Landscape'];
-$image->save();
+$image->broadcast();
 
 foreach($image->tags as $tag) { // Echoes: 'Montain', 'Black&White', 'Landscape'
     echo $tag->name;

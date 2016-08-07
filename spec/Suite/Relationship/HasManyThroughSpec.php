@@ -283,12 +283,12 @@ describe("HasManyThrough", function() {
 
     });
 
-    describe("->save()", function() {
+    describe("->broadcast()", function() {
 
         it("bails out on save since it's just an alias", function() {
 
             $hasManyThrough = Image::definition()->relation('tags');
-            expect($hasManyThrough->save(null))->toBe(true);
+            expect($hasManyThrough->broadcast(null))->toBe(true);
 
         });
 

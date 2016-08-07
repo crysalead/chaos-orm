@@ -51,7 +51,7 @@ class HasOne extends \Chaos\Relationship
      * @param  array   $options Saving options.
      * @return boolean
      */
-    public function save($entity, $options = [])
+    public function broadcast($entity, $options = [])
     {
         if ($this->link() !== static::LINK_KEY) {
             return true;
@@ -64,7 +64,7 @@ class HasOne extends \Chaos\Relationship
 
         $conditions = $this->match($entity);
         $related = $entity->{$name};
-        $result = !!$related->set($conditions)->save($options);
+        $result = !!$related->set($conditions)->broadcast($options);
         return $result;
     }
 }

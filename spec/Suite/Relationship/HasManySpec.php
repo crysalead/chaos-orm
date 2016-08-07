@@ -189,13 +189,13 @@ describe("HasMany", function() {
 
     });
 
-    describe("->save()", function() {
+    describe("->broadcast()", function() {
 
         it("bails out if no relation data hasn't been setted", function() {
 
             $hasMany = Gallery::definition()->relation('images');
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
-            expect($hasMany->save($gallery))->toBe(true);
+            expect($hasMany->broadcast($gallery))->toBe(true);
 
         });
 
@@ -211,13 +211,13 @@ describe("HasMany", function() {
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             $gallery->images = [['title' => 'Amiga 1200']];
 
-            Stub::on($gallery->images[0])->method('save', function() use ($gallery) {
+            Stub::on($gallery->images[0])->method('broadcast', function() use ($gallery) {
                 $gallery->images[0]->id = 1;
                 return true;
             });
 
-            expect($gallery->images[0])->toReceive('save');
-            expect($hasMany->save($gallery))->toBe(true);
+            expect($gallery->images[0])->toReceive('broadcast');
+            expect($hasMany->broadcast($gallery))->toBe(true);
             expect($gallery->images[0]->gallery_id)->toBe($gallery->id);
 
         });
@@ -240,18 +240,18 @@ describe("HasMany", function() {
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             $gallery->images = [['title' => 'Amiga 1200'], $toKeep];
 
-            Stub::on($gallery->images[0])->method('save', function() use ($gallery) {
+            Stub::on($gallery->images[0])->method('broadcast', function() use ($gallery) {
                 $gallery->images[0]->id = 1;
                 return true;
             });
 
-            Stub::on($toKeep)->method('save', function() { return true; });
-            Stub::on($toUnset)->method('save', function() use ($toUnset) {return true;});
+            Stub::on($toKeep)->method('broadcast', function() { return true; });
+            Stub::on($toUnset)->method('broadcast', function() use ($toUnset) {return true;});
 
-            expect($gallery->images[0])->toReceive('save');
-            expect($toKeep)->toReceive('save');
-            expect($toUnset)->toReceive('save');
-            expect($hasMany->save($gallery))->toBe(true);
+            expect($gallery->images[0])->toReceive('broadcast');
+            expect($toKeep)->toReceive('broadcast');
+            expect($toUnset)->toReceive('broadcast');
+            expect($hasMany->broadcast($gallery))->toBe(true);
             expect($toUnset->exists())->toBe(true);
             expect($toUnset->gallery_id)->toBe(null);
             expect($gallery->images[0]->gallery_id)->toBe($gallery->id);
@@ -276,20 +276,20 @@ describe("HasMany", function() {
             $image = Image::create(['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley'], ['exists' => true]);
             $image->images_tags = [['tag_id' => 1], $toKeep];
 
-            Stub::on($image->images_tags[0])->method('save', function() use ($image) {
+            Stub::on($image->images_tags[0])->method('broadcast', function() use ($image) {
                 $image->images_tags[0]->id = 7;
                 return true;
             });
 
             $schema = ImageTag::definition();
 
-            Stub::on($toKeep)->method('save', function() { return true; });
+            Stub::on($toKeep)->method('broadcast', function() { return true; });
             Stub::on($schema)->method('truncate', function() { return true; });
 
-            expect($image->images_tags[0])->toReceive('save');
-            expect($toKeep)->toReceive('save');
+            expect($image->images_tags[0])->toReceive('broadcast');
+            expect($toKeep)->toReceive('broadcast');
             expect($schema)->toReceive('truncate')->with(['id' => 5]);
-            expect($hasMany->save($image))->toBe(true);
+            expect($hasMany->broadcast($image))->toBe(true);
             expect($toDelete->exists())->toBe(false);
             expect($image->images_tags[0]->image_id)->toBe($image->id);
 

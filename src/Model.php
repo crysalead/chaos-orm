@@ -431,30 +431,20 @@ class Model extends Document
     }
 
     /**
-     * Creates and/or updates an entity and its direct relationship data in the datasource.
+     * Creates and/or updates an entity and its relationships data in the datasource.
      *
      * For example, to create a new record or document:
      * {{{
      * $post = Post::create(); // Creates a new object, which doesn't exist in the database yet
      * $post->title = "My post";
-     * $success = $post->save();
+     * $success = $post->broadcast();
      * }}}
      *
      * It is also used to update existing database objects, as in the following:
      * {{{
      * $post = Post::first($id);
      * $post->title = "Revised title";
-     * $success = $post->save();
-     * }}}
-     *
-     * By default, an object's data will be checked against the validation rules of the model it is
-     * bound to. Any validation errors that result can then be accessed through the `errors()`
-     * method.
-     *
-     * {{{
-     * if (!$post->save($someData)) {
-     *     return array('errors' => $post->errors());
-     * }
+     * $success = $post->broadcast();
      * }}}
      *
      * To override the validation checks and save anyway, you can pass the `'validate'` option:
@@ -462,7 +452,7 @@ class Model extends Document
      * {{{
      * $post->title = "We Don't Need No Stinkin' Validation";
      * $post->body = "I know what I'm doing.";
-     * $post->save(['validate' => false]);
+     * $post->broadcast(['validate' => false]);
      * }}}
      *
      * @param  array    $options Options:
@@ -470,7 +460,7 @@ class Model extends Document
      *                                                      be immediately saved. Defaults to `true`.
      * @return boolean           Returns `true` on a successful save operation, `false` otherwise.
      */
-    public function save($options = [])
+    public function broadcast($options = [])
     {
         $defaults = ['validate' => true];
         $options += $defaults;
@@ -478,18 +468,18 @@ class Model extends Document
             return false;
         }
         $schema = $this->schema();
-        return $schema->save($this, $options);
+        return $schema->broadcast($this, $options);
     }
 
     /**
-     * Similar to `->save()` except the direct relationship has not been saved by default.
+     * Similar to `->broadcast()` except the direct relationship has not been saved by default.
      *
      * @param  array   $options Same options as `->save()`.
      * @return boolean          Returns `true` on a successful save operation, `false` on failure.
      */
-    public function persist($options = [])
+    public function save($options = [])
     {
-        return $this->save($options + ['embed' => false]);
+        return $this->broadcast($options + ['embed' => false]);
     }
 
     /**

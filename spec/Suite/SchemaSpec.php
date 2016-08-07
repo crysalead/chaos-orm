@@ -946,4 +946,28 @@ describe("Schema", function() {
 
     });
 
+    describe("->save()", function() {
+
+        it("saves an entity", function() {
+
+            $data = [
+                'name' => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200'
+            ];
+
+            $image = Image::create($data);
+
+            Stub::on($image->schema())->method('bulkInsert')->andReturn(true);
+            Stub::on($image->schema())->method('bulkUpdate')->andReturn(true);
+
+            expect($image)->toReceive('broadcast')->with([
+                'custom' => 'option',
+                'embed' => false
+            ]);
+
+            expect($image->save(['custom' => 'option']))->toBe(true);
+        });
+
+    });
+
 });

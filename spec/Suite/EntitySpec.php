@@ -474,7 +474,7 @@ describe("Entity", function() {
 
     });
 
-    describe("->save()", function() {
+    describe("->broadcast()", function() {
 
         afterEach(function() {
 
@@ -488,7 +488,7 @@ describe("Entity", function() {
             $image = Image::create([]);
             Image::validator()->rule('name', 'not:empty');
 
-            expect($image->save())->toBe(false);
+            expect($image->broadcast())->toBe(false);
             expect($image->exists())->toBe(false);
 
         });
@@ -502,7 +502,7 @@ describe("Entity", function() {
                 'title'   => 'Amiga 1200',
                 'gallery' => []
             ]);
-            expect($image->save())->toBe(false);
+            expect($image->broadcast())->toBe(false);
             expect($image->exists())->toBe(false);
 
         });
