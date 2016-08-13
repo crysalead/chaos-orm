@@ -556,7 +556,7 @@ class Schema
      *                         See the `Relationship` class for more information.
      * @return boolean
      */
-    public function belongsTo($name, $to, $config) {
+    public function belongsTo($name, $to, $config = []) {
         $defaults = [
             'to'       => $to,
             'relation' => 'belongsTo'
@@ -574,7 +574,7 @@ class Schema
      *                         See the `Relationship` class for more information.
      * @return boolean
      */
-    public function hasMany($name, $to, $config) {
+    public function hasMany($name, $to, $config = []) {
         $defaults = [
             'to'       => $to,
             'relation' => 'hasMany'
@@ -592,7 +592,7 @@ class Schema
      *                         See the `Relationship` class for more information.
      * @return boolean
      */
-    public function hasOne($name, $to, $config) {
+    public function hasOne($name, $to, $config = []) {
         $defaults = [
             'to'       => $to,
             'relation' => 'hasOne'
@@ -664,9 +664,15 @@ class Schema
             if (!isset($config['through'])) {
                 throw new ChaosException("Missing `'through'` relation name.");
             }
-            $config += ['using' => $this->_conventions->apply('single', $name)];
+            $config += ['using' => $this->conventions()->apply('single', $name)];
             $config['type'] = 'through';
             $this->_relations[$config['through']]['junction'] = true;
+        } elseif ($config['relation'] === 'belongsTo' && $config['link'] === $relationship::LINK_KEY) {
+            $fieldName = $this->conventions()->apply('reference', $name);
+            $this->_columns[$fieldName] = ['type' => 'id', 'array' => false, 'null' => true];
+        } elseif ($config['relation'] === 'hasMany' && $config['link'] === $relationship::LINK_KEY_LIST) {
+            $fieldName = $this->conventions()->apply('references', $name);
+            $this->_columns[$fieldName] = ['type' => 'id', 'array' => true, 'null' => true];
         }
 
         if (isset($this->_relations[$name]['junction'])) {

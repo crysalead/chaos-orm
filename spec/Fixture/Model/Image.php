@@ -6,7 +6,6 @@ class Image extends \Chaos\Model
     protected static function _define($schema)
     {
         $schema->column('id', ['type' => 'serial']);
-        $schema->column('gallery_id', ['type' => 'integer']);
         $schema->column('name', ['type' => 'string']);
         $schema->column('title', ['type' => 'string', 'length' => 50]);
         $schema->column('score', ['type' => 'float' ]);

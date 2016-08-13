@@ -23,6 +23,7 @@ describe("Conventions", function() {
             $model = 'app\model\MyPost';
             expect($conventions->apply('source', $model))->toBe('my_post');
             expect($conventions->apply('reference', $model))->toBe('my_post_id');
+            expect($conventions->apply('references', $model))->toBe('my_post_ids');
             expect($conventions->apply('field', $model))->toBe('my_post');
             expect($conventions->apply('single', 'tag'))->toBe('tag');
             expect($conventions->apply('multiple', 'tag'))->toBe('tags');
@@ -35,6 +36,7 @@ describe("Conventions", function() {
             $model = 'app\model\MyComments';
             expect($conventions->apply('source', $model))->toBe('my_comments');
             expect($conventions->apply('reference', $model))->toBe('my_comment_id');
+            expect($conventions->apply('references', $model))->toBe('my_comment_ids');
             expect($conventions->apply('field', $model))->toBe('my_comment');
             expect($conventions->apply('single', 'tags'))->toBe('tag');
             expect($conventions->apply('multiple', 'tags'))->toBe('tags');
@@ -69,6 +71,7 @@ describe("Conventions", function() {
                 'key',
                 'multiple',
                 'reference',
+                'references',
                 'single',
                 'source'
             ]);
@@ -85,6 +88,7 @@ describe("Conventions", function() {
                 'key',
                 'multiple',
                 'reference',
+                'references',
                 'single',
                 'source'
             ]);

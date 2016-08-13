@@ -54,6 +54,11 @@ class Conventions
                     $basename = substr($class, $pos !== false ? $pos + 1 : 0);
                     return Inflector::underscore(Inflector::singularize($basename)). '_id';
                 },
+                'references' => function($class) {
+                    $pos = strrpos($class, '\\');
+                    $basename = substr($class, $pos !== false ? $pos + 1 : 0);
+                    return Inflector::underscore(Inflector::singularize($basename)). '_ids';
+                },
                 'field' => function($class) {
                     $pos = strrpos($class, '\\');
                     $basename = substr($class, $pos !== false ? $pos + 1 : 0);

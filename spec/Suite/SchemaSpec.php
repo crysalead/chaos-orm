@@ -148,7 +148,7 @@ describe("Schema", function() {
 
         it("returns all column names", function() {
 
-            expect($this->schema->names())->toBe(['id', 'gallery_id', 'name', 'title', 'score']);
+            expect($this->schema->names())->toBe(['id', 'name', 'title', 'score', 'gallery_id']);
 
         });
 
@@ -179,7 +179,7 @@ describe("Schema", function() {
 
         it("returns all fields", function() {
 
-            expect($this->schema->fields())->toBe(['id', 'gallery_id', 'name', 'title', 'score']);
+            expect($this->schema->fields())->toBe(['id', 'name', 'title', 'score', 'gallery_id']);
 
         });
 
@@ -211,11 +211,6 @@ describe("Schema", function() {
                     'array' => false,
                     'null'  => false
                 ],
-                'gallery_id' => [
-                    'type'  => 'integer',
-                    'array' => false,
-                    'null'  => true
-                ],
                 'name' => [
                     'type'    => 'string',
                     'array'   => false,
@@ -231,6 +226,11 @@ describe("Schema", function() {
                     'type'    => 'float',
                     'array'   => false,
                     'null'    => true
+                ],
+                'gallery_id' => [
+                    'type'  => 'id',
+                    'array' => false,
+                    'null'  => true
                 ]
             ]);
 
@@ -277,7 +277,7 @@ describe("Schema", function() {
             ]);
 
             expect($schema->column('gallery_id'))->toBe([
-                'type'  => 'integer',
+                'type'  => 'id',
                 'array' => false,
                 'null'  => true
             ]);
