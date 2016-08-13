@@ -1325,7 +1325,7 @@ class Schema
      *                             options.
      * @return boolean             Returns `true` if the remove operation succeeded, otherwise `false`.
      */
-    public function truncate($options = [])
+    public function truncate($conditions = [], $options = [])
     {
         throw new ChaosException("Missing `truncate()` implementation for `{$this->_model}`'s schema.");
     }
