@@ -416,7 +416,7 @@ describe("Entity", function() {
             Image::reset();
         });
 
-        it("validate an entity", function() {
+        it("validates an entity", function() {
 
             $gallery = Gallery::create();
             expect($gallery->validates())->toBe(false);
@@ -432,7 +432,7 @@ describe("Entity", function() {
 
         });
 
-        it("validate an nested entities", function() {
+        it("validates an nested entities", function() {
 
             $gallery = Gallery::create();
             $gallery->images[] = Image::create();
@@ -469,6 +469,24 @@ describe("Entity", function() {
                     []
                 ]
             ]);
+
+        });
+
+        it("passes entity instances to validator handlers", function() {
+
+            $actual = null;
+
+            $validator = Gallery::validator();
+
+            $validator->set('customValidationRule', function($value, $options = [], &$params = []) use (&$actual) {
+                $actual = $options;
+            });
+
+            $validator->rule('name', ['customValidationRule']);
+
+            $gallery = Gallery::create(['name' => 'test']);
+            expect($gallery->validates())->toBe(false);
+            expect($actual['entity'])->toBe($gallery);
 
         });
 

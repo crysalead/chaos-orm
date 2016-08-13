@@ -542,7 +542,8 @@ class Model extends Document
         $defaults = [
             'events'   => $this->exists() !== false ? 'update' : 'create',
             'required' => $this->exists() !== false ? false : true,
-            'embed'     => true
+            'entity'   => $this,
+            'embed'    => true
         ];
         $options += $defaults;
         $validator = static::validator();
