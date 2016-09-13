@@ -8,12 +8,12 @@ use Chaos\Model;
 use Chaos\Schema;
 use Chaos\Collection\Collection;
 
-use Kahlan\Plugin\Stub;
+use Kahlan\Plugin\Double;
 
 describe("Model", function() {
 
-    before(function() {
-        $model = $this->model = Stub::classname(['extends' => Model::class]);
+    beforeAll(function() {
+        $model = $this->model = Double::classname(['extends' => Model::class]);
         $model::definition()->locked(false);
     });
 
@@ -27,7 +27,7 @@ describe("Model", function() {
 
         it("gets/sets a conventions", function() {
 
-            $conventions = Stub::create();
+            $conventions = Double::instance();
             $model = $this->model;
             $model::conventions($conventions);
             expect($model::conventions())->toBe($conventions);
@@ -40,8 +40,8 @@ describe("Model", function() {
 
         it("gets/sets a connection", function() {
 
-            $connection = Stub::create();
-            Stub::on($connection)->method('formatters', function() {
+            $connection = Double::instance();
+            allow($connection)->toReceive('formatters')->andRun(function() {
                 return [];
             });
             $model = $this->model;
@@ -135,7 +135,7 @@ describe("Model", function() {
 
         it("gets/sets a validator", function() {
 
-            $validator = Stub::create();
+            $validator = Double::instance();
             $model = $this->model;
             $model::validator($validator);
             expect($model::validator())->toBe($validator);
@@ -148,7 +148,7 @@ describe("Model", function() {
 
         it("gets/sets a finders", function() {
 
-            $finders = Stub::create();
+            $finders = Double::instance();
             $model = $this->model;
             $model::finders($finders);
             expect($model::finders())->toBe($finders);
@@ -162,8 +162,8 @@ describe("Model", function() {
         beforeEach(function() {
             $model = $this->model;
             $schema = $model::definition();
-            $this->query = $query = Stub::create(['methods' => ['method1', 'method2']]);
-            Stub::on($schema)->method('query', function() use ($query) {
+            $this->query = $query = Double::instance(['methods' => ['method1', 'method2']]);
+            allow($schema)->toReceive('query')->andRun(function() use ($query) {
                 return $query;
             });
         });
@@ -218,8 +218,8 @@ describe("Model", function() {
         beforeEach(function() {
             $model = $this->model;
             $schema = $model::definition();
-            $this->query = $query = Stub::create();
-            Stub::on($schema)->method('query', function() use ($query) {
+            $this->query = $query = Double::instance();
+            allow($schema)->toReceive('query')->andRun(function() use ($query) {
                 return $query;
             });
         });
@@ -242,8 +242,8 @@ describe("Model", function() {
         beforeEach(function() {
             $model = $this->model;
             $schema = $model::definition();
-            $this->query = $query = Stub::create();
-            Stub::on($schema)->method('query', function() use ($query) {
+            $this->query = $query = Double::instance();
+            allow($schema)->toReceive('query')->andRun(function() use ($query) {
                 return $query;
             });
         });
@@ -269,8 +269,8 @@ describe("Model", function() {
         beforeEach(function() {
             $model = $this->model;
             $schema = $model::definition();
-            $this->query = $query = Stub::create();
-            Stub::on($schema)->method('query', function() use ($query) {
+            $this->query = $query = Double::instance();
+            allow($schema)->toReceive('query')->andRun(function() use ($query) {
                 return $query;
             });
         });
@@ -301,7 +301,7 @@ describe("Model", function() {
 
         it("gets/sets a finders", function() {
 
-            $schema = Stub::create();
+            $schema = Double::instance();
             $model = $this->model;
             $model::definition($schema);
             expect($model::definition())->toBe($schema);

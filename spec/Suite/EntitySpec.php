@@ -10,7 +10,7 @@ use Chaos\Schema;
 use Chaos\Collection\Collection;
 use Chaos\Collection\Through;
 
-use Kahlan\Plugin\Stub;
+use Kahlan\Plugin\Double;
 
 use Chaos\Spec\Fixture\Model\Gallery;
 use Chaos\Spec\Fixture\Model\GalleryDetail;
@@ -21,7 +21,7 @@ use Chaos\Spec\Fixture\Model\Tag;
 describe("Entity", function() {
 
     beforeEach(function() {
-        $this->model = Stub::classname(['extends' => Model::class]);
+        $this->model = Double::classname(['extends' => Model::class]);
         $model = $this->model;
         $schema = $model::definition();
         $schema->column('id', ['type' => 'serial']);
@@ -50,7 +50,7 @@ describe("Entity", function() {
         it("throws an exception if exists is `null` but no record actually exists", function() {
 
             $model = $this->model;
-            Stub::on($model)->method('::load', function() { return; });
+            allow($model)->toReceive('::load')->andRun(function() { return; });
 
             $closure = function() {
                 $model = $this->model;
@@ -365,13 +365,13 @@ describe("Entity", function() {
         context("when a model is defined", function() {
 
             beforeEach(function() {
-                $this->model = Stub::classname(['extends' => $this->model]);
+                $this->model = Double::classname(['extends' => $this->model]);
             });
 
             it("autoboxes setted data", function() {
 
                 $model = $this->model;
-                $childEntity = Stub::classname(['extends' => $this->model]);
+                $childEntity = Double::classname(['extends' => $this->model]);
                 $childEntity::definition()->locked(false);
 
                 $schema = new Schema(['model' => $model]);

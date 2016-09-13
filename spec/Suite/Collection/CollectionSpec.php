@@ -7,12 +7,12 @@ use Chaos\Schema;
 use Chaos\Document;
 use Chaos\Collection\Collection;
 
-use Kahlan\Plugin\Stub;
+use Kahlan\Plugin\Double;
 
 describe("Collection", function() {
 
     beforeEach(function() {
-        $model = $this->model = Stub::classname(['extends' => Model::class]);
+        $model = $this->model = Double::classname(['extends' => Model::class]);
         $model::definition()->locked(false);
     });
 
@@ -93,9 +93,9 @@ describe("Collection", function() {
 
         beforeEach(function() {
             $this->collection = new Collection();
-            $class = Stub::classname();
+            $class = Double::classname();
 
-            Stub::on($class)->method('hello', function() {
+            allow($class)->toReceive('hello')->andRun(function() {
                 return 'world';
             });
 
@@ -598,8 +598,8 @@ describe("Collection", function() {
 
         it("delegates the call up to the schema instance", function() {
 
-            $model = Stub::classname(['extends' => Model::class]);
-            $schema = Stub::create();
+            $model = Double::classname(['extends' => Model::class]);
+            $schema = Double::instance();
 
             $model::definition($schema);
 
@@ -640,8 +640,8 @@ describe("Collection", function() {
 
         it("converts objects which support __toString", function() {
 
-            $stringable = Stub::classname();
-            Stub::on($stringable)->method('__toString')->andReturn('hello');
+            $stringable = Double::classname();
+            allow($stringable)->toReceive('__toString')->andReturn('hello');
             $collection = new Collection(['data' => [new $stringable()]]);
 
             expect(Collection::toArray($collection))->toBe(['hello']);
@@ -650,7 +650,7 @@ describe("Collection", function() {
 
         it("converts objects using handlers", function() {
 
-            $handlable = Stub::classname();
+            $handlable = Double::classname();
             $handlers = [$handlable => function($value) { return 'world'; }];
             $collection = new Collection(['data' => [new $handlable()]]);
 

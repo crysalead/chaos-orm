@@ -6,7 +6,7 @@ use Chaos\Model;
 use Chaos\Collection\Collection;
 use Chaos\Collection\Through;
 
-use Kahlan\Plugin\Stub;
+use Kahlan\Plugin\Double;
 
 use Chaos\Spec\Fixture\Model\Image;
 use Chaos\Spec\Fixture\Model\Tag;
@@ -18,20 +18,20 @@ describe("Through", function() {
 
         $this->images_tags = [];
 
-         $this->imageTagModel = $imageTagModel = Stub::classname([
+         $this->imageTagModel = $imageTagModel = Double::classname([
             'extends' => ImageTag::class
         ]);
 
         $imageTagModel::definition()->locked(false);
 
-        $this->tagModel = $tagModel = Stub::classname([
+        $this->tagModel = $tagModel = Double::classname([
             'extends' => Tag::class,
             'methods' => ['tagMethod']
         ]);
 
         $tagModel::definition()->locked(false);
 
-        Stub::on($tagModel)->method('tagMethod', function($options) {
+        allow($tagModel)->toReceive('tagMethod')->andRun(function($options) {
             return $options;
         });
 
@@ -501,7 +501,7 @@ describe("Through", function() {
 
             $model = $this->tagModel;
             $schema = $model::definition();
-            Stub::on($schema)->method('embed');
+            allow($schema)->toReceive('embed');
 
             expect($schema)->toReceive('embed')->with($this->through, ['relation1.relation2']);
             $this->through->embed(['relation1.relation2']);

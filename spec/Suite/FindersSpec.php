@@ -4,7 +4,7 @@ namespace Chaos\Spec\Suite;
 use Chaos\ChaosException;
 use Chaos\Finders;
 
-use Kahlan\Plugin\Stub;
+use Kahlan\Plugin\Double;
 
 describe("Finders", function() {
 
@@ -43,7 +43,7 @@ describe("Finders", function() {
 
         it("calls a finder", function() {
 
-            $closure = Stub::create();
+            $closure = Double::instance();
             $this->finders->set('myfinder', $closure);
 
             expect($closure)->toReceive('__invoke')->with('a', 'b', 'c');

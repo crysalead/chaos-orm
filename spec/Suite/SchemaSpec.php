@@ -7,7 +7,7 @@ use InvalidArgumentException;
 use Chaos\Schema;
 use Chaos\Model;
 
-use Kahlan\Plugin\Stub;
+use Kahlan\Plugin\Double;
 
 use Chaos\Spec\Fixture\Model\Gallery;
 use Chaos\Spec\Fixture\Model\Image;
@@ -36,10 +36,10 @@ describe("Schema", function() {
 
         it("correctly sets config options", function() {
 
-            $connection = Stub::create();
-            $conventions = Stub::create();
+            $connection = Double::instance();
+            $conventions = Double::instance();
 
-            Stub::on($connection)->method('formatters')->andReturn([]);
+            allow($connection)->toReceive('formatters')->andReturn([]);
 
             $schema = new Schema([
                 'connection'  => $connection,
@@ -69,7 +69,7 @@ describe("Schema", function() {
 
         it("gets/sets the connection", function() {
 
-            $connection = Stub::create();
+            $connection = Double::instance();
             $schema = new Schema();
 
             expect($schema->connection($connection))->toBe($schema);
@@ -704,7 +704,7 @@ describe("Schema", function() {
 
         it("includes embedded relations using `true` as first parameter", function() {
 
-            $model = Stub::classname(['extends' => Model::class]);
+            $model = Double::classname(['extends' => Model::class]);
 
             $schema = new Schema(['model' => $model]);
             $schema->column('embedded', [
@@ -723,7 +723,7 @@ describe("Schema", function() {
 
         it("gets/sets the conventions", function() {
 
-            $conventions = Stub::create();
+            $conventions = Double::instance();
             $schema = new Schema();
 
             expect($schema->conventions($conventions))->toBe($schema);
@@ -957,8 +957,8 @@ describe("Schema", function() {
 
             $image = Image::create($data);
 
-            Stub::on($image->schema())->method('bulkInsert')->andReturn(true);
-            Stub::on($image->schema())->method('bulkUpdate')->andReturn(true);
+            allow($image->schema())->toReceive('bulkInsert')->andReturn(true);
+            allow($image->schema())->toReceive('bulkUpdate')->andReturn(true);
 
             expect($image)->toReceive('broadcast')->with([
                 'custom' => 'option',
