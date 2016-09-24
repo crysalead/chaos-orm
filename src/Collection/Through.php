@@ -529,6 +529,37 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     }
 
     /**
+     * Validates the collection.
+     *
+     * @param  array   $options Validates option.
+     * @return boolean
+     */
+    public function validates($options = [])
+    {
+        $success = true;
+        foreach ($this as $entity) {
+            if (!$entity->validates($options)) {
+                $success = false;
+            }
+        }
+        return $success;
+    }
+
+    /**
+     * Returns the errors from the last validate call.
+     *
+     * @return array The occured errors.
+     */
+    public function errors($options = [])
+    {
+        $errors = [];
+        foreach ($this as $entity) {
+            $errors[] = $entity ? $entity->errors($options) : [];
+        }
+        return $errors;
+    }
+
+    /**
      * Exports a `Collection` object to another format.
      *
      * The supported values of `format` depend on the registered handlers.

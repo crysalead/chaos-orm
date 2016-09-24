@@ -522,4 +522,74 @@ describe("Through", function() {
 
     });
 
+    describe("->validates()", function() {
+
+        it("returns `true` when no validation error occur", function() {
+
+            $image = Image::create();
+            $image->tags[] = Tag::create();
+            $image->tags[] = Tag::create();
+
+            expect($image->tags->validates())->toBe(true);
+
+        });
+
+        it("returns `false` when a validation error occurs", function() {
+
+            $validator = Tag::validator();
+            $validator->rule('name', 'not:empty');
+
+            $image = Image::create();
+            $image->tags[] = Tag::create();
+            $image->tags[] = Tag::create();
+
+            expect($image->tags->validates())->toBe(false);
+
+            expect($image->tags->errors())->toBe([
+                [
+                    'name' => [
+                        'is required'
+                    ]
+                ],
+                [
+                    'name' => [
+                        'is required'
+                    ]
+                ]
+            ]);
+
+        });
+
+    });
+
+    describe("->errors()", function() {
+
+        it("returns errors", function() {
+
+            $validator = Tag::validator();
+            $validator->rule('name', 'not:empty');
+
+            $image = Image::create();
+            $image->tags[] = Tag::create();
+            $image->tags[] = Tag::create();
+
+            expect($image->validates())->toBe(false);
+
+            expect($image->tags->errors())->toBe([
+                [
+                    'name' => [
+                        'is required'
+                    ]
+                ],
+                [
+                    'name' => [
+                        'is required'
+                    ]
+                ]
+            ]);
+
+        });
+
+    });
+
 });
