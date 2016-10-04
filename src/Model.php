@@ -551,7 +551,8 @@ class Model extends Document
         $valid = $this->_validates($options);
 
         $success = $validator->validates($this->get(), $options);
-        $this->_errors = $validator->errors();
+        $this->_errors = [];
+        $this->invalidate($validator->errors());
         return $success && $valid;
     }
 
@@ -582,6 +583,27 @@ class Model extends Document
             }
         }
         return $success;
+    }
+
+    /**
+     * Invalidate a field or an array of fields.
+     *
+     * @param  string|array $field  The field to invalidate of an array of fields with associated errors.
+     * @param  string|array $errors The associated error message(s).
+     * @return self
+     */
+    public function invalidate($field, $errors = [])
+    {
+        if (func_num_args() === 1) {
+            foreach ($field as $key => $value) {
+                $this->invalidate($key, $value);
+            }
+            return $this;
+        }
+        if ($errors) {
+            $this->_errors[$field] = (array) $errors;
+        }
+        return $this;
     }
 
     /**
