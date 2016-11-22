@@ -193,7 +193,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public static function create($data = [], $options = [])
     {
         $defaults = [
-            'type'   => 'entity'
+            'type' => 'entity'
         ];
         $options += $defaults;
 

@@ -607,6 +607,22 @@ class Model extends Document
     }
 
     /**
+     * Return an indivitual error
+     *
+     * @param  string       $field The field name.
+     * @param  string|array $all   Indicate whether all errors or simply the first one need to be returned.
+     * @return string              Return an array of error messages or the first one (depending on `$all`) or
+     *                             an empty string for no error.
+     */
+    public function error($field, $all = false)
+    {
+        if (!empty($this->_errors[$field])) {
+            return $all ? $this->_errors[$field] : reset($this->_errors[$field]);
+        }
+        return '';
+    }
+
+    /**
      * Returns the errors from the last `->validates()` call.
      *
      * @return array The occured errors.
@@ -630,6 +646,20 @@ class Model extends Document
             }
         }
         return $errors;
+    }
+
+    /**
+     * Check if the entity or a specific field errored
+     *
+     * @param  string  $field The field to check.
+     * @return boolean
+     */
+    public function errored($field = null)
+    {
+        if (!func_num_args()) {
+            return !!$this->_errors;
+        }
+        return isset($this->_errors[$field]);
     }
 
     /**
