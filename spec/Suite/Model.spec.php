@@ -116,6 +116,16 @@ describe("Model", function() {
 
         });
 
+        it("creates an entity of a different class", function() {
+
+            $model = $this->model;
+            $subclass = Double::classname(['extends' => $model]);
+            $entity = $model::create([], ['model' => $subclass]);
+
+            expect($entity)->toBeAnInstanceOf($subclass);
+
+        });
+
     });
 
     describe("::query()", function() {
