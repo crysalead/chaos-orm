@@ -35,7 +35,7 @@ describe("BelongsTo", function() {
 
             expect($relation->name())->toBe($this->conventions->apply('field', Gallery::class));
 
-            $foreignKey = $this->conventions->apply('reference', Image::class);
+            $foreignKey = $this->conventions->apply('reference', Gallery::class);
             expect($relation->keys())->toBe([$foreignKey => $this->key]);
 
             expect($relation->from())->toBe(Image::class);

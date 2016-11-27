@@ -22,7 +22,7 @@ class BelongsTo extends \Chaos\Relationship
 
         if (!$keys ) {
             $key = $this->_conventions->apply('key');
-            $this->_keys = [$this->_conventions->apply('reference', $config['from']) => $key];
+            $this->_keys = [$this->_conventions->apply('reference', $config['to']) => $key];
         }
     }
 
