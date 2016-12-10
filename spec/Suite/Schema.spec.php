@@ -36,15 +36,11 @@ describe("Schema", function() {
 
         it("correctly sets config options", function() {
 
-            $connection = Double::instance();
             $conventions = Double::instance();
 
-            allow($connection)->toReceive('formatters')->andReturn([]);
-
             $schema = new Schema([
-                'connection'  => $connection,
                 'source'      => 'image',
-                'model'       => Image::class,
+                'reference'   => Image::class,
                 'key'         => 'key',
                 'locked'      => false,
                 'columns'     => ['id' => 'serial', 'age' => 'integer'],
@@ -52,28 +48,13 @@ describe("Schema", function() {
                 'conventions' => $conventions
             ]);
 
-            expect($schema->connection())->toBe($connection);
             expect($schema->source())->toBe('image');
-            expect($schema->model())->toBe(Image::class);
+            expect($schema->reference())->toBe(Image::class);
             expect($schema->key())->toBe('key');
             expect($schema->locked())->toBe(false);
             expect($schema->fields())->toBe(['id', 'age']);
             expect($schema->meta())->toBe(['some' => ['meta']]);
             expect($schema->conventions())->toBe($conventions);
-
-        });
-
-    });
-
-    describe("->connection()", function() {
-
-        it("gets/sets the connection", function() {
-
-            $connection = Double::instance();
-            $schema = new Schema();
-
-            expect($schema->connection($connection))->toBe($schema);
-            expect($schema->connection())->toBe($connection);
 
         });
 
@@ -92,14 +73,14 @@ describe("Schema", function() {
 
     });
 
-    describe("->model()", function() {
+    describe("->reference()", function() {
 
         it("gets/sets the conventions", function() {
 
             $schema = new Schema();
 
-            expect($schema->model(Image::class))->toBe($schema);
-            expect($schema->model())->toBe(Image::class);
+            expect($schema->reference(Image::class))->toBe($schema);
+            expect($schema->reference())->toBe(Image::class);
 
         });
 
@@ -706,10 +687,10 @@ describe("Schema", function() {
 
             $model = Double::classname(['extends' => Model::class]);
 
-            $schema = new Schema(['model' => $model]);
+            $schema = new Schema(['reference' => $model]);
             $schema->column('embedded', [
-                'type' => 'object',
-                'model' => $model
+                'type'      => 'object',
+                'reference' => $model
             ]);
 
             expect($schema->relations())->toBe([]);

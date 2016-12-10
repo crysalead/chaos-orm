@@ -25,13 +25,6 @@ class Schema
     ];
 
     /**
-     * The connection instance.
-     *
-     * @var object
-     */
-    protected $_connection = null;
-
-    /**
      * The conventions instance.
      *
      * @var object
@@ -50,7 +43,7 @@ class Schema
      *
      * @var string
      */
-    protected $_model = null;
+    protected $_reference = null;
 
     /**
      * Indicates whether the schema is locked or not.
@@ -112,9 +105,8 @@ class Schema
      * Configures the meta for use.
      *
      * @param array $config Possible options are:
-     *                      - `'connection'`  _object_ : The connection instance (defaults to `null`).
      *                      - `'source'`      _string_ : The source name (defaults to `null`).
-     *                      - `'model'`       _string_ : The fully namespaced model class name (defaults to `null`).
+     *                      - `'reference'`   _string_ : The fully namespaced reference class name (defaults to `null`).
      *                      - `'locked'`      _boolean_: set the ability to dynamically add/remove fields (defaults to `false`).
      *                      - `'key'`         _string_ : The primary key value (defaults to `id`).
      *                      - `'columns'      _array_  : array of field definition where keys are field names and values are arrays
@@ -143,9 +135,8 @@ class Schema
     public function __construct($config = [])
     {
         $defaults = [
-            'connection'   => null,
             'source'       => null,
-            'model'        => Document::class,
+            'reference'    => Document::class,
             'locked'       => true,
             'columns'      => [],
             'meta'         => [],
@@ -157,7 +148,6 @@ class Schema
         $config = Set::merge($defaults, $config);
 
         $this->_classes = $config['classes'];
-        $this->_connection = $config['connection'];
         $this->_locked = $config['locked'];
         $this->_meta = $config['meta'];
         $this->_handlers = Set::merge($config['handlers'], $this->_handlers());
@@ -169,15 +159,11 @@ class Schema
 
         $this->_columns = $config['columns'];
         $this->_source = $config['source'];
-        $this->_model = $config['model'];
+        $this->_reference = $config['reference'];
         $this->_key = $config['key'];
 
         foreach ($config['columns'] as $key => $value) {
             $this->_columns[$key] = $this->_initColumn($value);
-        }
-
-        if ($this->_connection) {
-            $this->_formatters = $this->_connection->formatters();
         }
 
         $handlers = $this->_handlers;
@@ -201,28 +187,6 @@ class Schema
         $this->formatter('cast', 'boolean',  $handlers['cast']['boolean']);
         $this->formatter('cast', 'null',     $handlers['cast']['null']);
         $this->formatter('cast', 'string',   $handlers['cast']['string']);
-
-        if ($this->_connection) {
-            $this->_formatters = Set::merge($this->_formatters, $this->_connection->formatters());
-        }
-    }
-
-    /**
-     * Gets/sets the connection object to which this schema is bound.
-     *
-     * @return object    Returns a connection instance.
-     * @throws Exception Throws a `ChaosException` if a connection isn't set.
-     */
-    public function connection($connection = null)
-    {
-        if (func_num_args()) {
-            $this->_connection = $connection;
-            return $this;
-        }
-        if (!$this->_connection) {
-            throw new ChaosException("Error, missing connection for this schema.");
-        }
-        return $this->_connection;
     }
 
     /**
@@ -241,17 +205,17 @@ class Schema
     }
 
     /**
-     * Gets/sets the attached model class name.
+     * Gets/sets the attached reference class name.
      *
-     * @param  mixed $model The model class name to set to none to get the current model class name.
-     * @return mixed        The attached model class name or `$this`.
+     * @param  mixed $reference The reference class name to set to none to get the current reference class name.
+     * @return mixed        The attached reference class name or `$this`.
      */
-    public function model($model = null)
+    public function reference($reference = null)
     {
         if (!func_num_args()) {
-            return $this->_model;
+            return $this->_reference;
         }
-        $this->_model = $model;
+        $this->_reference = $reference;
         return $this;
     }
 
@@ -430,7 +394,7 @@ class Schema
         $this->bind($name, [
             'type'     => $column['array'] ? 'set' : 'entity',
             'relation' => $column['array'] ? 'hasMany' : 'hasOne',
-            'to'       => isset($column['model']) ? $column['model'] : $this->model(),
+            'to'       => isset($column['reference']) ? $column['reference'] : $this->reference(),
             'link'     => $relationship::LINK_EMBEDDED
         ]);
 
@@ -551,7 +515,7 @@ class Schema
      * Sets a BelongsTo relation.
      *
      * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
-     * @param  string  $to     The model class name to bind.
+     * @param  string  $to     The reference class name to bind.
      * @param  array   $config The configuration that should be specified in the relationship.
      *                         See the `Relationship` class for more information.
      * @return boolean
@@ -569,7 +533,7 @@ class Schema
      * Sets a hasMany relation.
      *
      * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
-     * @param  string  $to     The model class name to bind.
+     * @param  string  $to     The reference class name to bind.
      * @param  array   $config The configuration that should be specified in the relationship.
      *                         See the `Relationship` class for more information.
      * @return boolean
@@ -587,7 +551,7 @@ class Schema
      * Sets a hasOne relation.
      *
      * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
-     * @param  string  $to     The model class name to bind.
+     * @param  string  $to     The reference class name to bind.
      * @param  array   $config The configuration that should be specified in the relationship.
      *                         See the `Relationship` class for more information.
      * @return boolean
@@ -636,7 +600,7 @@ class Schema
 
         $config += [
             'type' => 'entity',
-            'from' => $this->model(),
+            'from' => $this->reference(),
             'to'   => null,
             'link' => $relationship::LINK_KEY
         ];
@@ -868,7 +832,7 @@ class Schema
         ];
         $options += $defaults;
 
-        $options['model'] = $this->model();
+        $options['reference'] = $this->reference();
         $options['schema'] = $this;
 
         if ($field) {
@@ -886,10 +850,10 @@ class Schema
             $options['basePath'] = $options['embedded'] ? $name : null;
 
             if ($options['relation'] !== 'hasManyThrough') {
-                $options['model'] = $options['to'];
+                $options['reference'] = $options['to'];
             } else {
                 $through = $this->relation($name);
-                $options['model'] = $through->to();
+                $options['reference'] = $through->to();
             }
 
             if ($options['array'] && $field) {
@@ -938,10 +902,10 @@ class Schema
             return $data;
         }
         $options['data'] = $data ? $data : [];
-        $options['schema'] = $options['model'] === Document::class ? $options['schema'] : null;
+        $options['schema'] = $options['reference'] === Document::class ? $options['schema'] : null;
 
-        $model = $options['model'];
-        return new $model($options);
+        $reference = $options['reference'];
+        return new $reference($options);
     }
 
     /**
@@ -961,9 +925,9 @@ class Schema
             $data->basePath($options['basePath']);
             return $data;
         }
-        $model = $options['model'];
+        $reference = $options['reference'];
         $options['data'] = $data ? $data : [];
-        $options['schema'] = $model::definition();
+        $options['schema'] = $reference::definition();
 
         return new $collection($options);
     }
@@ -1267,7 +1231,7 @@ class Schema
      */
     public function bulkInsert($inserts, $filter)
     {
-        throw new ChaosException("Missing `bulkInsert()` implementation for `{$this->_model}`'s schema.");
+        throw new ChaosException("Missing `bulkInsert()` implementation for `{$this->_reference}`'s schema.");
     }
 
     /**
@@ -1279,7 +1243,7 @@ class Schema
      */
     public function bulkUpdate($updates, $filter)
     {
-        throw new ChaosException("Missing `bulkUpdate()` implementation for `{$this->_model}`'s schema.");
+        throw new ChaosException("Missing `bulkUpdate()` implementation for `{$this->_reference}`'s schema.");
     }
 
     /**
@@ -1293,7 +1257,7 @@ class Schema
      */
     public function insert($data, $options = [])
     {
-        throw new ChaosException("Missing `insert()` implementation for `{$this->_model}`'s schema.");
+        throw new ChaosException("Missing `insert()` implementation for `{$this->_reference}`'s schema.");
     }
 
     /**
@@ -1309,7 +1273,7 @@ class Schema
      */
     public function update($data, $conditions = [], $options = [])
     {
-        throw new ChaosException("Missing `update()` implementation for `{$this->_model}`'s schema.");
+        throw new ChaosException("Missing `update()` implementation for `{$this->_reference}`'s schema.");
     }
 
     /**
@@ -1327,7 +1291,7 @@ class Schema
      */
     public function truncate($conditions = [], $options = [])
     {
-        throw new ChaosException("Missing `truncate()` implementation for `{$this->_model}`'s schema.");
+        throw new ChaosException("Missing `truncate()` implementation for `{$this->_reference}`'s schema.");
     }
 
 }

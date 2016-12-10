@@ -120,7 +120,7 @@ describe("Model", function() {
 
             $model = $this->model;
             $subclass = Double::classname(['extends' => $model]);
-            $entity = $model::create([], ['model' => $subclass]);
+            $entity = $model::create([], ['reference' => $subclass]);
 
             expect($entity)->toBeAnInstanceOf($subclass);
 
@@ -300,7 +300,7 @@ describe("Model", function() {
 
     describe("::definition()", function() {
 
-        it("returns the model", function() {
+        it("returns the definition", function() {
 
             $model = $this->model;
             $schema = $model::definition();
