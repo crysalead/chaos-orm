@@ -153,7 +153,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $schema = new $definition([
             'classes'     => ['entity' => Document::class] + static::$_classes,
             'conventions' => static::conventions(),
-            'reference'   => Document::class
+            'document'    => Document::class
         ]);
         $schema->locked(false);
         return $schema;
@@ -185,8 +185,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @param  array  $data    Any data that this object should be populated with initially.
      * @param  array  $options Options to be passed to item.
-     *                         - `'type'`      _string_ : can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection
-     *                         - `'reference'` _string_ : the reference class name to use to create entities.
+     *                         - `'type'`     _string_ : can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection
+     *                         - `'document'` _string_ : the document class name to use to create entities.
      * @return object          Returns a new, un-saved record or document object. In addition to
      *                         the values passed to `$data`, the object will also contain any values
      *                         assigned to the `'default'` key of each field defined in the schema.
@@ -194,15 +194,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public static function create($data = [], $options = [])
     {
         $defaults = [
-            'type'      => 'entity',
-            'reference' => static::class
+            'type'     => 'entity',
+            'document' => static::class
         ];
         $options += $defaults;
 
         $type = $options['type'];
 
         if ($type === 'entity') {
-            $classname = $options['reference'];
+            $classname = $options['document'];
         } else {
             $options['schema'] = static::definition();
             $classname = static::$_classes[$type];
@@ -258,11 +258,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     }
 
     /**
-     * Gets the reference name.
+     * Gets the document name.
      *
-     * @return string Returns the entity's reference name.
+     * @return string Returns the entity's document name.
      */
-    public function reference()
+    public function document()
     {
         return static::class;
     }

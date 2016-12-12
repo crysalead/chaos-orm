@@ -32,12 +32,12 @@ describe("Document", function() {
 
     });
 
-    describe("->reference()", function() {
+    describe("->document()", function() {
 
-        it("returns the reference class name", function() {
+        it("returns the document class name", function() {
 
             $document = new Document();
-            expect($document->reference())->toBe(Document::class);
+            expect($document->document())->toBe(Document::class);
 
         });
 

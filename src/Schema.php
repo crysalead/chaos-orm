@@ -43,7 +43,7 @@ class Schema
      *
      * @var string
      */
-    protected $_reference = null;
+    protected $_document = null;
 
     /**
      * Indicates whether the schema is locked or not.
@@ -106,7 +106,7 @@ class Schema
      *
      * @param array $config Possible options are:
      *                      - `'source'`      _string_ : The source name (defaults to `null`).
-     *                      - `'reference'`   _string_ : The fully namespaced reference class name (defaults to `null`).
+     *                      - `'document'`    _string_ : The fully namespaced document class name (defaults to `null`).
      *                      - `'locked'`      _boolean_: set the ability to dynamically add/remove fields (defaults to `false`).
      *                      - `'key'`         _string_ : The primary key value (defaults to `id`).
      *                      - `'columns'      _array_  : array of field definition where keys are field names and values are arrays
@@ -136,7 +136,7 @@ class Schema
     {
         $defaults = [
             'source'       => null,
-            'reference'    => Document::class,
+            'document'    => Document::class,
             'locked'       => true,
             'columns'      => [],
             'meta'         => [],
@@ -159,7 +159,7 @@ class Schema
 
         $this->_columns = $config['columns'];
         $this->_source = $config['source'];
-        $this->_reference = $config['reference'];
+        $this->_document = $config['document'];
         $this->_key = $config['key'];
 
         foreach ($config['columns'] as $key => $value) {
@@ -205,17 +205,17 @@ class Schema
     }
 
     /**
-     * Gets/sets the attached reference class name.
+     * Gets/sets the attached document class name.
      *
-     * @param  mixed $reference The reference class name to set to none to get the current reference class name.
-     * @return mixed        The attached reference class name or `$this`.
+     * @param  mixed $document The document class name to set to none to get the current document class name.
+     * @return mixed           The attached document class name or `$this`.
      */
-    public function reference($reference = null)
+    public function document($document = null)
     {
         if (!func_num_args()) {
-            return $this->_reference;
+            return $this->_document;
         }
-        $this->_reference = $reference;
+        $this->_document = $document;
         return $this;
     }
 
@@ -394,7 +394,7 @@ class Schema
         $this->bind($name, [
             'type'     => $column['array'] ? 'set' : 'entity',
             'relation' => $column['array'] ? 'hasMany' : 'hasOne',
-            'to'       => isset($column['reference']) ? $column['reference'] : $this->reference(),
+            'to'       => isset($column['document']) ? $column['document'] : $this->document(),
             'link'     => $relationship::LINK_EMBEDDED
         ]);
 
@@ -515,7 +515,7 @@ class Schema
      * Sets a BelongsTo relation.
      *
      * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
-     * @param  string  $to     The reference class name to bind.
+     * @param  string  $to     The document class name to bind.
      * @param  array   $config The configuration that should be specified in the relationship.
      *                         See the `Relationship` class for more information.
      * @return boolean
@@ -533,7 +533,7 @@ class Schema
      * Sets a hasMany relation.
      *
      * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
-     * @param  string  $to     The reference class name to bind.
+     * @param  string  $to     The document class name to bind.
      * @param  array   $config The configuration that should be specified in the relationship.
      *                         See the `Relationship` class for more information.
      * @return boolean
@@ -551,7 +551,7 @@ class Schema
      * Sets a hasOne relation.
      *
      * @param  string  $name   The name of the relation (i.e. field name where it will be binded).
-     * @param  string  $to     The reference class name to bind.
+     * @param  string  $to     The document class name to bind.
      * @param  array   $config The configuration that should be specified in the relationship.
      *                         See the `Relationship` class for more information.
      * @return boolean
@@ -600,7 +600,7 @@ class Schema
 
         $config += [
             'type' => 'entity',
-            'from' => $this->reference(),
+            'from' => $this->document(),
             'to'   => null,
             'link' => $relationship::LINK_KEY
         ];
@@ -832,7 +832,7 @@ class Schema
         ];
         $options += $defaults;
 
-        $options['reference'] = $this->reference();
+        $options['document'] = $this->document();
         $options['schema'] = $this;
 
         if ($field) {
@@ -850,10 +850,10 @@ class Schema
             $options['basePath'] = $options['embedded'] ? $name : null;
 
             if ($options['relation'] !== 'hasManyThrough') {
-                $options['reference'] = $options['to'];
+                $options['document'] = $options['to'];
             } else {
                 $through = $this->relation($name);
-                $options['reference'] = $through->to();
+                $options['document'] = $through->to();
             }
 
             if ($options['array'] && $field) {
@@ -902,10 +902,10 @@ class Schema
             return $data;
         }
         $options['data'] = $data ? $data : [];
-        $options['schema'] = $options['reference'] === Document::class ? $options['schema'] : null;
+        $options['schema'] = $options['document'] === Document::class ? $options['schema'] : null;
 
-        $reference = $options['reference'];
-        return new $reference($options);
+        $document = $options['document'];
+        return new $document($options);
     }
 
     /**
@@ -925,9 +925,9 @@ class Schema
             $data->basePath($options['basePath']);
             return $data;
         }
-        $reference = $options['reference'];
+        $document = $options['document'];
         $options['data'] = $data ? $data : [];
-        $options['schema'] = $reference::definition();
+        $options['schema'] = $document::definition();
 
         return new $collection($options);
     }
@@ -1231,7 +1231,7 @@ class Schema
      */
     public function bulkInsert($inserts, $filter)
     {
-        throw new ChaosException("Missing `bulkInsert()` implementation for `{$this->_reference}`'s schema.");
+        throw new ChaosException("Missing `bulkInsert()` implementation for `{$this->_document}`'s schema.");
     }
 
     /**
@@ -1243,7 +1243,7 @@ class Schema
      */
     public function bulkUpdate($updates, $filter)
     {
-        throw new ChaosException("Missing `bulkUpdate()` implementation for `{$this->_reference}`'s schema.");
+        throw new ChaosException("Missing `bulkUpdate()` implementation for `{$this->_document}`'s schema.");
     }
 
     /**
@@ -1257,7 +1257,7 @@ class Schema
      */
     public function insert($data, $options = [])
     {
-        throw new ChaosException("Missing `insert()` implementation for `{$this->_reference}`'s schema.");
+        throw new ChaosException("Missing `insert()` implementation for `{$this->_document}`'s schema.");
     }
 
     /**
@@ -1273,7 +1273,7 @@ class Schema
      */
     public function update($data, $conditions = [], $options = [])
     {
-        throw new ChaosException("Missing `update()` implementation for `{$this->_reference}`'s schema.");
+        throw new ChaosException("Missing `update()` implementation for `{$this->_document}`'s schema.");
     }
 
     /**
@@ -1291,7 +1291,7 @@ class Schema
      */
     public function truncate($conditions = [], $options = [])
     {
-        throw new ChaosException("Missing `truncate()` implementation for `{$this->_reference}`'s schema.");
+        throw new ChaosException("Missing `truncate()` implementation for `{$this->_document}`'s schema.");
     }
 
 }

@@ -97,7 +97,7 @@ class Model extends Document
             'classes'     => ['entity' => $self] + static::$_classes,
             'connection'  => static::$_connection,
             'conventions' => $conventions,
-            'reference'   => $self
+            'document'    => $self
         ];
         $config += ['source' => $conventions->apply('source', $config['classes']['entity'])];
 
@@ -126,10 +126,10 @@ class Model extends Document
      *
      * // Custom object with a dedicated class
      * $schema->column('comments', [
-     *     'type'      => 'object',
-     *     'reference' => 'Name\Space\Model\Comment',
-     *     'array'     => true,
-     *     'default'   => []
+     *     'type'     => 'object',
+     *     'document' => 'Name\Space\Model\Comment',
+     *     'array'    => true,
+     *     'default'  => []
      * ]);
      *
      * $schema->bind('tags', [

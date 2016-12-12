@@ -67,13 +67,13 @@ describe("Entity", function() {
 
     });
 
-    describe("->reference()", function() {
+    describe("->document()", function() {
 
-        it("returns the reference class name", function() {
+        it("returns the document class name", function() {
 
             $model = $this->model;
             $entity = $model::create();
-            expect($entity->reference())->toBe($model);
+            expect($entity->document())->toBe($model);
 
         });
 
@@ -374,10 +374,10 @@ describe("Entity", function() {
                 $childEntity = Double::classname(['extends' => $this->model]);
                 $childEntity::definition()->locked(false);
 
-                $schema = new Schema(['reference' => $model]);
+                $schema = new Schema(['document' => $model]);
                 $schema->column('child', [
-                    'type'      => 'object',
-                    'reference' => $childEntity
+                    'type'     => 'object',
+                    'document' => $childEntity
                 ]);
 
                 $model::definition($schema);

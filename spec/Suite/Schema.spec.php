@@ -40,7 +40,7 @@ describe("Schema", function() {
 
             $schema = new Schema([
                 'source'      => 'image',
-                'reference'   => Image::class,
+                'document'    => Image::class,
                 'key'         => 'key',
                 'locked'      => false,
                 'columns'     => ['id' => 'serial', 'age' => 'integer'],
@@ -49,7 +49,7 @@ describe("Schema", function() {
             ]);
 
             expect($schema->source())->toBe('image');
-            expect($schema->reference())->toBe(Image::class);
+            expect($schema->document())->toBe(Image::class);
             expect($schema->key())->toBe('key');
             expect($schema->locked())->toBe(false);
             expect($schema->fields())->toBe(['id', 'age']);
@@ -73,14 +73,14 @@ describe("Schema", function() {
 
     });
 
-    describe("->reference()", function() {
+    describe("->document()", function() {
 
         it("gets/sets the conventions", function() {
 
             $schema = new Schema();
 
-            expect($schema->reference(Image::class))->toBe($schema);
-            expect($schema->reference())->toBe(Image::class);
+            expect($schema->document(Image::class))->toBe($schema);
+            expect($schema->document())->toBe(Image::class);
 
         });
 
@@ -687,10 +687,10 @@ describe("Schema", function() {
 
             $model = Double::classname(['extends' => Model::class]);
 
-            $schema = new Schema(['reference' => $model]);
+            $schema = new Schema(['document' => $model]);
             $schema->column('embedded', [
-                'type'      => 'object',
-                'reference' => $model
+                'type'     => 'object',
+                'document' => $model
             ]);
 
             expect($schema->relations())->toBe([]);
