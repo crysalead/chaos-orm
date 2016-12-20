@@ -718,33 +718,12 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Deletes the data associated with the current `Model`.
      *
-     * @param array $options Options.
      * @return boolean Success.
-     * @filter
      */
-    public function delete($options = [])
+    public function delete()
     {
         $schema = $this->schema();
-        if (!$key = $schema->key()) {
-            return false;
-        }
-        $keys = [];
-
-        foreach ($this as $entity) {
-            if ($entity->exists()) {
-                $keys[] = $entity->id();
-            }
-        }
-
-        if (!$keys) {
-            return true;
-        }
-
-        if ($schema->truncate([$key => $keys])) {
-            $this->_exists = false;
-            return true;
-        }
-        return false;
+        return $schema->delete($this);
     }
 
     /**

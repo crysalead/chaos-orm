@@ -500,22 +500,13 @@ class Model extends Document
     /**
      * Deletes the data associated with the current `Model`.
      *
-     * @param array $options Options.
      * @return boolean Success.
      * @filter
      */
-    public function delete($options = [])
+    public function delete()
     {
         $schema = $this->schema();
-        if ((!$key = $schema->key()) || $this->exists() === false) {
-            return false;
-        }
-        if($schema->truncate([$key => $this->id()])) {
-            $this->_exists = false;
-            $this->_persisted = [];
-            return true;
-        }
-        return false;
+        return $schema->delete($this);
     }
 
     /**

@@ -5,7 +5,6 @@ use Iterator;
 use DateTime;
 use Lead\Set\Set;
 use Chaos\ChaosException;
-use Chaos\Model;
 
 class Schema
 {
@@ -1150,7 +1149,7 @@ class Schema
             $whitelist = $options['whitelist'];
         }
 
-        $collection = $instance instanceof Model ? [$instance] : $instance;
+        $collection = $instance instanceof Document ? [$instance] : $instance;
 
         $inserts = [];
         $updates = [];
@@ -1195,7 +1194,7 @@ class Schema
         $options += $defaults;
         $types = (array) $types;
 
-        $collection = $instance instanceof Model ? [$instance] : $instance;
+        $collection = $instance instanceof Document ? [$instance] : $instance;
 
         $success = true;
         foreach ($collection as $entity) {
@@ -1209,6 +1208,44 @@ class Schema
             }
         }
         return $success;
+    }
+
+    /**
+     * Deletes the data associated with the current `Model`.
+     *
+     * @param  object  $instance The entity or collection instance to save.
+     * @return boolan            Return `true` on success `false` otherwise.
+     */
+    public function delete($instance)
+    {
+        $collection = $instance instanceof Document ? [$instance] : $instance;
+
+        $key = $this->key();
+        if (!$key) {
+          throw new ChaosException("No primary key has been defined for `" + instance.self() + "`'s schema.");
+        }
+
+        $keys = [];
+
+        foreach ($collection as $entity) {
+            if ($entity->exists()) {
+                $keys[] = $entity->id();
+            }
+        }
+
+        if (!$keys) {
+            return true;
+        }
+
+        if (!$this->truncate([$key => (count($keys) ===1 ? $keys[0] : $keys)])) {
+            return false;
+        }
+
+        foreach ($collection as $entity) {
+            $entity->sync(null, [], ['exists' => false]);
+        }
+
+        return true;
     }
 
     /**
@@ -1247,36 +1284,6 @@ class Schema
     }
 
     /**
-     * Inserts a records with the given data.
-     *
-     * @param  mixed   $data       Typically an array of key/value pairs that specify the new data with which
-     *                             the records will be updated. For SQL databases, this can optionally be
-     *                             an SQL fragment representing the `SET` clause of an `UPDATE` query.
-     * @param  array   $options    Any database-specific options to use when performing the operation.
-     * @return boolean             Returns `true` if the update operation succeeded, otherwise `false`.
-     */
-    public function insert($data, $options = [])
-    {
-        throw new ChaosException("Missing `insert()` implementation for `{$this->_reference}`'s schema.");
-    }
-
-    /**
-     * Updates multiple records with the given data, restricted by the given set of criteria (optional).
-     *
-     * @param  mixed $data       Typically an array of key/value pairs that specify the new data with which
-     *                           the records will be updated. For SQL databases, this can optionally be
-     *                           an SQL fragment representing the `SET` clause of an `UPDATE` query.
-     * @param  mixed $conditions An array of key/value pairs representing the scope of the records
-     *                           to be updated.
-     * @param  array $options    Any database-specific options to use when performing the operation.
-     * @return boolean           Returns `true` if the update operation succeeded, otherwise `false`.
-     */
-    public function update($data, $conditions = [], $options = [])
-    {
-        throw new ChaosException("Missing `update()` implementation for `{$this->_reference}`'s schema.");
-    }
-
-    /**
      * Removes multiple documents or records based on a given set of criteria. **WARNING**: If no
      * criteria are specified, or if the criteria (`$conditions`) is an empty value (i.e. an empty
      * array or `null`), all the data in the backend data source (i.e. table or collection) _will_
@@ -1284,12 +1291,9 @@ class Schema
      *
      * @param mixed    $conditions An array of key/value pairs representing the scope of the records or
      *                             documents to be deleted.
-     * @param array    $options    Any database-specific options to use when performing the operation. See
-     *                             the `truncate()` method of the corresponding backend database for available
-     *                             options.
      * @return boolean             Returns `true` if the remove operation succeeded, otherwise `false`.
      */
-    public function truncate($conditions = [], $options = [])
+    public function truncate($conditions = [])
     {
         throw new ChaosException("Missing `truncate()` implementation for `{$this->_reference}`'s schema.");
     }
