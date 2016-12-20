@@ -1,5 +1,5 @@
 {
-    "name": "crysalead/chaos",
+    "name": "crysalead/chaos-orm",
     "description": "Data Abstraction Layer.",
     "keywords": ["Data Abstraction", "DataMapper", "ORM", "Model"],
     "license": "MIT",
