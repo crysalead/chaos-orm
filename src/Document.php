@@ -153,7 +153,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $schema = new $definition([
             'classes'     => ['entity' => Document::class] + static::$_classes,
             'conventions' => static::conventions(),
-            'document'    => Document::class
+            'class'       => Document::class
         ]);
         $schema->locked(false);
         return $schema;
@@ -185,8 +185,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @param  array  $data    Any data that this object should be populated with initially.
      * @param  array  $options Options to be passed to item.
-     *                         - `'type'`     _string_ : can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection
-     *                         - `'document'` _string_ : the document class name to use to create entities.
+     *                         - `'type'`  _string_ : can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection
+     *                         - `'class'` _string_ : the document class name to use to create entities.
      * @return object          Returns a new, un-saved record or document object. In addition to
      *                         the values passed to `$data`, the object will also contain any values
      *                         assigned to the `'default'` key of each field defined in the schema.
@@ -194,15 +194,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public static function create($data = [], $options = [])
     {
         $defaults = [
-            'type'     => 'entity',
-            'document' => static::class
+            'type'  => 'entity',
+            'class' => static::class
         ];
         $options += $defaults;
 
         $type = $options['type'];
 
         if ($type === 'entity') {
-            $classname = $options['document'];
+            $classname = $options['class'];
         } else {
             $options['schema'] = static::definition();
             $classname = static::$_classes[$type];

@@ -120,7 +120,7 @@ describe("Model", function() {
 
             $model = $this->model;
             $subclass = Double::classname(['extends' => $model]);
-            $entity = $model::create([], ['document' => $subclass]);
+            $entity = $model::create([], ['class' => $subclass]);
 
             expect($entity)->toBeAnInstanceOf($subclass);
 

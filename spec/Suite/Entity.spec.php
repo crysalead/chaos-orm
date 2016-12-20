@@ -374,10 +374,10 @@ describe("Entity", function() {
                 $childEntity = Double::classname(['extends' => $this->model]);
                 $childEntity::definition()->locked(false);
 
-                $schema = new Schema(['document' => $model]);
+                $schema = new Schema(['class' => $model]);
                 $schema->column('child', [
-                    'type'     => 'object',
-                    'document' => $childEntity
+                    'type'  => 'object',
+                    'class' => $childEntity
                 ]);
 
                 $model::definition($schema);
