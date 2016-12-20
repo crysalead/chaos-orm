@@ -32,12 +32,12 @@ describe("Document", function() {
 
     });
 
-    describe("->document()", function() {
+    describe("->self()", function() {
 
         it("returns the document class name", function() {
 
             $document = new Document();
-            expect($document->document())->toBe(Document::class);
+            expect($document->self())->toBe(Document::class);
 
         });
 

@@ -67,13 +67,13 @@ describe("Entity", function() {
 
     });
 
-    describe("->document()", function() {
+    describe("->self()", function() {
 
-        it("returns the document class name", function() {
+        it("returns the entity class name", function() {
 
             $model = $this->model;
             $entity = $model::create();
-            expect($entity->document())->toBe($model);
+            expect($entity->self())->toBe($model);
 
         });
 

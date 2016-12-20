@@ -262,7 +262,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return string Returns the entity's document name.
      */
-    public function document()
+    public function self()
     {
         return static::class;
     }
