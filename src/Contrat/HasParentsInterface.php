@@ -1,5 +1,5 @@
 <?php
-namespace Chaos\Contrat;
+namespace Chaos\ORM\Contrat;
 
 interface HasParentsInterface
 {

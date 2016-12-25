@@ -1,9 +1,9 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ChaosException;
 use stdClass;
-use Chaos\Map;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Map;
 
 describe("Map", function() {
 

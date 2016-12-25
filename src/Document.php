@@ -1,13 +1,13 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 use Traversable;
 use ArrayAccess;
-use Chaos\Contrat\DataStoreInterface;
-use Chaos\Contrat\HasParentsInterface;
+use Chaos\ORM\Contrat\DataStoreInterface;
+use Chaos\ORM\Contrat\HasParentsInterface;
 
 use Lead\Set\Set;
-use Chaos\Collection\Collection;
+use Chaos\ORM\Collection\Collection;
 
 class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess, \Iterator, \Countable
 {
@@ -23,7 +23,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @var string
      */
-    protected static $_definition = 'Chaos\Schema';
+    protected static $_definition = 'Chaos\ORM\Schema';
 
     /**
      * Class dependencies.
@@ -31,10 +31,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @var array
      */
     protected static $_classes = [
-        'collector'   => 'Chaos\Collector',
-        'set'         => 'Chaos\Collection\Collection',
-        'through'     => 'Chaos\Collection\Through',
-        'conventions' => 'Chaos\Conventions'
+        'collector'   => 'Chaos\ORM\Collector',
+        'set'         => 'Chaos\ORM\Collection\Collection',
+        'through'     => 'Chaos\ORM\Collection\Through',
+        'conventions' => 'Chaos\ORM\Conventions'
     ];
 
     /**

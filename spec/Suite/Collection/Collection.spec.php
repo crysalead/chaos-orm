@@ -1,11 +1,11 @@
 <?php
-namespace Chaos\Spec\Suite\Collection;
+namespace Chaos\ORM\Spec\Suite\Collection;
 
 use InvalidArgumentException;
-use Chaos\Model;
-use Chaos\Schema;
-use Chaos\Document;
-use Chaos\Collection\Collection;
+use Chaos\ORM\Model;
+use Chaos\ORM\Schema;
+use Chaos\ORM\Document;
+use Chaos\ORM\Collection\Collection;
 
 use Kahlan\Plugin\Double;
 

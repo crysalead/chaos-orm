@@ -1,11 +1,11 @@
 <?php
-namespace Chaos\Database\Spec\Suite;
+namespace Chaos\ORM\Database\Spec\Suite;
 
 use DateTime;
 use DateTimeZone;
-use Chaos\Source;
-use Chaos\Document;
-use Chaos\Collection\Collection;
+use Chaos\ORM\Source;
+use Chaos\ORM\Document;
+use Chaos\ORM\Collection\Collection;
 
 describe("Source", function() {
 

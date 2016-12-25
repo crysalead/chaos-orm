@@ -1,18 +1,18 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use Chaos\Schema;
-use Chaos\Model;
+use Chaos\ORM\Schema;
+use Chaos\ORM\Model;
 
 use Kahlan\Plugin\Double;
 
-use Chaos\Spec\Fixture\Model\Gallery;
-use Chaos\Spec\Fixture\Model\Image;
-use Chaos\Spec\Fixture\Model\ImageTag;
-use Chaos\Spec\Fixture\Model\Tag;
+use Chaos\ORM\Spec\Fixture\Model\Gallery;
+use Chaos\ORM\Spec\Fixture\Model\Image;
+use Chaos\ORM\Spec\Fixture\Model\ImageTag;
+use Chaos\ORM\Spec\Fixture\Model\Tag;
 
 describe("Schema", function() {
 
@@ -857,7 +857,7 @@ describe("Schema", function() {
             expect($image->name)->toBe('image.jpg');
             expect($image->title)->toBe('My Image');
             expect($image->score)->toBe(8.9);
-            expect($image->tags)->toBeAnInstanceOf('Chaos\Collection\Through');
+            expect($image->tags)->toBeAnInstanceOf('Chaos\ORM\Collection\Through');
             expect($image->tags->schema())->toBe(Tag::definition());
             expect($image->tags[0]->data())->toEqual(['id' => '1', 'name' => 'landscape']);
             expect($image->tags[1]->data())->toEqual(['id' => '2', 'name' => 'mountain']);

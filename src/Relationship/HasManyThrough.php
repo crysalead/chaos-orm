@@ -1,16 +1,16 @@
 <?php
-namespace Chaos\Relationship;
+namespace Chaos\ORM\Relationship;
 
 use Lead\Set\Set;
-use Chaos\ChaosException;
-use Chaos\Model;
-use Chaos\Collection\Through;
-use Chaos\Conventions;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Model;
+use Chaos\ORM\Collection\Through;
+use Chaos\ORM\Conventions;
 
 /**
  * The `HasManyThrough` relationship.
  */
-class HasManyThrough extends \Chaos\Relationship
+class HasManyThrough extends \Chaos\ORM\Relationship
 {
     /**
      * The relation name of the pivot.
@@ -29,7 +29,7 @@ class HasManyThrough extends \Chaos\Relationship
     /**
      * Constructs an object that represents a relationship between two model classes.
      *
-     * @see Chaos\Relationship
+     * @see Chaos\ORM\Relationship
      * @param array $config The relationship's configuration, which defines how the two models in
      *                      question are bound. The available options are:
      *                      - `'name'`        _string_ : The field name used for accessing the related data.

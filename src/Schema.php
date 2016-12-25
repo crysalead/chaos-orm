@@ -1,10 +1,10 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 use Iterator;
 use DateTime;
 use Lead\Set\Set;
-use Chaos\ChaosException;
+use Chaos\ORM\ChaosException;
 
 class Schema
 {
@@ -14,13 +14,13 @@ class Schema
      * @var array
      */
     protected $_classes = [
-        'set'            => 'Chaos\Collection\Collection',
-        'through'        => 'Chaos\Collection\Through',
-        'relationship'   => 'Chaos\Relationship',
-        'belongsTo'      => 'Chaos\Relationship\BelongsTo',
-        'hasOne'         => 'Chaos\Relationship\HasOne',
-        'hasMany'        => 'Chaos\Relationship\HasMany',
-        'hasManyThrough' => 'Chaos\Relationship\HasManyThrough'
+        'set'            => 'Chaos\ORM\Collection\Collection',
+        'through'        => 'Chaos\ORM\Collection\Through',
+        'relationship'   => 'Chaos\ORM\Relationship',
+        'belongsTo'      => 'Chaos\ORM\Relationship\BelongsTo',
+        'hasOne'         => 'Chaos\ORM\Relationship\HasOne',
+        'hasMany'        => 'Chaos\ORM\Relationship\HasMany',
+        'hasManyThrough' => 'Chaos\ORM\Relationship\HasManyThrough'
     ];
 
     /**
@@ -589,7 +589,7 @@ class Schema
      *
      * @param  string    $name   The name of the relation (i.e. field name where it will be binded).
      * @param  array     $config The configuration that should be specified in the relationship.
-     *                           See the `Chaos\Relationship` class for more information.
+     *                           See the `Chaos\ORM\Relationship` class for more information.
      * @return boolean
      * @throws Exception         Throws a `ChaosException` if the config has no type option defined.
      */

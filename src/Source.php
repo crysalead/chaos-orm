@@ -1,5 +1,5 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 use DateTime;
 use Lead\Set\Set;

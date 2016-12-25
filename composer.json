@@ -16,12 +16,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Chaos\\": "src/"
+            "Chaos\\ORM\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Chaos\\Spec\\": "spec/"
+            "Chaos\\ORM\\Spec\\": "spec/"
         }
     },
     "config": {

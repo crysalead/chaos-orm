@@ -1,5 +1,5 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 /**
  * The `Map` class can store object by key.

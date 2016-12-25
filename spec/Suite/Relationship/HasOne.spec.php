@@ -1,16 +1,16 @@
 <?php
-namespace Chaos\Spec\Suite\Relationship;
+namespace Chaos\ORM\Spec\Suite\Relationship;
 
-use Chaos\ChaosException;
-use Chaos\Model;
-use Chaos\Relationship;
-use Chaos\Relationship\HasOne;
-use Chaos\Conventions;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Model;
+use Chaos\ORM\Relationship;
+use Chaos\ORM\Relationship\HasOne;
+use Chaos\ORM\Conventions;
 
 use Kahlan\Plugin\Stub;
 
-use Chaos\Spec\Fixture\Model\Gallery;
-use Chaos\Spec\Fixture\Model\GalleryDetail;
+use Chaos\ORM\Spec\Fixture\Model\Gallery;
+use Chaos\ORM\Spec\Fixture\Model\GalleryDetail;
 
 describe("HasOne", function() {
 
@@ -42,7 +42,7 @@ describe("HasOne", function() {
             expect($relation->to())->toBe(GalleryDetail::class);
             expect($relation->link())->toBe(Relationship::LINK_KEY);
             expect($relation->fields())->toBe(true);
-            expect($relation->conventions())->toBeAnInstanceOf('chaos\Conventions');
+            expect($relation->conventions())->toBeAnInstanceOf('Chaos\ORM\Conventions');
 
         });
 

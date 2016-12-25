@@ -1,15 +1,15 @@
 <?php
-namespace Chaos\Collection;
+namespace Chaos\ORM\Collection;
 
 use ArrayAccess;
 use Traversable;
-use Chaos\Contrat\DataStoreInterface;
-use Chaos\Contrat\HasParentsInterface;
+use Chaos\ORM\Contrat\DataStoreInterface;
+use Chaos\ORM\Contrat\HasParentsInterface;
 
 use InvalidArgumentException;
-use Chaos\ChaosException;
-use Chaos\Document;
-use Chaos\Map;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Document;
+use Chaos\ORM\Map;
 
 /**
  * `Collection` provide context-specific features for working with sets of data persisted by a backend data store.
@@ -29,7 +29,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @var array
      */
     protected $_classes = [
-        'collector' => 'Chaos\Collector'
+        'collector' => 'Chaos\ORM\Collector'
     ];
 
     /**

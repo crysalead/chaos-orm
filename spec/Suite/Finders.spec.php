@@ -1,8 +1,8 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ChaosException;
-use Chaos\Finders;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Finders;
 
 use Kahlan\Plugin\Double;
 

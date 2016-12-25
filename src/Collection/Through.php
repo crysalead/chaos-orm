@@ -1,11 +1,11 @@
 <?php
-namespace Chaos\Collection;
+namespace Chaos\ORM\Collection;
 
-use Chaos\Contrat\DataStoreInterface;
-use Chaos\Contrat\HasParentsInterface;
+use Chaos\ORM\Contrat\DataStoreInterface;
+use Chaos\ORM\Contrat\HasParentsInterface;
 
-use Chaos\ChaosException;
-use Chaos\Collection\Collection;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Collection\Collection;
 
 /**
  * `Through` provide context-specific features for working with sets of data persisted by a backend data store.

@@ -1,5 +1,5 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 /**
  * `Finders` can stores closures for configuring queries.

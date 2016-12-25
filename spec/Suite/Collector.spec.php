@@ -1,8 +1,8 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ChaosException;
-use Chaos\Collector;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Collector;
 
 describe("Collector", function() {
 

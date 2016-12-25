@@ -1,22 +1,22 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use Chaos\ChaosException;
-use Chaos\Model;
-use Chaos\Schema;
-use Chaos\Collection\Collection;
-use Chaos\Collection\Through;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Model;
+use Chaos\ORM\Schema;
+use Chaos\ORM\Collection\Collection;
+use Chaos\ORM\Collection\Through;
 
 use Kahlan\Plugin\Double;
 
-use Chaos\Spec\Fixture\Model\Gallery;
-use Chaos\Spec\Fixture\Model\GalleryDetail;
-use Chaos\Spec\Fixture\Model\Image;
-use Chaos\Spec\Fixture\Model\ImageTag;
-use Chaos\Spec\Fixture\Model\Tag;
+use Chaos\ORM\Spec\Fixture\Model\Gallery;
+use Chaos\ORM\Spec\Fixture\Model\GalleryDetail;
+use Chaos\ORM\Spec\Fixture\Model\Image;
+use Chaos\ORM\Spec\Fixture\Model\ImageTag;
+use Chaos\ORM\Spec\Fixture\Model\Tag;
 
 describe("Entity", function() {
 

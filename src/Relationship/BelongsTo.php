@@ -1,18 +1,18 @@
 <?php
-namespace Chaos\Relationship;
+namespace Chaos\ORM\Relationship;
 
 use Lead\Set\Set;
-use Chaos\ChaosException;
+use Chaos\ORM\ChaosException;
 
 /**
  * The `BelongsTo` relationship.
  */
-class BelongsTo extends \Chaos\Relationship
+class BelongsTo extends \Chaos\ORM\Relationship
 {
     /**
      * Constructs an object that represents a relationship between two model classes.
      *
-     * @see Chaos\Relationship
+     * @see Chaos\ORM\Relationship
      */
     public function __construct($config = [])
     {

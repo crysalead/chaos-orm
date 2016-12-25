@@ -1,10 +1,10 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 use Iterator;
 use Lead\Set\Set;
-use Chaos\Document;
-use Chaos\collection\Collection;
+use Chaos\ORM\Document;
+use Chaos\ORM\collection\Collection;
 
 class Model extends Document
 {
@@ -27,7 +27,7 @@ class Model extends Document
      *
      * @var string
      */
-    protected static $_definition = 'Chaos\Schema';
+    protected static $_definition = 'Chaos\ORM\Schema';
 
     /**
      * Class dependencies.
@@ -35,11 +35,11 @@ class Model extends Document
      * @var array
      */
     protected static $_classes = [
-        'collector'   => 'Chaos\Collector',
-        'set'         => 'Chaos\Collection\Collection',
-        'through'     => 'Chaos\Collection\Through',
-        'conventions' => 'Chaos\Conventions',
-        'finders'     => 'Chaos\Finders',
+        'collector'   => 'Chaos\ORM\Collector',
+        'set'         => 'Chaos\ORM\Collection\Collection',
+        'through'     => 'Chaos\ORM\Collection\Through',
+        'conventions' => 'Chaos\ORM\Conventions',
+        'finders'     => 'Chaos\ORM\Finders',
         'validator'   => 'Lead\Validator\Validator'
     ];
 

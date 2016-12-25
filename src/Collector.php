@@ -1,5 +1,5 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 /**
  * The `Collector` class ensures single references of objects through the Identity Map pattern.

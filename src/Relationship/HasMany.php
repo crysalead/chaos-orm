@@ -1,15 +1,15 @@
 <?php
-namespace Chaos\Relationship;
+namespace Chaos\ORM\Relationship;
 
 use Traversable;
 use Lead\Set\Set;
-use Chaos\ChaosException;
-use Chaos\Model;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Model;
 
 /**
  * The `HasMany` relationship.
  */
-class HasMany extends \Chaos\Relationship
+class HasMany extends \Chaos\ORM\Relationship
 {
     /**
      * Indicates whether the relation is a junction table or not.
@@ -21,7 +21,7 @@ class HasMany extends \Chaos\Relationship
     /**
      * Constructs an object that represents a relationship between two model classes.
      *
-     * @see Chaos\Relationship
+     * @see Chaos\ORM\Relationship
      * @param array $config The relationship's configuration, which defines how the two models in
      *                      question are bound. The available options are:
      *                      - `'junction'` _boolean_ : Indicates whether the relation is a junction table or not.

@@ -1,9 +1,9 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ChaosException;
-use Chaos\Model;
-use Chaos\Conventions;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Model;
+use Chaos\ORM\Conventions;
 
 describe("Conventions", function() {
 

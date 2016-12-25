@@ -1,8 +1,7 @@
 <?php
-namespace Chaos;
+namespace Chaos\ORM;
 
 use Lead\Set\Set;
-use Chaos\Map;
 
 /**
  * The `Relationship` class encapsulates the data and functionality necessary to link two model together.

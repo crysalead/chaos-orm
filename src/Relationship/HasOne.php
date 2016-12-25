@@ -1,13 +1,13 @@
 <?php
-namespace Chaos\Relationship;
+namespace Chaos\ORM\Relationship;
 
 use Lead\Set\Set;
-use Chaos\ChaosException;
+use Chaos\ORM\ChaosException;
 
 /**
  * The `HasOne` relationship.
  */
-class HasOne extends \Chaos\Relationship
+class HasOne extends \Chaos\ORM\Relationship
 {
     /**
      * Expands a collection of entities by adding their related data.

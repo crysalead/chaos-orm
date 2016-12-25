@@ -1,12 +1,12 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use Chaos\ChaosException;
-use Chaos\Document;
-use Chaos\Schema;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Document;
+use Chaos\ORM\Schema;
 
 use Kahlan\Plugin\Stub;
 

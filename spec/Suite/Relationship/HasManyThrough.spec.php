@@ -1,17 +1,17 @@
 <?php
-namespace Chaos\Spec\Suite\Relationship;
+namespace Chaos\ORM\Spec\Suite\Relationship;
 
-use Chaos\ChaosException;
-use Chaos\Model;
-use Chaos\Relationship;
-use Chaos\Relationship\HasManyThrough;
-use Chaos\Conventions;
+use Chaos\ORM\ChaosException;
+use Chaos\ORM\Model;
+use Chaos\ORM\Relationship;
+use Chaos\ORM\Relationship\HasManyThrough;
+use Chaos\ORM\Conventions;
 
 use Kahlan\Plugin\Stub;
 
-use Chaos\Spec\Fixture\Model\Image;
-use Chaos\Spec\Fixture\Model\ImageTag;
-use Chaos\Spec\Fixture\Model\Tag;
+use Chaos\ORM\Spec\Fixture\Model\Image;
+use Chaos\ORM\Spec\Fixture\Model\ImageTag;
+use Chaos\ORM\Spec\Fixture\Model\Tag;
 
 describe("HasManyThrough", function() {
 
@@ -52,7 +52,7 @@ describe("HasManyThrough", function() {
             expect($relation->link())->toBe(Relationship::LINK_KEY);
             expect($relation->fields())->toBe(true);
             expect($relation->strategy())->toBe(null);
-            expect($relation->conventions())->toBeAnInstanceOf('chaos\Conventions');
+            expect($relation->conventions())->toBeAnInstanceOf('Chaos\ORM\Conventions');
 
         });
 

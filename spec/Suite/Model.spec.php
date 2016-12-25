@@ -1,12 +1,12 @@
 <?php
-namespace Chaos\Spec\Suite;
+namespace Chaos\ORM\Spec\Suite;
 
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use Chaos\Model;
-use Chaos\Schema;
-use Chaos\Collection\Collection;
+use Chaos\ORM\Model;
+use Chaos\ORM\Schema;
+use Chaos\ORM\Collection\Collection;
 
 use Kahlan\Plugin\Double;
 
@@ -304,7 +304,7 @@ describe("Model", function() {
 
             $model = $this->model;
             $schema = $model::definition();
-            expect($schema)->toBeAnInstanceOf('chaos\Schema');
+            expect($schema)->toBeAnInstanceOf('Chaos\ORM\Schema');
             expect($schema)->toBe($model::definition());
 
         });
