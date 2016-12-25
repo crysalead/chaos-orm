@@ -362,7 +362,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @param  pbject $parent The parent instance to unset.
      * @return self
      */
-    public function removeParent($parent)
+    public function unsetParent($parent)
     {
         $this->_parents->remove($parent);
         if ($this->_parents->count() === 0) {
@@ -547,7 +547,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $value->setParent($this, $name);
         }
         if ($previous instanceof HasParentsInterface) {
-            $previous->removeParent($this);
+            $previous->unsetParent($this);
         }
     }
 
@@ -623,7 +623,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
         $value = $this->_data[$name];
         if ($value instanceof HasParentsInterface) {
-            $value->removeParent($this);
+            $value->unsetParent($this);
         }
         $this->_skipNext = $name === key($this->_data);
         unset($this->_data[$name]);

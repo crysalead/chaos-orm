@@ -123,9 +123,9 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * @param  pbject $parent The parent instance to remove.
      * @return self
      */
-    public function removeParent($parent)
+    public function unsetParent($parent)
     {
-        $this->_parent->{$this->_through}->removeParent($parent);
+        $this->_parent->{$this->_through}->unsetParent($parent);
         return $this;
     }
 

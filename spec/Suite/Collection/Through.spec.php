@@ -71,7 +71,7 @@ describe("Through", function() {
 
     });
 
-    describe("->removeParent()", function() {
+    describe("->unsetParent()", function() {
 
         it("removes a parent", function() {
 

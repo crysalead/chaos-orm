@@ -56,7 +56,7 @@ describe("Document", function() {
         });
     });
 
-    describe("->removeParent()", function() {
+    describe("->unsetParent()", function() {
 
         it("unsets a parent", function() {
 
