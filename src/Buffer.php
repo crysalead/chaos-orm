@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\ORM;
 
+use ArrayIterator;
 use IteratorAggregate;
 
 /**
@@ -34,7 +35,8 @@ class Buffer implements IteratorAggregate
      */
     public function getIterator()
     {
-        return $this->get();
+        $data = $this->get();
+        return is_array($data) ? new ArrayIterator($data) : $data;
     }
 
     /**
