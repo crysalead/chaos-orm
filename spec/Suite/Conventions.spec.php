@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Conventions;
 
@@ -102,7 +102,7 @@ describe("Conventions", function() {
                 $conventions->get('unexisting');
             };
 
-            expect($closure)->toThrow(new ChaosException);
+            expect($closure)->toThrow(new ORMException);
 
         });
 

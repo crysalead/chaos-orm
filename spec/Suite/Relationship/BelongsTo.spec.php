@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite\Relationship;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Relationship;
 use Chaos\ORM\Relationship\BelongsTo;
@@ -53,7 +53,7 @@ describe("BelongsTo", function() {
                     'to'   => Gallery::class
                 ]);
             };
-            expect($closure)->toThrow(new ChaosException("The relationship `'from'` option can't be empty."));
+            expect($closure)->toThrow(new ORMException("The relationship `'from'` option can't be empty."));
 
         });
 
@@ -64,7 +64,7 @@ describe("BelongsTo", function() {
                     'from' => Image::class
                 ]);
             };
-            expect($closure)->toThrow(new ChaosException("The relationship `'to'` option can't be empty."));
+            expect($closure)->toThrow(new ORMException("The relationship `'to'` option can't be empty."));
 
         });
 
@@ -212,7 +212,7 @@ describe("BelongsTo", function() {
                 $belongsTo->broadcast($image);
             };
 
-            expect($closure)->toThrow(new ChaosException("The `'id'` key is missing from related data."));
+            expect($closure)->toThrow(new ORMException("The `'id'` key is missing from related data."));
 
         });
 

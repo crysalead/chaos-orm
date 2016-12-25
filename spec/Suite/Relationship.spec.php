@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 
 use Chaos\ORM\Spec\Fixture\Model\Image;
 use Chaos\ORM\Spec\Fixture\Model\ImageTag;
@@ -63,7 +63,7 @@ describe("Relationship", function() {
                 $relation->counterpart();
             };
 
-            expect($closure)->toThrow(new ChaosException("Ambiguous belongsTo counterpart relationship for `Chaos\ORM\Spec\Fixture\Model\Image`. Apply the Single Table Inheritance pattern to get unique models."));
+            expect($closure)->toThrow(new ORMException("Ambiguous belongsTo counterpart relationship for `Chaos\ORM\Spec\Fixture\Model\Image`. Apply the Single Table Inheritance pattern to get unique models."));
 
         });
 

@@ -2,7 +2,7 @@
 namespace Chaos\ORM\Relationship;
 
 use Lead\Set\Set;
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Collection\Through;
 use Chaos\ORM\Conventions;
@@ -64,7 +64,7 @@ class HasManyThrough extends \Chaos\ORM\Relationship
 
         foreach (['from', 'through', 'using'] as $value) {
             if (!$config[$value]) {
-                throw new ChaosException("The relationship `'{$value}'` option can't be empty.");
+                throw new ORMException("The relationship `'{$value}'` option can't be empty.");
             }
         }
 

@@ -4,7 +4,7 @@ namespace Chaos\ORM\Spec\Suite;
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Collection\Collection;
@@ -61,7 +61,7 @@ describe("Entity", function() {
                 ], ['exists' => null]);
             };
 
-            expect($closure)->toThrow(new ChaosException("The entity id:`1` doesn't exists."));
+            expect($closure)->toThrow(new ORMException("The entity id:`1` doesn't exists."));
 
         });
 
@@ -122,7 +122,7 @@ describe("Entity", function() {
                 ]);
                 $entity->id();
             };
-            expect($closure)->toThrow(new ChaosException("No primary key has been defined for `{$model}`'s schema."));
+            expect($closure)->toThrow(new ORMException("No primary key has been defined for `{$model}`'s schema."));
             $model::reset();
 
         });
@@ -134,7 +134,7 @@ describe("Entity", function() {
                 $entity = $model::create([], ['exists' => true]);
                 $entity->id();
             };
-            expect($closure)->toThrow(new ChaosException("Existing entities must have a valid ID."));
+            expect($closure)->toThrow(new ORMException("Existing entities must have a valid ID."));
 
         });
 
@@ -326,7 +326,7 @@ describe("Entity", function() {
                 $image->set('a.nested.value', 'hello');
             };
 
-            expect($closure)->toThrow(new ChaosException('Missing schema definition for field: `a`.'));
+            expect($closure)->toThrow(new ORMException('Missing schema definition for field: `a`.'));
 
         });
 

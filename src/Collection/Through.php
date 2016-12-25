@@ -4,7 +4,7 @@ namespace Chaos\ORM\Collection;
 use Chaos\ORM\Contrat\DataStoreInterface;
 use Chaos\ORM\Contrat\HasParentsInterface;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Collection\Collection;
 
 /**
@@ -68,7 +68,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
 
         foreach (['parent', 'schema', 'through', 'using'] as $name) {
             if (!$config[$name]) {
-                throw new ChaosException("Invalid through collection, `'{$name}'` is empty.");
+                throw new ORMException("Invalid through collection, `'{$name}'` is empty.");
             }
             $key = '_' . $name;
             $this->{$key} = $config[$name];

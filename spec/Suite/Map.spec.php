@@ -2,7 +2,7 @@
 namespace Chaos\ORM\Spec\Suite;
 
 use stdClass;
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Map;
 
 describe("Map", function() {
@@ -25,7 +25,7 @@ describe("Map", function() {
         $map->get(new stdClass());
       };
 
-      expect($closure)->toThrow(new ChaosException("No collected data associated to the key."));
+      expect($closure)->toThrow(new ORMException("No collected data associated to the key."));
 
     });
 

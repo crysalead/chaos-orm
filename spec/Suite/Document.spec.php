@@ -4,7 +4,7 @@ namespace Chaos\ORM\Spec\Suite;
 use stdClass;
 use DateTime;
 use InvalidArgumentException;
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Document;
 use Chaos\ORM\Schema;
 
@@ -219,7 +219,7 @@ describe("Document", function() {
                 $document = new Document();
                 $document->get('');
             };
-            expect($closure)->toThrow(new ChaosException("Field name can't be empty."));
+            expect($closure)->toThrow(new ORMException("Field name can't be empty."));
 
         });
 
@@ -307,7 +307,7 @@ describe("Document", function() {
                 $document = new Document();
                 $document[] = 'foo';
             };
-            expect($closure)->toThrow(new ChaosException("Field name can't be empty."));
+            expect($closure)->toThrow(new ORMException("Field name can't be empty."));
 
         });
 

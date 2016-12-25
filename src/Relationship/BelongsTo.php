@@ -2,7 +2,7 @@
 namespace Chaos\ORM\Relationship;
 
 use Lead\Set\Set;
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 
 /**
  * The `BelongsTo` relationship.
@@ -85,7 +85,7 @@ class BelongsTo extends \Chaos\ORM\Relationship
 
         $conditions = [];
         if (!isset($related->{$to})) {
-            throw new ChaosException("The `'{$to}'` key is missing from related data.");
+            throw new ORMException("The `'{$to}'` key is missing from related data.");
         }
         $conditions[$from] = $related->{$to};
 

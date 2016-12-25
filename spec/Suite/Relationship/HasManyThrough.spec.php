@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite\Relationship;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Relationship;
 use Chaos\ORM\Relationship\HasManyThrough;
@@ -64,7 +64,7 @@ describe("HasManyThrough", function() {
                     'using'   => 'tag'
                 ]);
             };
-            expect($closure)->toThrow(new ChaosException("The relationship `'from'` option can't be empty."));
+            expect($closure)->toThrow(new ORMException("The relationship `'from'` option can't be empty."));
 
         });
 
@@ -77,7 +77,7 @@ describe("HasManyThrough", function() {
                 ]);
             };
 
-            expect($closure)->toThrow(new ChaosException("The relationship `'through'` option can't be empty."));
+            expect($closure)->toThrow(new ORMException("The relationship `'through'` option can't be empty."));
 
         });
 
@@ -89,7 +89,7 @@ describe("HasManyThrough", function() {
                     'through' => 'images_tags'
                 ]);
             };
-            expect($closure)->toThrow(new ChaosException("The relationship `'using'` option can't be empty."));
+            expect($closure)->toThrow(new ORMException("The relationship `'using'` option can't be empty."));
 
         });
 

@@ -7,7 +7,7 @@ use Chaos\ORM\Contrat\DataStoreInterface;
 use Chaos\ORM\Contrat\HasParentsInterface;
 
 use InvalidArgumentException;
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Document;
 use Chaos\ORM\Map;
 
@@ -296,22 +296,22 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         }
         $keys = is_array($offset) ? $offset : explode('.', $offset);
         if (!$keys) {
-            throw new ChaosException("Invalid empty index `" . $offset . "` for collection.");
+            throw new ORMException("Invalid empty index `" . $offset . "` for collection.");
         }
 
         $name = array_shift($keys);
         if ($keys) {
             if (!array_key_exists($name, $this->_data)) {
-                throw new ChaosException("Missing index `" . $name . "` for collection.");
+                throw new ORMException("Missing index `" . $name . "` for collection.");
             }
             $value = $this->_data[$name];
             if (!$value instanceof DataStoreInterface) {
-                throw new ChaosException("The field: `" . $name . "` is not a valid document or entity.");
+                throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
             }
             return $value->get($keys);
         }
         if (!array_key_exists($name, $this->_data)) {
-            throw new ChaosException("Missing index `" . $name . "` for collection.");
+            throw new ORMException("Missing index `" . $name . "` for collection.");
         }
         return $this->_data[$name];
     }
@@ -344,7 +344,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         }
         if ($name !== null) {
             if (!is_numeric($name)) {
-                throw new ChaosException("Invalid index `" . $name . "` for a collection, must be a numeric value.");
+                throw new ORMException("Invalid index `" . $name . "` for a collection, must be a numeric value.");
             }
             $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
             $this->_data[$name] = $data;

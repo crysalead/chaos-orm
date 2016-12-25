@@ -93,7 +93,7 @@ class Conventions
      *
      * @param  string    $name The name of the convention or `null` to get all.
      * @return mixed           The closure or an array of closures.
-     * @throws Exception       Throws a `ChaosException` if no rule has been found.
+     * @throws Exception       Throws a `ORMException` if no rule has been found.
      */
     public function get($name = null)
     {
@@ -101,7 +101,7 @@ class Conventions
             return $this->_conventions;
         }
         if (!isset($this->_conventions[$name])) {
-            throw new ChaosException("Convention for `'{$name}'` doesn't exists.");
+            throw new ORMException("Convention for `'{$name}'` doesn't exists.");
         }
         return $this->_conventions[$name];
     }
@@ -113,7 +113,7 @@ class Conventions
      * @param  mixed     $param Parameter to pass to the closure.
      * @param  mixed     ...    Parameter to pass to the closure.
      * @return mixed
-     * @throws Exception       Throws a `ChaosException` if no rule has been found.
+     * @throws Exception       Throws a `ORMException` if no rule has been found.
      */
     public function apply($name) {
         $params = func_get_args();

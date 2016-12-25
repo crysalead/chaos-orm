@@ -361,7 +361,7 @@ class Model extends Document
         }
 
         if (!$id = $this->id()) {
-          throw new ChaosException("Existing entities must have a valid ID.");
+          throw new ORMException("Existing entities must have a valid ID.");
         }
         $source = $this->schema()->source();
         $this->uuid($source . ':' . $id);
@@ -381,13 +381,13 @@ class Model extends Document
      * Returns the primary key value.
      *
      * @return array     the primary key value.
-     * @throws Exception Throws a `ChaosException` if no primary key has been defined.
+     * @throws Exception Throws a `ORMException` if no primary key has been defined.
      */
     public function id()
     {
         if (!$key = $this->schema()->key()) {
             $class = static::class;
-            throw new ChaosException("No primary key has been defined for `{$class}`'s schema.");
+            throw new ORMException("No primary key has been defined for `{$class}`'s schema.");
         }
         return $this->{$key};
     }
@@ -490,7 +490,7 @@ class Model extends Document
         $id = $this->id();
         $persisted = $id !== null ? static::load($id) : null;
         if (!$persisted) {
-            throw new ChaosException("The entity id:`{$id}` doesn't exists.");
+            throw new ORMException("The entity id:`{$id}` doesn't exists.");
         }
         $this->_exists = true;
         $this->set($persisted->get());

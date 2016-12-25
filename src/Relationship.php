@@ -142,7 +142,7 @@ class Relationship
 
         foreach (['from', 'to'] as $value) {
             if (!$config[$value]) {
-                throw new ChaosException("The relationship `'{$value}'` option can't be empty.");
+                throw new ORMException("The relationship `'{$value}'` option can't be empty.");
             }
         }
 
@@ -209,9 +209,9 @@ class Relationship
         if (count($result) === 1) {
             return $this->_counterpart = reset($result);
         } elseif (count($result) > 1) {
-            throw new ChaosException("Ambiguous {$this->type()} counterpart relationship for `{$from}`. Apply the Single Table Inheritance pattern to get unique models.");
+            throw new ORMException("Ambiguous {$this->type()} counterpart relationship for `{$from}`. Apply the Single Table Inheritance pattern to get unique models.");
         }
-        throw new ChaosException("Missing {$this->type()} counterpart relationship for `{$from}`. Add one in the `{$to}` model.");
+        throw new ORMException("Missing {$this->type()} counterpart relationship for `{$from}`. Add one in the `{$to}` model.");
     }
 
     /**
@@ -231,7 +231,7 @@ class Relationship
         } elseif ($type === 'to') {
             return reset($this->_keys);
         }
-        throw new ChaosException("Invalid type `'{$type}'` only `'from'` and `'to'` are available");
+        throw new ORMException("Invalid type `'{$type}'` only `'from'` and `'to'` are available");
     }
 
     /**
@@ -249,7 +249,7 @@ class Relationship
         $conditions = [];
 
         if (!isset($entity->{$from})) {
-            throw new ChaosException("The `'{$from}'` key is missing from entity data.");
+            throw new ORMException("The `'{$from}'` key is missing from entity data.");
         }
         $conditions[$to] = $entity->{$from};
         return $conditions;
@@ -275,7 +275,7 @@ class Relationship
         $strategies = $this->strategies();
 
         if (!isset($strategies[$link]) || !is_callable($strategies[$link])) {
-            throw new ChaosException("Attempted to get object for invalid relationship link type `{$link}`.");
+            throw new ORMException("Attempted to get object for invalid relationship link type `{$link}`.");
         }
         return $strategies[$link]($entity, $this, $options);
     }
@@ -345,7 +345,7 @@ class Relationship
         unset($options['fetchOptions']);
 
         if ($this->link() !== static::LINK_KEY) {
-            throw new ChaosException("This relation is not based on a foreign key.");
+            throw new ORMException("This relation is not based on a foreign key.");
         }
         $to = $this->to();
 

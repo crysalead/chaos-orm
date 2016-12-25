@@ -2,7 +2,6 @@
 namespace Chaos\ORM\Relationship;
 
 use Lead\Set\Set;
-use Chaos\ORM\ChaosException;
 
 /**
  * The `HasOne` relationship.

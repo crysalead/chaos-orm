@@ -422,13 +422,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $keys = is_array($name) ? $name : explode('.', $name);
         $name = array_shift($keys);
         if (!$name) {
-            throw new ChaosException("Field name can't be empty.");
+            throw new ORMException("Field name can't be empty.");
         }
 
         if ($keys) {
             $value = $this->get($name);
             if (!$value instanceof DataStoreInterface) {
-                throw new ChaosException("The field: `" . $name . "` is not a valid document or entity.");
+                throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
             }
             return $value->get($keys);
         }
@@ -478,7 +478,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $options = $data;
         $data = $name;
         if (!is_array($data)) {
-            throw new ChaosException('An array is required to set data in bulk.');
+            throw new ORMException('An array is required to set data in bulk.');
         }
         foreach ($data as $name => $value) {
             $this->_set($name, $value);
@@ -525,7 +525,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $name = array_shift($keys);
         if (!$name) {
-            throw new ChaosException("Field name can't be empty.");
+            throw new ORMException("Field name can't be empty.");
         }
 
         if ($keys) {
@@ -535,7 +535,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 $this->_set($name, static::create());
             }
             if (!$this->_data[$name] instanceof DataStoreInterface) {
-                throw new ChaosException("The field: `" . $name . "` is not a valid document or entity.");
+                throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
             }
             $this->_data[$name]->set($keys, $data);
             return;

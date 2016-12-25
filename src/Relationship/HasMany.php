@@ -3,7 +3,6 @@ namespace Chaos\ORM\Relationship;
 
 use Traversable;
 use Lead\Set\Set;
-use Chaos\ORM\ChaosException;
 use Chaos\ORM\Model;
 
 /**

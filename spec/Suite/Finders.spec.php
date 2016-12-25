@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Finders;
 
 use Kahlan\Plugin\Double;
@@ -58,7 +58,7 @@ describe("Finders", function() {
                 $this->finders->myfinder('a', 'b', 'c');
             };
 
-            expect($closure)->toThrow(new ChaosException("Unexisting finder `'myfinder'`."));
+            expect($closure)->toThrow(new ORMException("Unexisting finder `'myfinder'`."));
 
         });
 

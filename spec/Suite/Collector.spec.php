@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Collector;
 
 describe("Collector", function() {
@@ -23,7 +23,7 @@ describe("Collector", function() {
         $collector->get(123);
       };
 
-      expect($closure)->toThrow(new ChaosException("No collected data with UUID `'123'` in this collector."));
+      expect($closure)->toThrow(new ORMException("No collected data with UUID `'123'` in this collector."));
 
     });
 

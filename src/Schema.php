@@ -4,7 +4,6 @@ namespace Chaos\ORM;
 use Iterator;
 use DateTime;
 use Lead\Set\Set;
-use Chaos\ORM\ChaosException;
 
 class Schema
 {
@@ -378,7 +377,7 @@ class Schema
     {
         if (func_num_args() === 1) {
             if (!isset($this->_columns[$name])) {
-                throw new ChaosException("Unexisting column `'{$name}'`");
+                throw new ORMException("Unexisting column `'{$name}'`");
             }
             return $this->_columns[$name];
         }
@@ -591,7 +590,7 @@ class Schema
      * @param  array     $config The configuration that should be specified in the relationship.
      *                           See the `Chaos\ORM\Relationship` class for more information.
      * @return boolean
-     * @throws Exception         Throws a `ChaosException` if the config has no type option defined.
+     * @throws Exception         Throws a `ORMException` if the config has no type option defined.
      */
     public function bind($name, $config = [])
     {
@@ -606,14 +605,14 @@ class Schema
         $config['embedded'] = strncmp($config['link'], 'key', 3) !== 0;
 
         if (!isset($config['relation']) || !isset($this->_classes[$config['relation']])) {
-            throw new ChaosException("Unexisting binding relation `{$config['relation']}` for `'{$name}'`.");
+            throw new ORMException("Unexisting binding relation `{$config['relation']}` for `'{$name}'`.");
         }
         if (!$config['from']) {
-            throw new ChaosException("Binding requires `'from'` option to be set.");
+            throw new ORMException("Binding requires `'from'` option to be set.");
         }
         if (!$config['to']) {
             if ($config['relation'] !== 'hasManyThrough') {
-                throw new ChaosException("Binding requires `'to'` option to be set.");
+                throw new ORMException("Binding requires `'to'` option to be set.");
             }
         } elseif (($pos = strrpos('\\', $config['to'])) !== false) {
             $from = $config['from'];
@@ -625,7 +624,7 @@ class Schema
 
         if ($config['relation'] === 'hasManyThrough') {
             if (!isset($config['through'])) {
-                throw new ChaosException("Missing `'through'` relation name.");
+                throw new ORMException("Missing `'through'` relation name.");
             }
             $config += ['using' => $this->conventions()->apply('single', $name)];
             $config['type'] = 'through';
@@ -673,7 +672,7 @@ class Schema
             return $this->_relationships[$name];
         }
         if (!isset($this->_relations[$name])) {
-            throw new ChaosException("Relationship `{$name}` not found.");
+            throw new ORMException("Relationship `{$name}` not found.");
         }
         $config = $this->_relations[$name];
         $relationship = $config['relation'];
@@ -873,7 +872,7 @@ class Schema
         }
 
         if ($this->locked()) {
-            throw new ChaosException("Missing schema definition for field: `" . $name . "`.");
+            throw new ORMException("Missing schema definition for field: `" . $name . "`.");
         }
         if (is_array($data)) {
             if ($data === array_values($data)) {
@@ -1173,7 +1172,7 @@ class Schema
                 if ($exists) {
                     $updates[] = $entity;
                 } else {
-                    throw new ChaosException("Entites must have a valid `false`/`true` existing value to be either inserted or updated.");
+                    throw new ORMException("Entites must have a valid `false`/`true` existing value to be either inserted or updated.");
                 }
             }
         }
@@ -1222,7 +1221,7 @@ class Schema
 
         $key = $this->key();
         if (!$key) {
-          throw new ChaosException("No primary key has been defined for `" + instance.self() + "`'s schema.");
+          throw new ORMException("No primary key has been defined for `" + instance.self() + "`'s schema.");
         }
 
         $keys = [];
@@ -1256,7 +1255,7 @@ class Schema
      */
     public function query($options = [])
     {
-        throw new ChaosException("Missing `query()` implementation for this schema.");
+        throw new ORMException("Missing `query()` implementation for this schema.");
     }
 
     /**
@@ -1268,7 +1267,7 @@ class Schema
      */
     public function bulkInsert($inserts, $filter)
     {
-        throw new ChaosException("Missing `bulkInsert()` implementation for `{$this->_reference}`'s schema.");
+        throw new ORMException("Missing `bulkInsert()` implementation for `{$this->_reference}`'s schema.");
     }
 
     /**
@@ -1280,7 +1279,7 @@ class Schema
      */
     public function bulkUpdate($updates, $filter)
     {
-        throw new ChaosException("Missing `bulkUpdate()` implementation for `{$this->_reference}`'s schema.");
+        throw new ORMException("Missing `bulkUpdate()` implementation for `{$this->_reference}`'s schema.");
     }
 
     /**
@@ -1295,7 +1294,7 @@ class Schema
      */
     public function truncate($conditions = [])
     {
-        throw new ChaosException("Missing `truncate()` implementation for `{$this->_reference}`'s schema.");
+        throw new ORMException("Missing `truncate()` implementation for `{$this->_reference}`'s schema.");
     }
 
 }

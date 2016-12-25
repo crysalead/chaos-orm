@@ -37,7 +37,7 @@ class Collector
         if (isset($this->_data[$uuid])) {
             return $this->_data[$uuid];
         }
-        throw new ChaosException("No collected data with UUID `'{$uuid}'` in this collector.");
+        throw new ORMException("No collected data with UUID `'{$uuid}'` in this collector.");
     }
 
     /**

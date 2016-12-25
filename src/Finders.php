@@ -79,7 +79,7 @@ class Finders
     public function __call($name, $params)
     {
         if (!isset($this->_finders[$name])) {
-            throw new ChaosException("Unexisting finder `'{$name}'`.");
+            throw new ORMException("Unexisting finder `'{$name}'`.");
         }
         call_user_func_array($this->_finders[$name], $params);
     }

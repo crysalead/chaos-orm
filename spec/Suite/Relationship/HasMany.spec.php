@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite\Relationship;
 
-use Chaos\ORM\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Relationship;
 use Chaos\ORM\Relationship\HasMany;
@@ -55,7 +55,7 @@ describe("HasMany", function() {
                     'to'   => Image::class
                 ]);
             };
-            expect($closure)->toThrow(new ChaosException("The relationship `'from'` option can't be empty."));
+            expect($closure)->toThrow(new ORMException("The relationship `'from'` option can't be empty."));
 
         });
 
@@ -66,7 +66,7 @@ describe("HasMany", function() {
                     'from' => Gallery::class
                 ]);
             };
-            expect($closure)->toThrow(new ChaosException("The relationship `'to'` option can't be empty."));
+            expect($closure)->toThrow(new ORMException("The relationship `'to'` option can't be empty."));
 
         });
 

@@ -47,7 +47,7 @@ class Map
         if (isset($this->_data[$id])) {
             return $this->_data[$id];
         }
-        throw new ChaosException("No collected data associated to the key.");
+        throw new ORMException("No collected data associated to the key.");
     }
 
     /**
