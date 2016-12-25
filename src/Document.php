@@ -352,21 +352,38 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function setParent($parent, $from)
     {
-        $this->_parents->set($parent, $from);
+        $this->parents()->set($parent, $from);
         return $this;
     }
 
     /**
      * Unset a parent.
      *
-     * @param  pbject $parent The parent instance to unset.
+     * @param  object $parent The parent instance to unset.
      * @return self
      */
     public function unsetParent($parent)
     {
-        $this->_parents->remove($parent);
-        if ($this->_parents->count() === 0) {
+        $parents = $this->parents();
+        $parents->remove($parent);
+        if ($parents->count() === 0) {
             $this->collector()->remove($this->uuid());
+        }
+        return $this;
+    }
+
+    /**
+     * Disconnect the document from its graph (i.e parents).
+     * Note: It has nothing to do with persistance
+     *
+     * @return self
+     */
+    public function disconnect()
+    {
+        $parents = $this->parents();
+        foreach ($parents->keys() as $object) {
+            $path = $parents->get($object);
+            unset($object->{$path});
         }
         return $this;
     }

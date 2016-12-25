@@ -82,6 +82,18 @@ describe("Through", function() {
 
     });
 
+    describe("->disconnect()", function() {
+
+        it("removes a document from its graph", function() {
+
+            $this->image->tags->disconnect();
+            expect($this->through->parents()->has($this->image))->toBe(false);
+            expect($this->image->has('tags'))->toBe(false);
+
+        });
+
+    });
+
     describe("->basePath()", function() {
 
         it("always returns an emtpy root path", function() {

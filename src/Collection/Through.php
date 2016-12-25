@@ -130,6 +130,18 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     }
 
     /**
+     * Disconnect the collection from its graph (i.e parents).
+     * Note: It has nothing to do with persistance
+     *
+     * @return self
+     */
+    public function disconnect()
+    {
+        $this->_parent->{$this->_through}->disconnect();
+        return $this;
+    }
+
+    /**
      * Gets/sets whether or not this instance has been persisted somehow.
      *
      * @param  boolean $exists The exists value to set or none to get the current one.

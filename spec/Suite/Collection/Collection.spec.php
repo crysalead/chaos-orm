@@ -55,6 +55,21 @@ describe("Collection", function() {
 
     });
 
+    describe("->disconnect()", function() {
+
+        it("removes a document from its graph", function() {
+
+            $parent = new Document();
+            $collection = new Collection();
+            $parent->value = $collection;
+            $collection->disconnect();
+            expect($collection->parents()->has($parent))->toBe(false);
+            expect($parent->has('value'))->toBe(false);
+
+        });
+
+    });
+
     describe("->basePath()", function() {
 
         it("returns the root path", function() {
