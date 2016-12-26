@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\ORM;
 
+use InvalidArgumentException;
 use DateTime;
 use Lead\Set\Set;
 
@@ -85,17 +86,20 @@ class Source
                     return !!$value;
                 },
                 'date'    => function($value, $options = []) {
-                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d'])->setTime(0, 0, 0);
+                    $date = $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                    $date->setTime(0, 0, 0);
+                    return $date;
                 },
                 'datetime'    => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
-                    if (is_numeric($value)) {
-                        return new DateTime('@' . $value);
-                    }
                     if ($value instanceof DateTime) {
                         return $value;
                     }
-                    return DateTime::createFromFormat($options['format'], date($options['format'], strtotime($value)));
+                    $timestamp = is_numeric($value) ? $value : strtotime($value);
+                    if ($timestamp < 0 || $timestamp === false) {
+                        $timestamp = 0;
+                    }
+                    return DateTime::createFromFormat($options['format'], date($options['format'], $timestamp));
                 },
                 'null'    => function($value, $options = []) {
                     return null;
@@ -109,16 +113,20 @@ class Source
                     return (string) $value;
                 },
                 'date'     => function($value, $options = []) {
-                    if (!$value instanceof DateTime) {
-                        $value = new DateTime($value);
-                    }
-                    return $value->format('Y-m-d');
+                    return $this->convert('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
                 'datetime' => function($value, $options = []) {
-                    if (!$value instanceof DateTime) {
-                        $value = new DateTime($value);
+                    $options += ['format' => 'Y-m-d H:i:s'];
+                    if ($value instanceof DateTime) {
+                        $date = $value->format($options['format']);
+                    } else {
+                        $timestamp = is_numeric($value) ? $value : strtotime($value);
+                        if ($timestamp < 0 || $timestamp === false) {
+                            throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
+                        }
+                        $date = date($options['format'], $timestamp);
                     }
-                    return $value->format('Y-m-d H:i:s');
+                    return $date;
                 },
                 'boolean'  => function($value, $options = []) {
                     return !!$value ? '1' : '0';
@@ -175,6 +183,7 @@ class Source
      */
     public function convert($mode, $type, $value, $options = [])
     {
+        $type = $value === null ? 'null' : $type;
         $formatter = null;
 
         if (isset($this->_formatters[$mode][$type])) {

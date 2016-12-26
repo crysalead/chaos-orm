@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\ORM\Database\Spec\Suite;
 
+use InvalidArgumentException;
 use DateTime;
 use DateTimeZone;
 use Chaos\ORM\Source;
@@ -77,6 +78,47 @@ describe("Source", function() {
 
         });
 
+        it("doesn't format `null` value on export", function() {
+
+            expect($this->source->convert('datasource', 'id', null))->toBe('');
+            expect($this->source->convert('datasource', 'serial', null))->toBe('');
+            expect($this->source->convert('datasource', 'integer', null))->toBe('');
+            expect($this->source->convert('datasource', 'float', null))->toBe('');
+            expect($this->source->convert('datasource', 'decimal', null))->toBe('');
+            expect($this->source->convert('datasource', 'date', null))->toEqual('');
+            expect($this->source->convert('datasource', 'datetime', null))->toBe('');
+            expect($this->source->convert('datasource', 'boolean', null))->toBe('');
+            expect($this->source->convert('datasource', 'null', null))->toBe('');
+            expect($this->source->convert('datasource', 'string', null))->toBe('');
+            expect($this->source->convert('datasource', '_default_', null))->toBe('');
+            expect($this->source->convert('datasource', '_undefined_', null))->toBe('');
+
+        });
+
+        it("throws an exception when exporting an invalid date", function() {
+
+            $closure = function() {
+                $this->source->convert('datasource', 'date', '0000-00-00');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `0000-00-00`, can't be parsed."));
+
+            $closure = function() {
+                $this->source->convert('datasource', 'date', '2016-25-15');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `2016-25-15`, can't be parsed."));
+
+            $closure = function() {
+                $this->source->convert('datasource', 'datetime', '2016-12-15 80:90:00');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `2016-12-15 80:90:00`, can't be parsed."));
+
+            $closure = function() {
+                $this->source->convert('datasource', 'datetime', '0000-00-00 00:00:00');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `0000-00-00 00:00:00`, can't be parsed."));
+
+        });
+
         it("formats according default `'cast'` handlers", function() {
 
             expect($this->source->convert('cast', 'id', '123'))->toBe(123);
@@ -97,6 +139,32 @@ describe("Source", function() {
             expect($this->source->convert('cast', 'string', 'abc'))->toBe('abc');
             expect($this->source->convert('cast', '_default_', 'abc'))->toBe('abc');
             expect($this->source->convert('cast', '_undefined_', 'abc'))->toBe('abc');
+
+        });
+
+        it("doesn't format `null` value on import", function() {
+
+            expect($this->source->convert('cast', 'id', null))->toBe(null);
+            expect($this->source->convert('cast', 'serial', null))->toBe(null);
+            expect($this->source->convert('cast', 'integer', null))->toBe(null);
+            expect($this->source->convert('cast', 'float', null))->toBe(null);
+            expect($this->source->convert('cast', 'decimal', null))->toBe(null);
+            expect($this->source->convert('cast', 'date', null))->toEqual(null);
+            expect($this->source->convert('cast', 'datetime', null))->toBe(null);
+            expect($this->source->convert('cast', 'boolean', null))->toBe(null);
+            expect($this->source->convert('cast', 'null', null))->toBe(null);
+            expect($this->source->convert('cast', 'string', null))->toBe(null);
+            expect($this->source->convert('cast', '_default_', null))->toBe(null);
+            expect($this->source->convert('cast', '_undefined_', null))->toBe(null);
+
+        });
+
+        it("format invalid date as `'1970-01-01'` on import", function() {
+
+            expect($this->source->convert('cast', 'date', '0000-00-00')->format('Y-m-d'))->toBe('1970-01-01');
+            expect($this->source->convert('cast', 'date', '2016-25-15')->format('Y-m-d'))->toBe('1970-01-01');
+            expect($this->source->convert('cast', 'datetime', '2016-12-15 80:90:00')->format('Y-m-d H:i:s'))->toBe('1970-01-01 00:00:00');
+            expect($this->source->convert('cast', 'datetime', '0000-00-00 00:00:00')->format('Y-m-d H:i:s'))->toBe('1970-01-01 00:00:00');
 
         });
 
