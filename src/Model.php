@@ -632,8 +632,11 @@ class Model extends Document
         $errors = $this->_errors;
 
         foreach ($tree as $field => $value) {
-            if (isset($this->{$field})) {
-                $errors[$field] = $this->{$field}->errors(['embed' => $value] + $options);
+            if (!isset($this->{$field})) {
+                continue;
+            }
+            if ($err = $this->{$field}->errors(['embed' => $value] + $options)) {
+                $errors[$field] = $err;
             }
         }
         return $errors;

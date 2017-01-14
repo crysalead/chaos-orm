@@ -432,7 +432,33 @@ describe("Entity", function() {
 
         });
 
-        it("validates an nested entities", function() {
+        it("validates a belongsTo nested entity", function() {
+
+            $image = Image::create();
+            $image->gallery = Gallery::create();
+            expect($image->validates())->toBe(false);
+            expect($image->errors())->toBe([
+                'name' => ['is required'],
+                'gallery' => [
+                    'name' => ['is required']
+                ]
+            ]);
+
+            $image->name = 'new image';
+            expect($image->validates())->toBe(false);
+            expect($image->errors())->toBe([
+                'gallery' => [
+                    'name' => ['is required']
+                ]
+            ]);
+
+            $image->gallery->name = 'new gallery';
+            expect($image->validates())->toBe(true);
+            expect($image->errors())->toBe([]);
+
+        });
+
+        it("validates a hasMany nested entities", function() {
 
             $gallery = Gallery::create();
             $gallery->images[] = Image::create();
@@ -461,14 +487,20 @@ describe("Entity", function() {
 
             $gallery->name = 'new gallery';
             $gallery->images[0]->name = 'image1';
-            $gallery->images[1]->name = 'image2';
-            expect($gallery->validates())->toBe(true);
+            $gallery->images[1]->name = '';
+            expect($gallery->validates())->toBe(false);
             expect($gallery->errors())->toBe([
                 'images' => [
                     [],
-                    []
+                    ['name' => ['must not be a empty']]
                 ]
             ]);
+
+            $gallery->name = 'new gallery';
+            $gallery->images[0]->name = 'image1';
+            $gallery->images[1]->name = 'image2';
+            expect($gallery->validates())->toBe(true);
+            expect($gallery->errors())->toBe([]);
 
         });
 

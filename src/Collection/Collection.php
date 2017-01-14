@@ -766,10 +766,15 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function errors($options = [])
     {
         $errors = [];
+        $errored = false;
         foreach ($this as $entity) {
-            $errors[] = $entity->errors();
+            $result = $entity->errors();
+            $errors[] = $result;
+            if ($result) {
+                $errored = true;
+            }
         }
-        return $errors;
+        return $errored ? $errors : [];
     }
 
     /**
