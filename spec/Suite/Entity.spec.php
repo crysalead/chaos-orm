@@ -25,7 +25,7 @@ describe("Entity", function() {
         $model = $this->model;
         $schema = $model::definition();
         $schema->column('id', ['type' => 'serial']);
-        $schema->locked(false);
+        $schema->lock(false);
     });
 
     describe("->__construct()", function() {
@@ -108,7 +108,7 @@ describe("Entity", function() {
         it("throws an exception if the schema has no primary key defined", function() {
 
             $schema = new Schema(['key' => null]);
-            $schema->locked(false);
+            $schema->lock(false);
 
             $model = $this->model;
             $model::definition($schema);
@@ -231,7 +231,7 @@ describe("Entity", function() {
 
         it("sets nested arbitraty value in cascade when locked is `false`", function() {
 
-            Image::definition()->locked(false);
+            Image::definition()->lock(false);
 
             $image = Image::create();
             $image->set('a.nested.value', 'hello');
@@ -427,7 +427,7 @@ describe("Entity", function() {
 
                 $model = $this->model;
                 $childEntity = Double::classname(['extends' => $this->model]);
-                $childEntity::definition()->locked(false);
+                $childEntity::definition()->lock(false);
 
                 $schema = new Schema(['class' => $model]);
                 $schema->column('child', [

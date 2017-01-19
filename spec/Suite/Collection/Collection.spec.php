@@ -13,7 +13,7 @@ describe("Collection", function() {
 
     beforeEach(function() {
         $model = $this->model = Double::classname(['extends' => Model::class]);
-        $model::definition()->locked(false);
+        $model::definition()->lock(false);
     });
 
     describe("->__construct()", function() {

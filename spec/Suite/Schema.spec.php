@@ -87,14 +87,20 @@ describe("Schema", function() {
 
     });
 
-    describe("->locked()", function() {
+    describe("->lock()/->locked()", function() {
 
         it("gets/sets the lock value", function() {
 
             $schema = new Schema();
 
-            expect($schema->locked(false))->toBe($schema);
+            expect($schema->lock(false))->toBe($schema);
             expect($schema->locked())->toBe(false);
+
+            expect($schema->lock())->toBe($schema);
+            expect($schema->locked())->toBe(true);
+
+            expect($schema->lock(true))->toBe($schema);
+            expect($schema->locked())->toBe(true);
 
         });
 
@@ -591,7 +597,7 @@ describe("Schema", function() {
 
             it("adds some fields to a schema", function() {
 
-                $this->schema->locked(false);
+                $this->schema->lock(false);
 
                 $this->schema->append([
                     'name'  => ['type' => 'string'],
@@ -888,7 +894,7 @@ describe("Schema", function() {
             $schema->column('data.*.test.*', ['type' => 'object']);
             $schema->column('data.*.test.*.nested', ['type' => 'object']);
             $schema->column('data.*.test.*.nested.*', ['type' => 'boolean', 'array' => true]);
-            $schema->locked(true);
+            $schema->lock(true);
 
             $document = new Document(['schema' => $schema]);
 

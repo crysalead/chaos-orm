@@ -155,7 +155,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             'conventions' => static::conventions(),
             'class'       => Document::class
         ]);
-        $schema->locked(false);
+        $schema->lock(false);
         return $schema;
     }
 

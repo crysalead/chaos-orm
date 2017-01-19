@@ -14,13 +14,13 @@ describe("Model", function() {
 
     beforeAll(function() {
         $model = $this->model = Double::classname(['extends' => Model::class]);
-        $model::definition()->locked(false);
+        $model::definition()->lock(false);
     });
 
     afterEach(function() {
         $model = $this->model;
         $model::reset();
-        $model::definition()->locked(false);
+        $model::definition()->lock(false);
     });
 
     describe("::conventions()", function() {

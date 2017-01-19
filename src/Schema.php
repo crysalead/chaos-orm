@@ -218,19 +218,27 @@ class Schema
     }
 
     /**
-     * Gets/sets the schema lock type. When Locked all extra fields which
+     * Sets the schema lock type. When Locked all extra fields which
      * are not part of the schema should be filtered out before saving.
      *
-     * @param  boolean $locked The locked value to set to none to get the current lock value.
-     * @return mixed           A boolean value or `$this`.
+     * @param  boolean $locked The locked value to set.
+     * @return self            Return `$this`.
      */
-    public function locked($locked = null)
+    public function lock($locked = true)
     {
-        if (!func_num_args()) {
-            return $this->_locked;
-        }
-        $this->_locked = $locked;
+        $this->_locked = $locked === false ? false : true;
         return $this;
+    }
+
+    /**
+     * Gets the schema lock type. When Locked all extra fields which
+     * are not part of the schema should be filtered out before saving.
+     *
+     * @return boolean The locked value.
+     */
+    public function locked()
+    {
+        return $this->_locked;
     }
 
     /**

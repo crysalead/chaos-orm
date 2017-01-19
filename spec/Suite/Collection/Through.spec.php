@@ -22,14 +22,14 @@ describe("Through", function() {
             'extends' => ImageTag::class
         ]);
 
-        $imageTagModel::definition()->locked(false);
+        $imageTagModel::definition()->lock(false);
 
         $this->tagModel = $tagModel = Double::classname([
             'extends' => Tag::class,
             'methods' => ['tagMethod']
         ]);
 
-        $tagModel::definition()->locked(false);
+        $tagModel::definition()->lock(false);
 
         allow($tagModel)->toReceive('tagMethod')->andRun(function($options) {
             return $options;
