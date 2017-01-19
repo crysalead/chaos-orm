@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\ORM\Collection;
 
+use Exception;
 use ArrayAccess;
 use Traversable;
 use Chaos\ORM\Contrat\DataStoreInterface;
@@ -9,6 +10,7 @@ use Chaos\ORM\Contrat\HasParentsInterface;
 use InvalidArgumentException;
 use Chaos\ORM\ORMException;
 use Chaos\ORM\Document;
+use Chaos\ORM\Model;
 use Chaos\ORM\Map;
 
 /**
@@ -116,7 +118,8 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             'basePath'  => null,
             'meta'      => [],
             'data'      => [],
-            'exists'    => false
+            'exists'    => false,
+            'index'     => null
         ];
         $config += $defaults;
 
@@ -594,6 +597,66 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function count()
     {
         return count($this->_data);
+    }
+
+    /**
+     * Return the collection indexed by an arbitrary field name.
+     *
+     * @param  string  $field   The field name to use for indexing
+     * @param  boolean $byValue If `true` returns the documents instead of thrir index number in the collection.
+     * @return array            The indexed array
+     */
+    public function indexBy($field, $byValue = false)
+    {
+        $indexes = [];
+        foreach ($this as $key => $document) {
+            if (!$document instanceof Document) {
+                throw new Exception("Only document can be indexed.");
+            }
+            $index = $document[$field];
+            if (!isset($indexes[$index])) {
+                $indexes[$index] = [];
+            }
+            $indexes[$index][] = $byValue ? $document : $key;
+        }
+        return $indexes;
+    }
+
+    /**
+     * Find the index of an entity with a defined id.
+     *
+     * @param  mixed        $id The entity id to look for.
+     * @return integer|null     The entity's index number in the collection or `null` if not found.
+     */
+    public function indexOfId($id)
+    {
+        $id = (string) $id;
+        foreach ($this as $key => $entity) {
+            if (!$entity instanceof Model) {
+                throw new Exception('Error, `indexOfId()` is only available on models.');
+            }
+            if ($id === (string) $entity->id()) {
+                return $key;
+            }
+        }
+    }
+
+    /**
+     * Find the index of an entity with a defined id.
+     *
+     * @param  string       $uuid The entity id to look for.
+     * @return integer|null       The entity's index number in the collection or `null` if not found.
+     */
+    public function indexOfUuid($uuid)
+    {
+        foreach ($this as $key => $document) {
+            if (!$document instanceof Document) {
+                throw new Exception('Error, `indexOfUuid()` is only available on documents.');
+            }
+            if ($uuid === $document->uuid()) {
+                return $key;
+            }
+        }
     }
 
     /**

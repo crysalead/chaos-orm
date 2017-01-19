@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Suite\Collection;
 
+use Exception;
 use InvalidArgumentException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Schema;
@@ -580,6 +581,102 @@ describe("Collection", function() {
 
             $collection = new Collection(['data' => [5 ,null, 4, true, false, 'bob']]);
             expect($collection)->toHaveLength(6);
+
+        });
+
+    });
+
+    describe("->indexBy()", function() {
+
+        it("indexes a collection using index number", function() {
+
+            $collection = new Collection(['data' => [
+                new Document(['data' => ['id' => 1, 'type' => 'type1']]),
+                new Document(['data' => ['id' => 2, 'type' => 'type2']]),
+                new Document(['data' => ['id' => 3, 'type' => 'type1']])
+            ]]);
+
+            $indexes = $collection->indexBy('type');
+            expect($indexes)->toBe([
+                'type1' => [0, 2],
+                "type2" => [1]
+            ]);
+
+        });
+
+        it("indexes a collection using values", function() {
+
+            $collection = new Collection(['data' => [
+                $a = new Document(['data' => ['id' => 1, 'type' => 'type1']]),
+                $b = new Document(['data' => ['id' => 2, 'type' => 'type2']]),
+                $c = new Document(['data' => ['id' => 3, 'type' => 'type1']])
+            ]]);
+
+            $indexes = $collection->indexBy('type', true);
+            expect($indexes)->toBe([
+                'type1' => [$a, $c],
+                "type2" => [$b]
+            ]);
+
+        });
+
+    });
+
+    describe("->indexOfId()", function() {
+
+        it("returns the index of an entity with a defined id", function() {
+
+            $model = $this->model;
+
+            $collection = new Collection(['data' => [
+                new $model(['data' => ['id' => 1, 'type' => 'type1']]),
+                new $model(['data' => ['id' => 2, 'type' => 'type2']]),
+                new $model(['data' => ['id' => 3, 'type' => 'type1']])
+            ]]);
+
+            expect($collection->indexOfId(1))->toBe(0);
+            expect($collection->indexOfId(2))->toBe(1);
+            expect($collection->indexOfId(3))->toBe(2);
+
+        });
+
+        it("throws an error when collection doesn't contain documents", function() {
+
+            $closure = function() {
+                $collection = new Collection(['data' => ['a', 'b', 'c']]);
+                $collection->indexOfId(1);
+            };
+            expect($closure)->toThrow(new Exception("Error, `indexOfId()` is only available on models."));
+
+        });
+
+    });
+
+    describe("->indexOfUuid()", function() {
+
+        it("returns the index of an entity with a defined id", function() {
+
+            $model = $this->model;
+
+            $collection = new Collection(['data' => [
+                $a = new Document(['data' => ['id' => 1, 'type' => 'type1']]),
+                $b = new Document(['data' => ['id' => 2, 'type' => 'type2']]),
+                $c = new Document(['data' => ['id' => 3, 'type' => 'type1']])
+            ]]);
+
+            expect($collection->indexOfUuid($a->uuid()))->toBe(0);
+            expect($collection->indexOfUuid($b->uuid()))->toBe(1);
+            expect($collection->indexOfUuid($c->uuid()))->toBe(2);
+
+        });
+
+        it("throws an error when collection doesn't contain documents", function() {
+
+            $closure = function() {
+                $collection = new Collection(['data' => ['a', 'b', 'c']]);
+                $collection->indexOfUuid(1);
+            };
+            expect($closure)->toThrow(new Exception("Error, `indexOfUuid()` is only available on documents."));
 
         });
 
