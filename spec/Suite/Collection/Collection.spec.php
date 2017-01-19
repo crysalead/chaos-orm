@@ -148,7 +148,7 @@ describe("Collection", function() {
 
     });
 
-    describe("->find()", function() {
+    describe("->filter()", function() {
 
         it("extracts items from a collection according a filter", function() {
 
@@ -159,7 +159,7 @@ describe("Collection", function() {
 
             $filter = function($item) { return $item === 1; };
 
-            $result = $collection->find($filter);
+            $result = $collection->filter($filter);
             expect($result)->toBeAnInstanceOf(Collection::class);
             expect($result->data())->toBe(array_fill(0, 10, 1));
 

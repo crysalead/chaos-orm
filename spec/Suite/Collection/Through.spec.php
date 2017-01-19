@@ -162,7 +162,7 @@ describe("Through", function() {
 
     });
 
-    describe("->find()", function() {
+    describe("->filter()", function() {
 
         it("extracts items from a collection according a filter", function() {
 
@@ -170,7 +170,7 @@ describe("Through", function() {
                 return $item->name % 2 === 0;
             };
 
-            $result = $this->through->find($filter);
+            $result = $this->through->filter($filter);
 
             expect($result)->toBeAnInstanceOf(Collection::class);
             expect($result->data())->toBe([
