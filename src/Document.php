@@ -38,6 +38,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     ];
 
     /**
+     * Lazily built class dependencies for classes.
+     *
+     * @var array
+     */
+    protected static $_dependencies = [];
+
+    /**
      * Stores validator instances.
      *
      * @var array
@@ -124,6 +131,23 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     protected $_skipNext = false;
 
     /**
+     * Gets/sets classes dependencies.
+     *
+     * @param  Object classes The classes dependencies to set or none to get it.
+     * @return mixed          The classes dependencies.
+     */
+    public static function classes($classes = [])
+    {
+        if (!isset(static::$_dependencies[static::class])) {
+            static::$_dependencies[static::class] = static::$_classes;
+        }
+        if (func_num_args()) {
+            static::$_dependencies[static::class] = Set::merge(static::$_dependencies[static::class], $classes);
+        }
+        return static::$_dependencies[static::class];
+    }
+
+    /**
      * Gets/sets the conventions object to which this model is bound.
      *
      * @param  object $conventions The conventions instance to set or none to get it.
@@ -205,7 +229,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $classname = $options['class'];
         } else {
             $options['schema'] = static::definition();
-            $classname = static::$_classes[$type];
+            $classes = static::classes();
+            $classname = $classes[$type];
         }
         $options = ['data' => $data] + $options;
 
@@ -979,5 +1004,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             }
         }
         return $result;
+    }
+
+    /**
+     * Reset the Document class.
+     */
+    public static function reset()
+    {
+        unset(static::$_dependencies[static::class]);
     }
 }

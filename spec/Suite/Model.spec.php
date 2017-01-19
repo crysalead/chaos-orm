@@ -126,6 +126,22 @@ describe("Model", function() {
 
         });
 
+        it("creates an entity using a custom collection class", function() {
+
+            $model = $this->model;
+            $MyCollection = Double::classname(['extends' => Collection::class]);
+            $model::classes(['set' => $MyCollection]);
+
+            $data = [
+                ['id' => '1', 'title' => 'Amiga 1200'],
+                ['id' => '2', 'title' => 'Las Vegas']
+            ];
+            $collection = $model::create($data, ['type' => 'set']);
+
+            expect($collection)->toBeAnInstanceOf($MyCollection);
+
+        });
+
     });
 
     describe("::query()", function() {

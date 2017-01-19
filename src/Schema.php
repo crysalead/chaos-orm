@@ -13,8 +13,6 @@ class Schema
      * @var array
      */
     protected $_classes = [
-        'set'            => 'Chaos\ORM\Collection\Collection',
-        'through'        => 'Chaos\ORM\Collection\Through',
         'relationship'   => 'Chaos\ORM\Relationship',
         'belongsTo'      => 'Chaos\ORM\Relationship\BelongsTo',
         'hasOne'         => 'Chaos\ORM\Relationship\HasOne',
@@ -964,10 +962,12 @@ class Schema
     public function _castArray($name, $data, $options)
     {
         $options['type'] = isset($options['relation']) && $options['relation'] === 'hasManyThrough' ? 'through' : 'set';
-        $collection = $this->_classes[$options['type']];
-        $isThrough = $options['type'] === 'through';
 
         $class = ltrim($options['class'], '\\');
+        $classes = $class::classes();
+
+        $collection = $classes[$options['type']];
+        $isThrough = $options['type'] === 'through';
 
         $config = [
             'collector' => $options['collector'],

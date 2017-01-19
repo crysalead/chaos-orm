@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Model;
 use Chaos\ORM\Document;
+use Chaos\ORM\Collection\Collection;
 
 use Kahlan\Plugin\Double;
 
@@ -960,6 +961,29 @@ describe("Schema", function() {
 
           $document->set('key', ['a' => 'b']);
           expect($document->get('key'))->toEqual(['a' => 'b']);
+
+        });
+
+        it("support custom collection class", function() {
+
+            $model = Double::classname(['extends' => Model::class]);
+            $model::definition()->lock(false);
+
+            $MyCollection = Double::classname(['extends' => Collection::class]);
+            $model::classes(['set' => $MyCollection]);
+
+            $schema = new Schema();
+            $schema->column('collection', ['type' => 'object', 'class' => $model, 'array' => true]);
+
+            $data = [
+                ['id' => '1', 'title' => 'Amiga 1200'],
+                ['id' => '2', 'title' => 'Las Vegas']
+            ];
+
+            $document = new Document(['schema' => $schema]);
+            $document['collection'] = $data;
+
+            expect($document['collection'])->toBeAnInstanceOf($MyCollection);
 
         });
 

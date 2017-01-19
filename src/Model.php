@@ -94,12 +94,11 @@ class Model extends Document
         }
         $conventions = static::conventions();
         $config = [
-            'classes'     => ['entity' => $self] + static::$_classes,
             'connection'  => static::$_connection,
             'conventions' => $conventions,
             'class'       => $self
         ];
-        $config += ['source' => $conventions->apply('source', $config['classes']['entity'])];
+        $config += ['source' => $conventions->apply('source', $self)];
 
         $class = static::$_definition;
         $schema = static::$_definitions[$self] = new $class($config);
@@ -297,10 +296,11 @@ class Model extends Document
     }
 
     /**
-     * Resets the Model.
+     * Reset the Model class.
      */
     public static function reset()
     {
+        unset(static::$_dependencies[static::class]);
         static::conventions(null);
         static::connection(null);
         static::definition(null);
