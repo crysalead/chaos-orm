@@ -878,6 +878,85 @@ describe("Schema", function() {
 
         });
 
+        it("casts field name with stars", function() {
+
+            $schema = new Schema();
+            $schema->column('data', ['type' => 'object']);
+            $schema->column('data.*', ['type' => 'object']);
+            $schema->column('data.*.checked', ['type' => 'boolean']);
+            $schema->column('data.*.test', ['type' => 'object']);
+            $schema->column('data.*.test.*', ['type' => 'object']);
+            $schema->column('data.*.test.*.nested', ['type' => 'object']);
+            $schema->column('data.*.test.*.nested.*', ['type' => 'boolean', 'array' => true]);
+            $schema->locked(true);
+
+            $document = new Document(['schema' => $schema]);
+
+            $document->set('data.value1.checked', true);
+            $document->set('data.value2.checked', 1);
+            expect($document->get('data.value1.checked'))->toBe(true);
+            expect($document->get('data.value2.checked'))->toBe(true);
+
+            $document->set('data.value3.checked', false);
+            $document->set('data.value4.checked', 0);
+            $document->set('data.value5.checked', '');
+            expect($document->get('data.value3.checked'))->toBe(false);
+            expect($document->get('data.value4.checked'))->toBe(false);
+            expect($document->get('data.value5.checked'))->toBe(false);
+
+            $document->set('data.value3.test.deeply.nested.false', [0, '', false]);
+            $document->set('data.value3.test.deeply.nested.true', [1, true]);
+            expect($document->get('data.value3.test.deeply.nested.false')->data())->toEqual([false, false, false]);
+            expect($document->get('data.value3.test.deeply.nested.true')->data())->toEqual([true, true]);
+
+            expect($document->data())->toEqual([
+                'data' => [
+                    'value1' => [
+                        'checked' => true
+                    ],
+                    'value2' => [
+                        'checked' => true
+                    ],
+                    'value3' => [
+                        'checked' => false,
+                        'test' => [
+                            'deeply' => [
+                                'nested' => [
+                                    'false' => [false, false, false],
+                                    'true' => [true, true]
+                                ]
+                            ]
+                        ]
+                    ],
+                    'value4' => [
+                        'checked' => false
+                    ],
+                    'value5' => [
+                        'checked' => false
+                    ]
+                ]
+            ]);
+
+        });
+
+        it("doesn't cast undefined type", function() {
+
+          $schema = new Schema();
+          $schema->column('key', ['type' => 'undefined']);
+
+          $document = new Document(['schema' => $schema]);
+
+          $document->set('key', 'test');
+          expect($document->get('key'))->toEqual('test');
+
+          $document->set('key', [4, 5]);
+          expect($document->get('key'))->toEqual([4, 5]);
+
+          $document->set('key', ['a' => 'b']);
+          expect($document->get('key'))->toEqual(['a' => 'b']);
+
+        });
+
     });
 
     describe(".format()", function() {

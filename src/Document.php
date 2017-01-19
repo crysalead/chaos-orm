@@ -532,7 +532,12 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $value = $this->get($name);
 
             if (!array_key_exists($name, $this->_data)) {
-                $this->_set($name, static::create());
+                $this->_set($name, static::create([], [
+                    'collector' => $this->collector(),
+                    'parent'    => $this,
+                    'basePath'  => $this->basePath(),
+                    'defaults'  => true
+                ]));
             }
             if (!$this->_data[$name] instanceof DataStoreInterface) {
                 throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
@@ -921,8 +926,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public function to($format, $options = [])
     {
         $defaults = [
-            'embed' => true,
-            'basePath' => null
+            'embed'    => true,
+            'basePath' => $this->basePath()
         ];
         $options += $defaults;
 
@@ -939,6 +944,9 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         if ($schema->locked()) {
             $fields = array_merge($schema->fields($options['basePath']), $schema->relations());
+            if (in_array('*', $fields, true)) {
+                $fields = array_keys($this->_data);
+            }
         } else {
             $fields = array_keys($this->_data);
         }
@@ -960,10 +968,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             }
             $value = $this[$field];
             if ($value instanceof Document) {
-                $options['basePath'] = $rel && $rel->embedded() ? $value->basePath() : '';
+                $options['basePath'] = $value->basePath();
                 $result[$field] = $value->to($format, $options);
             } elseif ($value instanceof Traversable) {
-                $options['basePath'] = $rel && $rel->embedded() ? $value->basePath() : '';
+                $options['basePath'] = $value->basePath();
                 $result[$field] = Collection::toArray($value, $options);
             } else {
                 $options['basePath'] = $path;

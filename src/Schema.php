@@ -161,7 +161,7 @@ class Schema
         $this->_key = $config['key'];
 
         foreach ($config['columns'] as $key => $value) {
-            $this->_columns[$key] = $this->_initColumn($value);
+            $this->column($key, $value);
         }
 
         $handlers = $this->_handlers;
@@ -464,11 +464,11 @@ class Schema
     {
         if (is_array($fields)) {
             foreach ($fields as $key => $value) {
-                $this->_columns[$key] = $this->_initColumn($value);
+                $this->column($key, $value);
             }
         } else {
             foreach ($fields->fields() as $name) {
-                $this->_columns[$name] = $fields->column($name);
+                $this->column($name, $fields->column($name));
             }
         }
         return $this;
@@ -632,10 +632,10 @@ class Schema
             $this->_relations[$config['through']]['junction'] = true;
         } elseif ($config['relation'] === 'belongsTo' && $config['link'] === $relationship::LINK_KEY) {
             $fieldName = $this->conventions()->apply('reference', $name);
-            $this->_columns[$fieldName] = ['type' => 'id', 'array' => false, 'null' => true];
+            $this->column($fieldName, ['type' => 'id', 'array' => false, 'null' => true]);
         } elseif ($config['relation'] === 'hasMany' && $config['link'] === $relationship::LINK_KEY_LIST) {
             $fieldName = $this->conventions()->apply('references', $name);
-            $this->_columns[$fieldName] = ['type' => 'id', 'array' => true, 'null' => true];
+            $this->column($fieldName, ['type' => 'id', 'array' => true, 'null' => true]);
         }
 
         if (isset($this->_relations[$name]['junction'])) {
@@ -833,10 +833,9 @@ class Schema
         $options += $defaults;
 
         $options['class'] = $this->reference();
-        $options['schema'] = $this;
 
         if ($field) {
-            $name = $options['basePath'] ? $options['basePath'] . '.' . $field : $field;
+            $name = $options['basePath'] ? $options['basePath'] . '.' . $field : (string) $field;
         } else {
             $name = $options['basePath'];
         }
@@ -845,32 +844,13 @@ class Schema
             return $this->_cast($data, $options);
         }
 
-        if (isset($this->_relations[$name])) {
-            $options = $this->_relations[$name] + $options;
-            $options['basePath'] = $options['embedded'] ? $name : null;
-
-            if ($options['relation'] !== 'hasManyThrough') {
-                $options['class'] = $options['to'];
-            } else {
-                $through = $this->relation($name);
-                $options['class'] = $through->to();
+        foreach([$name, preg_replace('~[^.]*$~', '*', $name, 1)] as $entry) {
+            if (isset($this->_relations[$entry])) {
+                return $this->_relationCast($field, $entry, $data, $options);
             }
-
-            if ($options['array'] && $field) {
-                return $this->_castArray($name, $data, $options);
+            if (isset($this->_columns[$entry])) {
+                return $this->_columnCast($field, $entry, $data, $options);
             }
-            return $this->_cast($data, $options);
-        }
-
-        if (isset($this->_columns[$name])) {
-            $options = $this->_columns[$name] + $options;
-            if (!empty($options['setter'])) {
-                $data = $options['setter']($options['parent'], $data, $name);
-            }
-            if ($options['array'] && $field) {
-                return $this->_castArray($name, $data, $options);
-            }
-            return $this->format('cast', $name, $data);
         }
 
         if ($this->locked()) {
@@ -885,6 +865,54 @@ class Schema
         }
 
         return $data;
+    }
+
+    /**
+     * Casting helper for relations.
+     *
+     * @param  string $field      The field name to cast.
+     * @param  string $name       The full field name to cast.
+     * @param  array  $data       Some data to cast.
+     * @param  array  $options    Options for the casting.
+     * @return mixed              The casted data.
+     */
+    protected function _relationCast($field, $name, $data, $options)
+    {
+        $options = $this->_relations[$name] + $options;
+        $options['basePath'] = $options['embedded'] ? $name : null;
+
+        if ($options['relation'] !== 'hasManyThrough') {
+            $options['class'] = $options['to'];
+        } else {
+            $through = $this->relation($name);
+            $options['class'] = $through->to();
+        }
+
+        if ($options['array'] && $field) {
+            return $this->_castArray($name, $data, $options);
+        }
+        return $this->_cast($data, $options);
+    }
+
+    /**
+     * Casting helper for columns.
+     *
+     * @param  string $field      The field name to cast.
+     * @param  string $name       The full field name to cast.
+     * @param  array  $data       Some data to cast.
+     * @param  array  $options    Options for the casting.
+     * @return mixed              The casted data.
+     */
+    protected function _columnCast($field, $name, $data, $options)
+    {
+        $options = $this->_columns[$name] + $options;
+        if (!empty($options['setter'])) {
+            $data = $options['setter']($options['parent'], $data, $name);
+        }
+        if ($options['array'] && $field) {
+            return $this->_castArray($name, $data, $options);
+        }
+        return $this->format('cast', $name, $data);
     }
 
     /**
@@ -904,7 +932,7 @@ class Schema
         }
         $config = [
             'collector' => $options['collector'],
-            'schema'    => ltrim($options['class'], '\\') === Document::class ? $options['schema'] : null,
+            'schema'    => ltrim($options['class'], '\\') === Document::class ? $this : null,
             'basePath'  => $options['basePath'],
             'exists'    => $options['exists'],
             'defaults'  => $options['defaults']
