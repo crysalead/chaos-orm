@@ -217,6 +217,13 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      */
     public function get($offset = null)
     {
+        if (!func_num_args()) {
+            $data = [];
+            foreach ($this as $value) {
+                $data[] = $value;
+            }
+            return $data;
+        }
         if ($entity = $this->_parent->{$this->_through}->get($offset)) {
             return $entity->{$this->_using};
         }
@@ -326,6 +333,17 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
         foreach($collection as $key => $value) {
             $preserveKeys ? $this[$key] = $value : $this[] = $value;
         }
+        return $this;
+    }
+
+    /**
+     * Clear the collection
+     *
+     * @return self This collection instance.
+     */
+    public function clear()
+    {
+        $this->_parent->{$this->_through}->clear();
         return $this;
     }
 

@@ -489,6 +489,17 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     }
 
     /**
+     * Clear the collection
+     *
+     * @return self This collection instance.
+     */
+    public function clear()
+    {
+        $this->_data = [];
+        return $this;
+    }
+
+    /**
      * Returns the item keys.
      *
      * @return array The keys of the items.

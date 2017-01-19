@@ -6,6 +6,7 @@ use DateTime;
 use InvalidArgumentException;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Model;
+use Chaos\ORM\Document;
 
 use Kahlan\Plugin\Double;
 
@@ -861,6 +862,19 @@ describe("Schema", function() {
             expect($image->tags->schema())->toBe(Tag::definition());
             expect($image->tags[0]->data())->toEqual(['id' => '1', 'name' => 'landscape']);
             expect($image->tags[1]->data())->toEqual(['id' => '2', 'name' => 'mountain']);
+
+        });
+
+        it("casts arrays of integer", function() {
+
+            $schema = new Schema();
+            $schema->column('list', ['type' => 'integer', 'array' => true]);
+
+            $document = new Document(['schema' => $schema]);
+            $document->set('list', [4, 5]);
+
+            expect($document->get('list')->count())->toBe(2);
+            expect($document->get('list')->data())->toEqual([4, 5]);
 
         });
 

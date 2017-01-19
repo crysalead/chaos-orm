@@ -393,7 +393,8 @@ class Schema
             'type'     => $column['array'] ? 'set' : 'entity',
             'relation' => $column['array'] ? 'hasMany' : 'hasOne',
             'to'       => isset($column['class']) ? $column['class'] : $this->reference(),
-            'link'     => $relationship::LINK_EMBEDDED
+            'link'     => $relationship::LINK_EMBEDDED,
+            'config'   => isset($column['config']) ? $column['config'] : []
         ]);
 
         $this->_columns[$name] = $column;
@@ -826,7 +827,8 @@ class Schema
             'collector' => null,
             'parent'    => null,
             'basePath'  => null,
-            'exists'    => false
+            'exists'    => false,
+            'defaults'  => true
         ];
         $options += $defaults;
 
@@ -895,15 +897,24 @@ class Schema
     public function _cast($data, $options)
     {
         if ($data instanceof Document) {
-            $data->collector($options['collector']);
-            $data->basePath($options['basePath']);
-            return $data;
+            if ($options['class'] !== Document::class && $data instanceof $options['class']) {
+                return $data;
+            }
+            $data = $data->to('cast');
         }
-        $options['data'] = $data ? $data : [];
-        $options['schema'] = $options['class'] === Document::class ? $options['schema'] : null;
+        $config = [
+            'collector' => $options['collector'],
+            'schema'    => ltrim($options['class'], '\\') === Document::class ? $options['schema'] : null,
+            'basePath'  => $options['basePath'],
+            'exists'    => $options['exists'],
+            'defaults'  => $options['defaults']
+        ];
+        if (isset($options['config'])){
+            $config = Set::merge($config, $options['config']);
+        }
 
         $class = $options['class'];
-        return new $class($options);
+        return $class::create($data, $config);
     }
 
     /**
@@ -918,16 +929,37 @@ class Schema
     {
         $options['type'] = isset($options['relation']) && $options['relation'] === 'hasManyThrough' ? 'through' : 'set';
         $collection = $this->_classes[$options['type']];
-        if ($data instanceof $collection) {
-            $data->collector($options['collector']);
-            $data->basePath($options['basePath']);
-            return $data;
-        }
-        $class = $options['class'];
-        $options['data'] = $data ? $data : [];
-        $options['schema'] = $class::definition();
+        $isThrough = $options['type'] === 'through';
 
-        return new $collection($options);
+        $class = ltrim($options['class'], '\\');
+
+        $config = [
+            'collector' => $options['collector'],
+            'schema'    => $class === Document::class ? $this : $class::definition(),
+            'basePath'  => $class === Document::class ? $name : $options['basePath'],
+            'data'      => $data ? $data : [],
+            'meta'      => isset($options['meta']) ? $options['meta'] : [],
+            'exists'    => $options['exists'],
+            'defaults'  => $options['defaults']
+        ];
+        if (isset($options['config'])){
+            $config = Set::merge($config, $options['config']);
+        }
+
+        if ($isThrough) {
+          $config['parent'] = $options['parent'];
+          $config['through'] = $options['through'];
+          $config['using'] = $options['using'];
+        }
+
+        if ($data instanceof $collection) {
+            $config['data'] = $isThrough ? [] : $data->get();
+            $config['meta'] = $data->meta();
+        } else if ($isThrough) {
+            $config['parent']->get($config['through'])->clear();
+        }
+
+        return new $collection($config);
     }
 
     /**

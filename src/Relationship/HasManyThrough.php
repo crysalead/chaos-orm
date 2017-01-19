@@ -3,7 +3,7 @@ namespace Chaos\ORM\Relationship;
 
 use Lead\Set\Set;
 use Chaos\ORM\ORMException;
-use Chaos\ORM\Model;
+use Chaos\ORM\Document;
 use Chaos\ORM\Collection\Through;
 use Chaos\ORM\Conventions;
 
@@ -115,13 +115,31 @@ class HasManyThrough extends \Chaos\ORM\Relationship
         $relUsing = $pivot::definition()->relation($using);
         $related = $relUsing->embed($middle, $options);
 
-        $this->_cleanup($collection);
+        $to = $relUsing->to();
+        $toSchema = $to::definition();
+
+        foreach ($collection as $index => $entity) {
+            if ($entity instanceof Document) {
+                $entity->{$name} = new Through([
+                    'parent'  => $entity,
+                    'schema'  => $toSchema,
+                    'through' => $through,
+                    'using'   => $using
+                ]);
+            } elseif (is_object($entity)) {
+                $entity->{$name} = [];
+            } else {
+                $collection[$index][$name] = [];
+            }
+        }
 
         $fromKey = $this->keys('from');
         $indexes = $this->_index($related, $this->keys('to'));
 
         foreach ($collection as $index => $entity) {
-            if (is_object($entity)) {
+            if ($entity instanceof Document) {
+                continue;
+            } elseif (is_object($entity)) {
                 foreach ($entity->{$through} as $key => $item) {
                     if (isset($item->{$using})) {
                         $value = $item->{$using};
@@ -141,6 +159,7 @@ class HasManyThrough extends \Chaos\ORM\Relationship
                 }
             }
         }
+
         return $related;
     }
 
