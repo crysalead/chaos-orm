@@ -905,9 +905,9 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     /**
      * Returns all included relations accessible through this entity.
      *
-     * @param  string $prefix The parent relation path.
-     * @param  array  $ignore The already processed entities to ignore (address circular dependencies).
-     * @return array          The included relations.
+     * @param  string      $prefix The parent relation path.
+     * @param  array       $ignore The already processed entities to ignore (address circular dependencies).
+     * @return array|false         Returns an array of relation names or `false` when a circular loop is reached.
      */
     public function hierarchy($prefix = '', &$ignore = [])
     {

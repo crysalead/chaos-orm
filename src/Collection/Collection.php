@@ -855,15 +855,23 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Returns an array of all external relations and nested relations names.
      *
-     * @param  boolean $embedded Include or not embedded relations.
-     * @return array             Returns an array of relation names.
+     * @param  boolean     $embedded Include or not embedded relations.
+     * @return array|false           Returns an array of relation names or `false` when a circular loop is reached.
      */
     public function hierarchy($prefix = '', &$ignore = [])
     {
+        $hash = spl_object_hash($this);
+        if (isset($ignore[$hash])) {
+            return false;
+        }
+        $ignore[$hash] = true;
+
         $result = [];
 
         foreach ($this as $entity) {
-            $result += array_fill_keys($entity->hierarchy($prefix, $ignore), true);
+            if ($hierarchy = $entity->hierarchy($prefix, $ignore)) {
+                $result += array_fill_keys($hierarchy, true);
+            }
         }
 
         return array_keys($result);
