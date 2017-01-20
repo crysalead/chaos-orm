@@ -565,6 +565,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      */
     public function rewind()
     {
+        $this->_skipNext = false;
         return reset($this->_data);
     }
 

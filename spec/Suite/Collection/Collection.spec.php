@@ -423,6 +423,21 @@ describe("Collection", function() {
 
         });
 
+        it("resets skip hack on rewind", function() {
+
+            $data = ['Delete me', 'Hello', 'Hello again!'];
+            $collection = new Collection(compact('data'));
+            unset($collection[0]);
+
+            $result = [];
+            foreach ($collection as $word) {
+                $result[] = $word;
+            }
+
+            expect($result)->toBe(['Hello', 'Hello again!']);
+
+        });
+
     });
 
     describe("->has()", function() {
