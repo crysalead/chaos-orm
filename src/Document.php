@@ -272,9 +272,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
 
-        if ($config['defaults'] && !$config['basePath']) {
-            $config['data'] = Set::merge($this->schema()->defaults(), $config['data']);
-        }
+        $config['data'] = Set::merge($this->schema()->defaults($config['basePath']), $config['data']);
 
         $this->set($config['data']);
         $this->_persisted = $this->_data;
@@ -458,16 +456,27 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return $value->get($keys);
         }
 
-        $fieldname = $this->basePath() ? $this->basePath() . '.' . $name : $name;
+        $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
         $schema = $this->schema();
-        $field = $schema->has($fieldname) ? $schema->column($fieldname) : [];
+
+        if ($schema->has($fieldName)) {
+            $field = $schema->column($fieldName);
+        } else {
+            $genericFieldName = $this->basePath() ? $this->basePath() . '.*' : '*';
+            if ($schema->has($genericFieldName)) {
+                $field = $schema->column($genericFieldName);
+                $fieldName = $genericFieldName;
+            } else {
+                $field = [];
+            }
+        }
 
         if (!empty($field['getter'])) {
             $value = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
-        } elseif ($this instanceof Model && $schema->hasRelation($fieldname)) {
-            return $this->_data[$name] = $schema->relation($fieldname)->get($this);
+        } elseif ($this instanceof Model && $schema->hasRelation($fieldName)) {
+            return $this->_data[$name] = $schema->relation($fieldName)->get($this);
         } elseif (isset($field['type']) && $field['type'] === 'object') {
             $value = [];
         } else {
@@ -583,10 +592,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         if ($previous !== null && $previous === $value) {
             return;
         }
-        $fieldname = $this->basePath() ? $this->basePath() . '.' . $name : $name;
+        $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
         $this->_data[$name] = $value;
 
-        if ($schema->isVirtual($fieldname)) {
+        if ($schema->isVirtual($fieldName)) {
             return;
         }
 

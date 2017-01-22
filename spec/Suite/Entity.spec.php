@@ -448,7 +448,7 @@ describe("Entity", function() {
 
                 expect($child)->toBeAnInstanceOf($childEntity);
                 expect($child->parents()->get($entity))->toBe('child');
-                expect($child->basePath())->toBe('child');
+                expect($child->basePath())->toBe(null);
 
             });
 

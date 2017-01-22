@@ -341,18 +341,22 @@ class Schema
     /**
      * Returns the schema default values.
      *
-     * @param  array $name An optionnal field name.
-     * @return mixed       Returns all default values or a specific one if `$name` is set.
+     * @param  array $basePath The basePath to extract default values from.
+     * @return mixed           Returns all default values .
      */
-    public function defaults($name = null)
+    public function defaults($basePath = null)
     {
-        if ($name) {
-            return isset($this->_columns[$name]['default']) ? $this->_columns[$name]['default'] : null;
-        }
         $defaults = [];
         foreach ($this->_columns as $key => $value) {
+            if ($basePath && strpos($key, $basePath) !== 0) {
+                continue;
+            }
+            $fieldName = $basePath ? substr($key, strlen($basePath) + 1) : $key;
+            if (!$fieldName || $fieldName === '*' || strpos($fieldName, '.') !== false) {
+                continue;
+            }
             if (isset($value['default'])) {
-                $defaults[$key] = $value['default'];
+                $defaults[$fieldName] = $value['default'];
             }
         }
         return $defaults;
@@ -936,10 +940,14 @@ class Schema
             }
             $data = $data->to('cast');
         }
+
+        $class = ltrim($options['class'], '\\');
+        $isDocument = $class === Document::class;
+
         $config = [
             'collector' => $options['collector'],
-            'schema'    => ltrim($options['class'], '\\') === Document::class ? $this : null,
-            'basePath'  => $options['basePath'],
+            'schema'    => $isDocument ? $this : $class::definition(),
+            'basePath'  => $isDocument ? $options['basePath'] : null,
             'exists'    => $options['exists'],
             'defaults'  => $options['defaults']
         ];
@@ -969,10 +977,11 @@ class Schema
         $collection = $classes[$options['type']];
         $isThrough = $options['type'] === 'through';
 
+        $isDocument = $class === Document::class;
         $config = [
             'collector' => $options['collector'],
-            'schema'    => $class === Document::class ? $this : $class::definition(),
-            'basePath'  => $class === Document::class ? $name : $options['basePath'],
+            'schema'    => $isDocument ? $this : $class::definition(),
+            'basePath'  => $isDocument ? $name : null,
             'data'      => $data ? $data : [],
             'meta'      => isset($options['meta']) ? $options['meta'] : [],
             'exists'    => $options['exists'],
