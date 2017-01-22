@@ -223,6 +223,29 @@ describe("Document", function() {
 
         });
 
+        it("correctly sets parents", function() {
+
+            $schema = new Schema();
+            $schema->column('data', ['type' => 'object']);
+            $schema->column('data.*', ['type' => 'object']);
+            $schema->column('data.*.checked', ['type' => 'boolean']);
+            $schema->column('data.*.test', ['type' => 'object']);
+            $schema->column('data.*.test.*', ['type' => 'object']);
+            $schema->column('data.*.test.*.nested', ['type' => 'object']);
+            $schema->column('data.*.test.*.nested.*', ['type' => 'boolean', 'array' => true]);
+            $schema->locked(true);
+
+            $document = new Document(['schema' => $schema]);
+
+            expect($document->parents()->count())->toBe(0);
+            expect($document->get('data')->parents()->has($document))->toBe(true);
+            expect($document->get('data.value1')->parents()->has($document->get('data')))->toBe(true);
+            expect($document->get('data.value1.test')->parents()->has($document->get('data')))->toBe(false);
+            expect($document->get('data.value1.test')->parents()->has($document->get('data.value1')))->toBe(true);
+            expect($document->get('data.value3.test.deeply.nested')->parents()->has($document->get('data.value3.test.deeply')))->toBe(true);
+
+        });
+
     });
 
     describe("->__set()", function() {

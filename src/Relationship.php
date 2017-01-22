@@ -267,7 +267,7 @@ class Relationship
 
         if (!$entity->exists()) {
             return $entity->schema()->cast($name, [], [
-                'parent'   => $entity
+                'parent' => $entity
             ]);
         }
 

@@ -476,7 +476,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         } elseif ($this instanceof Model && $schema->hasRelation($fieldName)) {
-            return $this->_data[$name] = $schema->relation($fieldName)->get($this);
+            $related = $schema->relation($fieldName)->get($this);
+            if ($related instanceof HasParentsInterface) {
+                $related->setParent($this, $name);
+            }
+            return $this->_data[$name] = $related;
         } elseif (isset($field['type']) && $field['type'] === 'object') {
             $value = [];
         } else {
@@ -489,6 +493,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             'basePath'  => $this->basePath(),
             'defaults'  => true
         ]);
+        if ($value instanceof HasParentsInterface) {
+            $value->setParent($this, $name);
+        }
+
         if (!empty($field['virtual'])) {
             return $value;
         }
