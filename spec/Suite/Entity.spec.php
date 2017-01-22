@@ -424,7 +424,7 @@ describe("Entity", function() {
                 $this->model = Double::classname(['extends' => $this->model]);
             });
 
-            it("autoboxes setted object column", function() {
+            it("autoboxes object columns", function() {
 
                 $model = $this->model;
 
@@ -451,16 +451,16 @@ describe("Entity", function() {
 
             });
 
-            it("autoboxes setted object column using a custom model name", function() {
+            it("autoboxes object columns with a custom model name", function() {
 
                 $model = $this->model;
-                $childEntity = Double::classname(['extends' => $this->model]);
-                $childEntity::definition()->lock(false);
+                $MyChildModel = Double::classname(['extends' => $this->model]);
+                $MyChildModel::definition()->lock(false);
 
                 $schema = new Schema(['class' => $model]);
                 $schema->column('child', [
                     'type'  => 'object',
-                    'class' => $childEntity
+                    'class' => $MyChildModel
                 ]);
 
                 $model::definition($schema);
@@ -474,13 +474,47 @@ describe("Entity", function() {
                 ];
                 $child = $entity['child'];
 
-                expect($child)->toBeAnInstanceOf($childEntity);
+                expect($child)->toBeAnInstanceOf($MyChildModel);
                 expect($child->parents()->get($entity))->toBe('child');
                 expect($child->basePath())->toBe(null);
 
             });
 
-            it("cast object column", function() {
+            it("lazy applies object columns schema to support single table inheritance", function() {
+
+                $model = $this->model;
+                $MyChildModel = Double::classname(['extends' => $this->model]);
+                $MyChildModel::definition()->column('id', ['type' => 'serial']);
+
+                allow($MyChildModel)->toReceive('::create')->andRun(function($data, $options) use ($model) {
+                    $options['class'] = Document::class;
+                    return $model::create($data, $options);
+                });
+
+                $schema = new Schema(['class' => $model]);
+                $schema->column('child', [
+                    'type'  => 'object',
+                    'class' => $MyChildModel
+                ]);
+
+                $model::definition($schema);
+
+                $entity = $model::create();
+
+                $entity['child'] = [
+                    'id'      => 1,
+                    'title'   => 'child record'
+                ];
+                $child = $entity['child'];
+
+                expect(get_class($child))->toBe(Document::class);
+                expect($child->schema())->not->toBe($MyChildModel::definition());
+                expect($child->parents()->get($entity))->toBe('child');
+                expect($child->basePath())->toBe('child');
+
+            });
+
+            it("casts object columns", function() {
 
                 $model = $this->model;
 

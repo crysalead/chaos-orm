@@ -328,10 +328,10 @@ class Model extends Document
     {
         $defaults = [
             'exists'     => false,
-            'autoreload' => true,
-            'data'       => []
+            'autoreload' => true
         ];
         $config += $defaults;
+        unset($config['basePath']);
         parent::__construct($config);
 
         /**

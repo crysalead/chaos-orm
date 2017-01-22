@@ -942,20 +942,17 @@ class Schema
         }
 
         $class = ltrim($options['class'], '\\');
-        $isDocument = $class === Document::class;
 
         $config = [
             'collector' => $options['collector'],
-            'schema'    => $isDocument ? $this : $class::definition(),
-            'basePath'  => $isDocument ? $options['basePath'] : null,
+            'schema'    => $class === Document::class ? $this : null,
+            'basePath'  => $options['basePath'],
             'exists'    => $options['exists'],
             'defaults'  => $options['defaults']
         ];
         if (isset($options['config'])){
             $config = Set::merge($config, $options['config']);
         }
-
-        $class = $options['class'];
         return $class::create($data, $config);
     }
 
@@ -972,12 +969,14 @@ class Schema
         $options['type'] = isset($options['relation']) && $options['relation'] === 'hasManyThrough' ? 'through' : 'set';
 
         $class = ltrim($options['class'], '\\');
+
         $classes = $class::classes();
 
         $collection = $classes[$options['type']];
         $isThrough = $options['type'] === 'through';
 
         $isDocument = $class === Document::class;
+
         $config = [
             'collector' => $options['collector'],
             'schema'    => $isDocument ? $this : $class::definition(),
