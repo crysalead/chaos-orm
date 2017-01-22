@@ -402,7 +402,7 @@ class Schema
         $this->bind($name, [
             'type'     => $column['array'] ? 'set' : 'entity',
             'relation' => $column['array'] ? 'hasMany' : 'hasOne',
-            'to'       => isset($column['class']) ? $column['class'] : $this->reference(),
+            'to'       => isset($column['class']) ? $column['class'] : Document::class,
             'link'     => $relationship::LINK_EMBEDDED,
             'config'   => isset($column['config']) ? $column['config'] : []
         ]);
@@ -935,7 +935,7 @@ class Schema
     public function _cast($data, $options)
     {
         if ($data instanceof Document) {
-            if ($options['class'] !== Document::class && $data instanceof $options['class']) {
+            if ($options['class'] !== Document::class) {
                 return $data;
             }
             $data = $data->to('cast');

@@ -5,6 +5,7 @@ use stdClass;
 use DateTime;
 use InvalidArgumentException;
 use Chaos\ORM\ORMException;
+use Chaos\ORM\Document;
 use Chaos\ORM\Model;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Collection\Collection;
@@ -423,7 +424,34 @@ describe("Entity", function() {
                 $this->model = Double::classname(['extends' => $this->model]);
             });
 
-            it("autoboxes setted data", function() {
+            it("autoboxes setted object column", function() {
+
+                $model = $this->model;
+
+                $schema = new Schema(['class' => $model]);
+                $schema->column('child', [
+                    'type'  => 'object'
+                ]);
+                $schema->lock(false);
+
+                $model::definition($schema);
+
+                $entity = $model::create();
+
+                $entity['child'] = [
+                    'id'      => 1,
+                    'title'   => 'child record',
+                    'enabled' => true
+                ];
+                $child = $entity['child'];
+
+                expect(get_class($child))->toBe(Document::class);
+                expect($child->parents()->get($entity))->toBe('child');
+                expect($child->basePath())->toBe('child');
+
+            });
+
+            it("autoboxes setted object column using a custom model name", function() {
 
                 $model = $this->model;
                 $childEntity = Double::classname(['extends' => $this->model]);
@@ -449,6 +477,27 @@ describe("Entity", function() {
                 expect($child)->toBeAnInstanceOf($childEntity);
                 expect($child->parents()->get($entity))->toBe('child');
                 expect($child->basePath())->toBe(null);
+
+            });
+
+            it("cast object column", function() {
+
+                $model = $this->model;
+
+                $schema = new Schema(['class' => $model]);
+                $schema->column('child', [
+                    'type'  => 'object'
+                ]);
+                $schema->lock(false);
+
+                $model::definition($schema);
+
+                $entity = $model::create();
+
+                $child = $entity->get('child');
+                expect(get_class($child))->toBe(Document::class);
+                expect($child->parents()->get($entity))->toBe('child');
+                expect($child->basePath())->toBe('child');
 
             });
 
