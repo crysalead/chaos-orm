@@ -611,7 +611,7 @@ describe("Collection", function() {
                 new Document(['data' => ['id' => 3, 'type' => 'type1']])
             ]]);
 
-            $indexes = $collection->indexBy('type');
+            $indexes = $collection->indexBy('type', true);
             expect($indexes)->toBe([
                 'type1' => [0, 2],
                 "type2" => [1]
@@ -627,7 +627,7 @@ describe("Collection", function() {
                 $c = new Document(['data' => ['id' => 3, 'type' => 'type1']])
             ]]);
 
-            $indexes = $collection->indexBy('type', true);
+            $indexes = $collection->indexBy('type');
             expect($indexes)->toBe([
                 'type1' => [$a, $c],
                 "type2" => [$b]

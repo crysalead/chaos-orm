@@ -604,10 +604,10 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * Return the collection indexed by an arbitrary field name.
      *
      * @param  string  $field   The field name to use for indexing
-     * @param  boolean $byValue If `true` returns the documents instead of thrir index number in the collection.
+     * @param  boolean $byIndex If `true` return index numbers attached to the index instead of documents.
      * @return array            The indexed array
      */
-    public function indexBy($field, $byValue = false)
+    public function indexBy($field, $byIndex = false)
     {
         $indexes = [];
         foreach ($this as $key => $document) {
@@ -618,7 +618,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             if (!isset($indexes[$index])) {
                 $indexes[$index] = [];
             }
-            $indexes[$index][] = $byValue ? $document : $key;
+            $indexes[$index][] = $byIndex ? $key : $document;
         }
         return $indexes;
     }
