@@ -935,10 +935,7 @@ class Schema
     public function _cast($data, $options)
     {
         if ($data instanceof Document) {
-            if ($options['class'] !== Document::class) {
-                return $data;
-            }
-            $data = $data->to('cast');
+            return $data;
         }
 
         $class = ltrim($options['class'], '\\');
@@ -997,8 +994,7 @@ class Schema
         }
 
         if ($data instanceof $collection) {
-            $config['data'] = $isThrough ? [] : $data->get();
-            $config['meta'] = $data->meta();
+            return $data;
         } else if ($isThrough) {
             $config['parent']->get($config['through'])->clear();
         }
