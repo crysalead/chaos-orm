@@ -226,7 +226,7 @@ describe("Through", function() {
 
         it("extracts a slice of items", function() {
 
-            $result = $this->through->slice(2, 2);
+            $result = $this->through->slice(2, 4);
 
             expect($result)->toBeAnInstanceOf(Collection::class);
             expect($result->data())->toBe([
@@ -237,6 +237,32 @@ describe("Through", function() {
         });
 
     });
+
+    describe("->splice()", function() {
+
+        it("removes some items", function() {
+
+            $this->through->splice(2, 2);
+            expect($this->through->data())->toBe([
+                ['name' => '0'],
+                ['name' => '1'],
+                ['name' => '4']
+            ]);
+
+        });
+
+        it("removes & adds some items", function() {
+
+            $this->through->splice(2, 2);
+            expect($this->through->data())->toBe([
+                ['name' => '0'],
+                ['name' => '1'],
+                ['name' => '4']
+            ]);
+
+        });
+
+      });
 
     describe("->offsetExists()", function() {
 

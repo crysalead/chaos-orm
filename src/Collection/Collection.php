@@ -718,15 +718,28 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * Keys have to be preserved by this method. Calling this method will only return the
      * selected slice and NOT change the elements contained in the collection slice is called on.
      *
-     * @param  integer $offset       The offset value.
-     * @param  integer $length       The number of element to extract.
-     * @param  boolean $preserveKeys Boolean indicating if keys must be preserved.
+     * @param  integer $start        The start offset.
+     * @param  integer $length       The end offset.
      * @return object                Returns a collection instance.
      */
-    public function slice($offset, $length = null, $preserveKeys = true)
+    public function slice($start, $end = null)
     {
-        $data = array_slice($this->_data, $offset, $length, $preserveKeys);
+        $end = $end !== null ? $end : count($this->_data) - 1;
+        $data = $end - $start > 0 ? array_slice($this->_data, $start, $end - $start) : [];
         return new static(compact('data'));
+    }
+
+    /**
+     * Changes the contents of an array by removing existing elements and/or adding new elements.
+     *
+     * @param  integer $offset The offset value.
+     * @param  integer $length The number of element to extract.
+     * @return array           An array containing the deleted elements.
+     */
+    public function splice($offset, $length = 0) {
+        $result = array_slice($this->_data, $offset, $length);
+        array_splice($this->_data, $offset, $length);
+        return $result;
     }
 
     /**

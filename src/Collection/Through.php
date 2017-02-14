@@ -521,14 +521,31 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * Keys have to be preserved by this method. Calling this method will only return the
      * selected slice and NOT change the elements contained in the collection slice is called on.
      *
-     * @param  integer $offset       The offset value.
-     * @param  integer $length       The number of element to extract.
-     * @param  boolean $preserveKeys Boolean indicating if keys must be preserved.
+     * @param  integer $start        The start offset.
+     * @param  integer $end          The end offset.
      * @return object                Returns a collection instance.
      */
-    public function slice($offset, $length = null, $preserveKeys = true)
+    public function slice($start, $end = null)
     {
-        $result = $this->_parent->{$this->_through}->slice($offset, $length, $preserveKeys);
+        $result = $this->_parent->{$this->_through}->slice($start, $end);
+
+        $data = [];
+        foreach ($result as $key => $value) {
+            $data[$key] = $value->{$this->_using};
+        }
+        return new Collection(compact('data'));
+    }
+
+   /**
+    * Changes the contents of an array by removing existing elements and/or adding new elements.
+    *
+    * @param  integer  offset The offset value.
+    * @param  integer  length The number of element to extract.
+    * @return Array           An array containing the deleted elements.
+    */
+    public function splice($offset, $length = 0)
+    {
+        $result = $this->_parent->{$this->_through}->splice($offset, $length);
 
         $data = [];
         foreach ($result as $key => $value) {
