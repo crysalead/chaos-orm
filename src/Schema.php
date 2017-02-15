@@ -434,12 +434,12 @@ class Schema
     }
 
     /**
-     * Removes a field/some fields from the schema.
+     * Unset a field/some fields from the schema.
      *
      * @param  string|array $name The field name or an array of field names to remove.
      * @return object             Returns `$this`.
      */
-    public function remove($name)
+    public function unset($name)
     {
         $names = $name ? (array) $name : [];
         foreach ($names as $name) {

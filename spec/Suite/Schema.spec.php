@@ -575,11 +575,11 @@ describe("Schema", function() {
 
     });
 
-    describe("->remove()", function() {
+    describe("->unset()", function() {
 
-        it("removes a field", function() {
+        it("unsets a field", function() {
 
-            $this->schema->remove('title');
+            $this->schema->unset('title');
             expect($this->schema->has('title'))->toBe(false);
 
         });
@@ -591,7 +591,7 @@ describe("Schema", function() {
         it("checks if a schema contain a field name", function() {
 
             expect($this->schema->has('title'))->toBe(true);
-            $this->schema->remove('title');
+            $this->schema->unset('title');
             expect($this->schema->has('title'))->toBe(false);
 
         });

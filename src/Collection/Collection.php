@@ -149,10 +149,10 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Unset a parent.
      *
-     * @param  pbject $parent The parent instance to remove.
+     * @param  pbject $parent The parent instance to unset.
      * @return self
      */
-    public function removeParent($parent)
+    public function unsetParent($parent)
     {
         $this->_parents->delete($parent);
         return $this;
@@ -321,7 +321,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
             $this->_data[$name] = $data;
             if ($previous instanceof HasParentsInterface) {
-                $previous->removeParent($this);
+                $previous->unsetParent($this);
             }
         } else {
             $this->_data[] = $data;
@@ -431,7 +431,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         $value = $this->_data[$name];
         unset($this->_data[$name]);
         if ($value instanceof HasParentsInterface) {
-            $value->removeParent($this);
+            $value->unsetParent($this);
         }
     }
 
@@ -452,7 +452,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  string  $name Property name.
      * @return boolean
      */
-    public function remove($name)
+    public function unset($name)
     {
         return $this->offsetUnset($name);
     }

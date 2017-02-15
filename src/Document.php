@@ -315,7 +315,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @param  object $parent The parent instance to unset.
      * @return self
      */
-    public function removeParent($parent)
+    public function unsetParent($parent)
     {
         $parents = $this->parents();
         $parents->delete($parent);
@@ -537,7 +537,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $value->setParent($this, $name);
         }
         if ($previous instanceof HasParentsInterface) {
-            $previous->removeParent($this);
+            $previous->unsetParent($this);
         }
     }
 
@@ -613,7 +613,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
         $value = $this->_data[$name];
         if ($value instanceof HasParentsInterface) {
-            $value->removeParent($this);
+            $value->unsetParent($this);
         }
         $this->_skipNext = $name === key($this->_data);
         unset($this->_data[$name]);
@@ -755,15 +755,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @param  string  $name Property name.
      * @return boolean
      */
-    public function remove($name)
+    public function unset($name)
     {
         $this->offsetUnset($name);
     }
 
     /**
-     * Unsets a property.
+     * Unset a property.
      *
-     * @param string $name The name of the field to remove.
+     * @param string $name The name of the field to unset.
      */
     public function __unset($name)
     {

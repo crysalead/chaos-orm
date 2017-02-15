@@ -71,9 +71,9 @@ describe("Through", function() {
 
     });
 
-    describe("->removeParent()", function() {
+    describe("->unsetParent()", function() {
 
-        it("removes a parent", function() {
+        it("unsets a parent", function() {
 
             unset($this->image->tags);
             expect($this->through->parents()->has($this->image))->toBe(false);
@@ -344,12 +344,12 @@ describe("Through", function() {
 
     });
 
-    describe("->remove()", function() {
+    describe("->unset()", function() {
 
         it("delegates to `offsetUnset`", function() {
 
             expect($this->through)->toReceive('offsetUnset')->with(0);
-            $this->through->remove(0);
+            $this->through->unset(0);
 
         });
 

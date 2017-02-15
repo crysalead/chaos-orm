@@ -56,7 +56,7 @@ describe("Document", function() {
         });
     });
 
-    describe("->removeParent()", function() {
+    describe("->unsetParent()", function() {
 
         it("unsets a parent", function() {
 
@@ -494,13 +494,13 @@ describe("Document", function() {
 
     });
 
-    describe("->remove()", function() {
+    describe("->unset()", function() {
 
         it("delegates to `offsetUnset`", function() {
 
             $document = new Document();
             expect($document)->toReceive('offsetUnset')->with(0);
-            $document->remove(0);
+            $document->unset(0);
 
         });
 
@@ -635,7 +635,7 @@ describe("Document", function() {
 
         });
 
-        it("returns `true` when a field is removed", function() {
+        it("returns `true` when a field is unsetted", function() {
 
             $document = new Document([
                 'data' => [

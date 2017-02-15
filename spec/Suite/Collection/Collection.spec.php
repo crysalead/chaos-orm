@@ -42,9 +42,9 @@ describe("Collection", function() {
         });
     });
 
-    describe("->removeParent()", function() {
+    describe("->unsetParent()", function() {
 
-        it("removes a parent", function() {
+        it("unsets a parent", function() {
 
             $parent = new Document();
             $collection = new Collection();
@@ -58,7 +58,7 @@ describe("Collection", function() {
 
     describe("->disconnect()", function() {
 
-        it("removes a document from its graph", function() {
+        it("unsets a document from its graph", function() {
 
             $parent = new Document();
             $collection = new Collection();
@@ -465,13 +465,13 @@ describe("Collection", function() {
 
     });
 
-    describe("->remove()", function() {
+    describe("->unset()", function() {
 
         it("delegates to `offsetUnset`", function() {
 
             $collection = new Collection();
             expect($collection)->toReceive('offsetUnset')->with(0);
-            $collection->remove(0);
+            $collection->unset(0);
 
         });
 
