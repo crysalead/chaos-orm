@@ -107,7 +107,7 @@ describe("HasManyThrough", function() {
                     ['id' => 5, 'image_id' => 4, 'tag_id' => 6],
                     ['id' => 6, 'image_id' => 4, 'tag_id' => 3],
                     ['id' => 7, 'image_id' => 4, 'tag_id' => 1]
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 if (empty($fetchOptions['return'])) {
                     return $imagesTags;
                 }
@@ -127,7 +127,7 @@ describe("HasManyThrough", function() {
                     ['id' => 4, 'name' => 'Art'],
                     ['id' => 5, 'name' => 'Science'],
                     ['id' => 6, 'name' => 'City']
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 if (empty($fetchOptions['return'])) {
                     return $tags;
                 }
@@ -154,21 +154,17 @@ describe("HasManyThrough", function() {
 
             expect(ImageTag::class)->toReceive('::all')->with([
                 'conditions' => ['image_id' => [1, 2, 3, 4, 5]]
-            ], ['collector' => $images->collector()]);
+            ], []);
 
             expect(Tag::class)->toReceive('::all')->with([
                 'conditions' => ['id' => [1, 3, 5, 6]]
-            ], ['collector' => $images->collector()]);
+            ], []);
 
             $images->embed(['tags']);
 
             foreach ($images as $image) {
                 foreach ($image->images_tags as $index => $image_tag) {
                     expect($image->tags[$index])->toBe($image_tag->tag);
-                    expect($image->tags[$index]->collector())->toBe($image_tag->tag->collector());
-                    expect($image->tags[$index]->collector())->toBe($image_tag->collector());
-                    expect($image->tags[$index]->collector())->toBe($image->collector());
-                    expect($image->tags[$index]->collector())->toBe($images->collector());
                 }
             }
 
@@ -190,11 +186,11 @@ describe("HasManyThrough", function() {
 
             expect(ImageTag::class)->toReceive('::all')->with([
                 'conditions' => ['image_id' => [1, 2, 3, 4, 5]]
-            ], ['collector' => null, 'return' => 'object']);
+            ], ['return' => 'object']);
 
             expect(Tag::class)->toReceive('::all')->with([
                 'conditions' => ['id' => [1, 3, 5, 6]]
-            ], ['collector' => null, 'return' => 'object']);
+            ], ['return' => 'object']);
 
             $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'object']]);
 
@@ -223,11 +219,11 @@ describe("HasManyThrough", function() {
 
             expect(ImageTag::class)->toReceive('::all')->with([
                 'conditions' => ['image_id' => [1, 2, 3, 4, 5]]
-            ], ['collector' => null, 'return' => 'array']);
+            ], ['return' => 'array']);
 
             expect(Tag::class)->toReceive('::all')->with([
                 'conditions' => ['id' => [1, 3, 5, 6]]
-            ], ['collector' => null, 'return' => 'array']);
+            ], ['return' => 'array']);
 
             $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'array']]);
 
@@ -250,7 +246,7 @@ describe("HasManyThrough", function() {
                 $imagesTags =  ImageTag::create([
                     ['id' => 1, 'image_id' => 1, 'tag_id' => 1],
                     ['id' => 2, 'image_id' => 1, 'tag_id' => 3]
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 return $imagesTags;
             });
 
@@ -258,7 +254,7 @@ describe("HasManyThrough", function() {
                 $tags =  Tag::create([
                     ['id' => 1, 'name' => 'High Tech'],
                     ['id' => 3, 'name' => 'Computer']
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 return $tags;
             });
 
@@ -266,18 +262,15 @@ describe("HasManyThrough", function() {
 
             expect(ImageTag::class)->toReceive('::all')->with([
                 'conditions' => ['image_id' => 1]
-            ], ['collector' => $image->collector()]);
+            ], []);
 
             expect(Tag::class)->toReceive('::all')->with([
                 'conditions' => ['id' => [1, 3]]
-            ], ['collector' => $image->collector()]);
+            ], []);
 
             expect(count($image->tags))->toBe(2);
             expect($image->tags[0]->data())->toBe(['id' => 1, 'name' => 'High Tech']);
             expect($image->tags[1]->data())->toBe(['id' => 3, 'name' => 'Computer']);
-
-            expect($image->tags[0]->collector())->toBe($image->collector());
-            expect($image->tags[1]->collector())->toBe($image->collector());
 
         });
 

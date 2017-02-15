@@ -82,21 +82,6 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     }
 
     /**
-     * Gets/sets the collector.
-     *
-     * @param  object $collector The collector instance to set or none to get it.
-     * @return mixed          Returns the parent value on get or `$this` otherwise.
-     */
-    public function collector($collector = null)
-    {
-        if (!func_num_args()) {
-            return $this->_parent->{$this->_through}->collector();
-        }
-        $this->_parent->{$this->_through}->collector($collector);
-        return $this;
-    }
-
-    /**
      * Get parents.
      *
      * @return Map Returns the parents map.
@@ -235,12 +220,12 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     /**
      * Sets data to a specified offset and wraps all data array in its appropriate object type.
      *
-     * @param  mixed  $data    An array or an entity instance to set.
-     * @param  mixed  $offset  The offset. If offset is `null` data is simply appended to the set.
-     * @param  array  $options Any additional options to pass to the `Entity`'s constructor.
-     * @return object          Returns the inserted instance.
+     * @param  mixed   $offset  The offset. If offset is `null` data is simply appended to the set.
+     * @param  mixed   $data    An array or an entity instance to set.
+     * @param  boolean $exists  The exists value.
+     * @return self             Return `this`.
      */
-    public function set($offset = null, $data = [])
+    public function set($offset = null, $data = [], $exists = null)
     {
         $name = $this->_through;
         $parent = $this->_parent;
@@ -250,7 +235,29 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
         $item = $through::create($this->_parent->exists() ? $relThrough->match($this->_parent) : []);
         $item->{$this->_using} = $data;
 
-        return $this->_parent->{$name}->set($offset, $item);
+        $this->_parent->{$name}->set($offset, $item, $exists);
+        return $this;
+    }
+
+    /**
+     * Adds data into the `Collection` instance.
+     *
+     * @param  mixed   $data    An array or an entity instance to set.
+     * @param  boolean $exists  The exists value.
+     * @return self             Return `this`.
+     */
+    public function push($data = [], $exists = null)
+    {
+        $name = $this->_through;
+        $parent = $this->_parent;
+        $relThrough = $parent->schema()->relation($name);
+        $through = $relThrough->to();
+
+        $item = $through::create($this->_parent->exists() ? $relThrough->match($this->_parent) : []);
+        $item->{$this->_using} = $data;
+
+        $this->_parent->{$name}->push($item, $exists);
+        return $this;
     }
 
     /**

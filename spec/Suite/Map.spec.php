@@ -52,14 +52,14 @@ describe("Map", function() {
 
   });
 
-  describe("->remove()", function() {
+  describe("->delete()", function() {
 
-    it("removes items", function() {
+    it("deletes items", function() {
 
       $map = new Map();
       $instance = new stdClass();
       expect($map->set($instance, 'Hello'))->toBe($map);
-      expect($map->remove($instance))->toBe($map);
+      expect($map->delete($instance))->toBe($map);
       expect($map->has($instance))->toBe(false);
 
     });
@@ -68,7 +68,7 @@ describe("Map", function() {
 
   describe("->count()", function() {
 
-    it("removes items", function() {
+    it("counts items", function() {
 
       $map = new Map();
       $instance = new stdClass();

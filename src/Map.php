@@ -56,7 +56,7 @@ class Map
      * @param  mixed $value A value.
      * @return self         Return `$this`.
      */
-    public function remove($value)
+    public function delete($value)
     {
         $id = is_object($value) ? spl_object_hash($value) : $value;
         unset($this->_keys[$id]);

@@ -293,10 +293,6 @@ class Relationship
                 return $relationship->isMany() ? $entity->parent()->parent() : $entity->parent();
             },
             static::LINK_KEY => function($entity, $relationship, $options) {
-                $options = Set::merge(['fetchOptions' => [
-                    'collector' => $this->_collector($entity)
-                ]], $options);
-
                 if ($relationship->type() === 'hasManyThrough') {
                     $collection = [$entity];
                     $this->embed($collection, $options);
@@ -309,9 +305,7 @@ class Relationship
                 return count($collection) ? $collection->rewind() : null;
             },
             static::LINK_KEY_LIST  => function($object, $relationship, $options) {
-                return $this->_find($entity->{$relationship->keys('from')}, Set::merge(['fetchOptions' => [
-                    'collector' => $this->_collector($entity)
-                ]], $options));
+                return $this->_find($entity->{$relationship->keys('from')}, $options);
             }
         ];
     }
@@ -350,27 +344,13 @@ class Relationship
         $to = $this->to();
 
         if (!$id) {
-            $collector = isset($fetchOptions['collector']) ? $fetchOptions['collector'] : null;
-            return $to::create([], ['type' => 'set', 'collector' => $collector]);
+            return $to::create([], ['type' => 'set']);
         }
         if (is_array($id) && count($id) === 1) {
             $id = reset($id);
         }
         $query = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $id]]);
         return $to::all($query, $fetchOptions);
-    }
-
-    /**
-     * Extracts the collector from an object
-     *
-     * @param  mixed       $object An instance.
-     * @return object|null         The collector instance or `null` if unavailable.
-     */
-    protected function _collector($object)
-    {
-        if (method_exists($object, 'collector')) {
-            return $object->collector();
-        }
     }
 
     /**

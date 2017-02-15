@@ -77,7 +77,7 @@ describe("HasOne", function() {
                 $details =  GalleryDetail::create([
                     ['id' => 1, 'description' => 'Foo Gallery Description', 'gallery_id' => 1],
                     ['id' => 2, 'description' => 'Bar Gallery Description', 'gallery_id' => 2]
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 if (!empty($fetchOptions['return']) && $fetchOptions['return'] === 'array') {
                     return $details->data();
                 }
@@ -96,14 +96,12 @@ describe("HasOne", function() {
 
             expect(GalleryDetail::class)->toReceive('::all')->with([
                 'conditions' => ['gallery_id' => [1, 2]]
-            ], ['collector' => $galleries->collector()]);
+            ], []);
 
             $galleries->embed(['detail']);
 
             foreach ($galleries as $gallery) {
                 expect($gallery->detail->gallery_id)->toBe($gallery->id);
-                expect($gallery->detail->collector())->toBe($gallery->collector());
-                expect($gallery->detail->collector())->toBe($galleries->collector());
             }
 
         });
@@ -121,7 +119,7 @@ describe("HasOne", function() {
 
             expect(GalleryDetail::class)->toReceive('::all')->with([
                 'conditions' => ['gallery_id' => [1, 2]]
-            ], ['collector' => null, 'return' => 'array']);
+            ], ['return' => 'array']);
 
             $hasOne->embed($galleries, ['fetchOptions' => ['return' => 'array']]);
 
@@ -139,7 +137,7 @@ describe("HasOne", function() {
         it("returns `null` for unexisting foreign key", function() {
 
             Stub::on(GalleryDetail::class)->method('::all', function($options = [], $fetchOptions = []) {
-                return GalleryDetail::create([], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                return GalleryDetail::create([], ['type' => 'set', 'exists' => true]);
             });
 
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
@@ -152,7 +150,7 @@ describe("HasOne", function() {
             Stub::on(GalleryDetail::class)->method('::all', function($options = [], $fetchOptions = []) {
                 $details =  GalleryDetail::create([
                     ['id' => 1, 'description' => 'Foo Gallery Description', 'gallery_id' => 1]
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 return $details;
             });
 
@@ -160,10 +158,9 @@ describe("HasOne", function() {
 
             expect(GalleryDetail::class)->toReceive('::all')->with([
                 'conditions' => ['gallery_id' => 1]
-            ], ['collector' => $gallery->collector()]);
+            ], []);
 
             expect($gallery->detail->gallery_id)->toBe($gallery->id);
-            expect($gallery->detail->collector())->toBe($gallery->collector());
 
         });
 

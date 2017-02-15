@@ -77,7 +77,7 @@ describe("BelongsTo", function() {
                 $galleries =  Gallery::create([
                     ['id' => 1, 'name' => 'Foo Gallery'],
                     ['id' => 2, 'name' => 'Bar Gallery']
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 if (!empty($fetchOptions['return']) && $fetchOptions['return'] === 'array') {
                     return $galleries->data();
                 }
@@ -99,13 +99,12 @@ describe("BelongsTo", function() {
 
             expect(Gallery::class)->toReceive('::all')->with([
                 'conditions' => ['id' => [1, 2]]
-            ], ['collector' => $images->collector()]);
+            ], []);
 
             $images->embed(['gallery']);
 
             foreach ($images as $image) {
                 expect($image->gallery->id)->toBe($image->gallery_id);
-                expect($image->gallery->collector())->toBe($image->collector());
             }
 
         });
@@ -126,7 +125,7 @@ describe("BelongsTo", function() {
 
             expect(Gallery::class)->toReceive('::all')->with([
                 'conditions' => ['id' => [1, 2]]
-            ], ['collector' => null, 'return' => 'array']);
+            ], ['return' => 'array']);
 
             $belongsTo->embed($images, ['fetchOptions' => ['return' => 'array']]);
 
@@ -153,7 +152,7 @@ describe("BelongsTo", function() {
             Stub::on(Gallery::class)->method('::all', function($options = [], $fetchOptions = []) {
                 $galleries =  Gallery::create([
                     ['id' => 1, 'name' => 'Foo Gallery']
-                ], ['type' => 'set', 'exists' => true, 'collector' => $fetchOptions['collector']]);
+                ], ['type' => 'set', 'exists' => true]);
                 return $galleries;
             });
 
@@ -161,10 +160,9 @@ describe("BelongsTo", function() {
 
             expect(Gallery::class)->toReceive('::all')->with([
                 'conditions' => ['id' => 1]
-            ], ['collector' => $image->collector()]);
+            ], []);
 
             expect($image->gallery->id)->toBe($image->gallery_id);
-            expect($image->gallery->collector())->toBe($image->collector());
         });
 
     });

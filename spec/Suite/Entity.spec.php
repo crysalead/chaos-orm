@@ -48,21 +48,45 @@ describe("Entity", function() {
 
         });
 
-        it("throws an exception if exists is `null` but no record actually exists", function() {
+        it("applies same `exists` value for children", function() {
 
-            $model = $this->model;
-            allow($model)->toReceive('::load')->andRun(function() { return; });
+            $image = Image::create([
+                'id'      => 123,
+                'name'    => 'amiga_1200.jpg',
+                'title'   => 'Amiga 1200',
+                'gallery' => ['id' => 456, 'name' => 'MyGallery']
+            ], ['exists' => true]);
 
-            $closure = function() {
+            expect($image->exists())->toBe(true);
+            expect($image->gallery->exists())->toBe(true);
+
+        });
+
+        context("when unicity is enabled", function() {
+
+            it("replace old references", function() {
+
                 $model = $this->model;
-                $entity = $model::create([
-                    'id'    => 1,
-                    'title' => 'Good Bye',
-                    'body'  => 'Folks'
-                ], ['exists' => null]);
-            };
+                $model::unicity(true);
+                $data = ['id' => '1', 'title' => 'Amiga 1200'];
+                $entity = $model::create(['id' => '1', 'title' => 'Amiga 1200'], ['exists' => true]);
+                $entity = $model::create(['id' => '1', 'title' => 'Amiga 1260'], ['exists' => true]);
 
-            expect($closure)->toThrow(new ORMException("The entity id:`1` doesn't exists."));
+                $closure = function() use ($data) {
+                    $model = $this->model;
+                    new $model([
+                        'data' => ['id' => '1', 'title' => 'Amiga 1260'],
+                        'exists' => true
+                    ]);
+                };
+
+                $schema = $model::definition();
+                $source = $schema->source();
+                expect($closure)->toThrow(new ORMException("Trying to create a duplicate of `{$source}` ID `1` which is not allowed when unicity is enabled."));
+
+                $model::reset();
+
+            });
 
         });
 
@@ -163,6 +187,25 @@ describe("Entity", function() {
 
         });
 
+        it("syncs associated data", function() {
+
+            $image = Image::create([
+                'name'  => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200'
+            ]);
+
+            expect($image->exists())->toBe(false);
+
+            $image->sync(123, [
+                'gallery' => ['id' => 456, 'name' => 'MyGallery']
+            ], ['exists' => true]);
+
+            expect($image->id())->toBe(123);
+            expect($image->exists())->toBe(true);
+            expect($image->gallery->exists())->toBe(true);
+
+        });
+
         context("when there's no primary key", function() {
 
             it("syncs an entity to its persisted value", function() {
@@ -182,6 +225,54 @@ describe("Entity", function() {
                 expect($entity->modified('modified'))->toBe(false);
                 expect($entity->modified('added'))->toBe(false);
                 expect($entity->added)->toBe('added');
+
+            });
+
+        });
+
+        context("when unicity is enabled", function() {
+
+            it("stores the entity in the shard when the entity has been persisted", function() {
+
+                $model = $this->model;
+                $model::unicity(true);
+                $shard = $model::shard();
+
+                $data = ['id' => '1', 'title' => 'Amiga 1200'];
+                $entity = $model::create($data);
+
+                expect($shard->has($entity->id()))->toBe(false);
+
+                $entity->sync(null, ['name' => 'file.jpg'], ['exists' => true]);
+
+                expect($shard->has($entity->id()))->toBe(true);
+                expect($shard->count())->toBe(1);
+
+                expect($entity->name)->toBe('file.jpg');
+
+                $model::reset();
+
+            });
+
+            it("removes the entity from the shard when the entity has been deleted", function() {
+
+                $model = $this->model;
+                $model::unicity(true);
+                $shard = $model::shard();
+
+                $data = ['id' => '1', 'title' => 'Amiga 1200'];
+                $entity = $model::create($data, ['exists' => true]);
+
+                expect($shard->has($entity->id()))->toBe(true);
+                expect($shard->count())->toBe(1);
+
+                $entity->sync(null, ['name' => 'file.jpg'], ['exists' => false]);
+
+                expect($shard->has($entity->id()))->toBe(false);
+
+                expect($entity->name)->toBe('file.jpg');
+
+                $model::reset();
 
             });
 
@@ -244,6 +335,10 @@ describe("Entity", function() {
                     ]
                 ]
             ]);
+
+            expect($image)->toBeAnInstanceOf(Image::class);
+            expect($image->a)->toBeAnInstanceOf(Document::class);
+            expect($image->a->nested)->toBeAnInstanceOf(Document::class);
 
         });
 

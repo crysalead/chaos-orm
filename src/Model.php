@@ -1,8 +1,10 @@
 <?php
 namespace Chaos\ORM;
 
+use Exception;
 use Iterator;
 use Lead\Set\Set;
+use Chaos\ORM\Map;
 use Chaos\ORM\Document;
 use Chaos\ORM\collection\Collection;
 
@@ -30,6 +32,13 @@ class Model extends Document
     protected static $_definition = 'Chaos\ORM\Schema';
 
     /**
+     * MUST BE re-defined in sub-classes which require a different unitity mode by default.
+     *
+     * @var boolean
+     */
+    protected static $_unicity = false;
+
+    /**
      * Class dependencies.
      *
      * @var array
@@ -49,6 +58,20 @@ class Model extends Document
      * @var array
      */
     protected static $_definitions = [];
+
+    /**
+     * Stores model's unicity definition.
+     *
+     * @var boolean
+     */
+    protected static $_unicities = [];
+
+    /**
+     * Source of truths when unicity is enabled.
+     *
+     * @var array
+     */
+    protected static $_shards = [];
 
     /**
      * Stores finders instances.
@@ -104,6 +127,40 @@ class Model extends Document
         $schema = static::$_definitions[$self] = new $class($config);
         static::_define($schema);
         return $schema;
+    }
+
+    /**
+     * Gets/sets the collector instance for the model.
+     *
+     * @param  Object collector The collector instance to set or none to get it.
+     * @return Object           The collector instance on get and `this` on set.
+     */
+    static function unicity($enable = null) {
+       if (!func_num_args()) {
+         return isset(static::$_unicities[static::class]) ? static::$_unicities[static::class] : static::$_unicity;
+       }
+       static::$_unicities[static::class] = !!$enable;
+    }
+
+    /**
+     * Get the shard attached to the model.
+     *
+     * @param  Map $collector The collector instance to set or none to get it.
+     * @return Map            The collector instance on get and `this` on set.
+     */
+    static function shard($collector = null) {
+      if (func_num_args()) {
+        if ($collector) {
+          static::$_shards[static::class] = $collector;
+        } else {
+          unset(static::$_shards[static::class]);
+        }
+        return;
+      }
+      if (!isset(static::$_shards[static::class])) {
+        static::$_shards[static::class] = new Map();
+      }
+      return static::$_shards[static::class];
     }
 
     /**
@@ -166,6 +223,66 @@ class Model extends Document
      */
     protected static function _finders($finders)
     {
+    }
+
+    /**
+     * Instantiates a new record or document object, initialized with any data passed in. For example:
+     *
+     * ```php
+     * $post = Posts::create(['title' => 'New post']);
+     * echo $post->title; // echoes 'New post'
+     * $success = $post->save();
+     * ```
+     *
+     * Note that while this method creates a new object, there is no effect on the database until
+     * the `save()` method is called.
+     *
+     * In addition, this method can be used to simulate loading a pre-existing object from the
+     * database, without actually querying the database:
+     *
+     * ```php
+     * $post = Posts::create(['id' => $id, 'moreData' => 'foo'], ['exists' => true]);
+     * $post->title = 'New title';
+     * $success = $post->save();
+     * ```
+     *
+     * This will create an update query against the object with an ID matching `$id`. Also note that
+     * only the `title` field will be updated.
+     *
+     * @param  array  $data    Any data that this object should be populated with initially.
+     * @param  array  $options Options to be passed to item.
+     *                         - `'type'`   _string_  : can be `'entity'` or `'set'`. `'set'` is used if the passed data represent a collection
+     *                         - `'class'`  _string_  : the document class name to use to create entities.
+     *                         - `'exists'` _boolean_ : the persitance boolean.
+     * @return object          Returns a new, un-saved record or document object. In addition to
+     *                         the values passed to `$data`, the object will also contain any values
+     *                         assigned to the `'default'` key of each field defined in the schema.
+     */
+    public static function create($data = [], $options = [])
+    {
+        $defaults = [
+            'type'   => 'entity',
+            'class'  => static::class,
+            'exists' => false
+        ];
+        $options += $defaults;
+
+        $type = $options['type'];
+        $classname = $options['class'];
+
+        if ($type === 'entity' && $options['exists'] && $classname::unicity()) {
+            $data = $data ? $data : [];
+            $schema = $classname::definition();
+            $shard = $classname::shard();
+            $key = $schema->key();
+            if (isset($data[$key]) && $shard->has($data[$key])) {
+                $id = $data[$key];
+                $instance = $shard->get($id);
+                $instance->sync(null, $data);
+                return $instance;
+            }
+        }
+        return parent::create($data, $options);
     }
 
     /**
@@ -306,7 +423,9 @@ class Model extends Document
         static::definition(null);
         static::validator(null);
         static::query([]);
+        unset(static::$_unicities[static::class]);
         unset(static::$_definitions[static::class]);
+        unset(static::$_shards[static::class]);
     }
 
     /***************************
@@ -320,15 +439,13 @@ class Model extends Document
      *
      * @param array $config Possible options are:
      *                      - `'exists'`     _boolean_: A boolean or `null` indicating if the entity exists.
-     *                      - `'autoreload'` _boolean_: If `true` and exists is `null`, autoreload the entity
      *                                                  from the datasource
      *
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'exists'     => false,
-            'autoreload' => true
+            'exists' => false
         ];
         $config += $defaults;
         unset($config['basePath']);
@@ -343,28 +460,24 @@ class Model extends Document
          */
         $this->exists($config['exists']);
 
-        if ($this->exists() === false) {
-            return;
-        }
-
-        if ($this->exists() !== true) {
-            if ($config['autoreload']) {
-                $this->reload();
-            }
-            $this->set($config['data']);
-        }
-
-        $this->_persisted = $this->_data;
-
-        if ($this->exists() !== true) {
+        if ($this->_exists !== true) {
             return;
         }
 
         if (!$id = $this->id()) {
           throw new ORMException("Existing entities must have a valid ID.");
         }
-        $source = $this->schema()->source();
-        $this->uuid($source . ':' . $id);
+
+        if (!static::unicity()) {
+            return;
+        }
+        $shard = static::shard();
+        if ($shard->has($id)) {
+          $schema = static::definition();
+          $source = $schema->source();
+          throw new ORMException("Trying to create a duplicate of `" . $source . "` ID `" . $id . "` which is not allowed when unicity is enabled.");
+        }
+        $shard->set($id, $this);
     }
 
     /**
@@ -419,14 +532,26 @@ class Model extends Document
      */
     public function sync($id = null, $data = [], $options = [])
     {
-        if (isset($options['exists'])) {
-            $this->_exists = $options['exists'];
-        }
-        if ($id && $key = $this->schema()->key()) {
+        $exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
+        $this->_exists = $exists;
+
+        $key = $this->schema()->key();
+        if ($id && $key) {
             $data[$key] = $id;
         }
-        $this->set($data + $this->_data);
+        $this->set($data + $this->_data, $exists);
         $this->_persisted = $this->_data;
+        if (!static::unicity()) {
+          return $this;
+        }
+        $id = $this->{$key};
+        if ($id !== null) {
+            if ($exists) {
+                static::shard()->set($id, $this);
+            } else {
+                static::shard()->delete($id);
+            }
+        }
         return $this;
     }
 

@@ -31,7 +31,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @var array
      */
     protected static $_classes = [
-        'collector'   => 'Chaos\ORM\Collector',
         'set'         => 'Chaos\ORM\Collection\Collection',
         'through'     => 'Chaos\ORM\Collection\Through',
         'conventions' => 'Chaos\ORM\Conventions'
@@ -52,13 +51,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     protected static $_validators = [];
 
     /**
-     * The collector instance.
-     *
-     * @var object
-     */
-    protected $_collector = null;
-
-    /**
      * A reference to `Document`'s parents object.
      *
      * @var object
@@ -71,13 +63,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @var object
      */
     protected $_schema = null;
-
-    /**
-     * The UUID value.
-     *
-     * @var string
-     */
-    protected $_uuid = null;
 
     /**
      * If this instance has a parent, this value indicates the parent field path.
@@ -247,8 +232,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * Creates a new record object with default values.
      *
      * @param array $config Possible options are:
-     *                      - `'collector'`  _object_ : A collector instance.
-     *                      - `'uuid'`       _object_ : The object UUID.
      *                      - `'schema'`     _object_ : The schema instance.
      *                      - `'basePath'`   _string_ : A dotted field names path (for embedded entities).
      *                      - `'defaults'`   _boolean_  Populates or not the fields default values.
@@ -258,8 +241,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public function __construct($config = [])
     {
         $defaults = [
-            'collector' => null,
-            'uuid'      => null,
             'schema'    => null,
             'basePath'  => null,
             'defaults'  => true,
@@ -268,16 +249,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $config += $defaults;
         $this->_parents = new Map();
 
-        $this->collector($config['collector']);
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
 
         $config['data'] = Set::merge($this->schema()->defaults($config['basePath']), $config['data']);
 
-        $this->set($config['data']);
+        $this->set($config['data'], isset($config['exists']) ? $config['exists'] : null);
         $this->_persisted = $this->_data;
-
-        $this->uuid($config['uuid']);
     }
 
     /**
@@ -306,54 +284,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $this->_schema = static::definition();
         }
         return $this->_schema;
-    }
-
-    /**
-      * Gets/sets the instance uuid.
-      *
-      * @param  string $uuid The uuid to set or none to get it.
-      * @return mixed        The uuid on get or `this` otherwise.
-      */
-    public function uuid($uuid = null)
-    {
-        if (func_num_args()) {
-            if ($this->_uuid === $uuid) {
-                return $this;
-            }
-
-            $collector = $this->collector();
-            if ($this->_uuid) {
-                $collector->remove($this->_uuid);
-            }
-            $this->_uuid = $uuid;
-            if ($this->_uuid) {
-                $collector->set($this->uuid(), $this);
-            }
-            return $this;
-        }
-        if (!$this->_uuid) {
-            $this->_uuid = spl_object_hash($this);
-        }
-        return $this->_uuid;
-    }
-
-    /**
-     * Gets/sets the collector instance.
-     *
-     * @param  object $collector The collector instance to set or none to get it.
-     * @return object            The collector instance on set or `$this` otherwise.
-     */
-    public function collector($collector = null)
-    {
-        if (func_num_args()) {
-            $this->_collector = $collector;
-            return $this;
-        }
-        if (!$this->_collector) {
-            $collector = static::$_classes['collector'];
-            $this->_collector = new $collector();
-        }
-        return $this->_collector;
     }
 
     /**
@@ -388,10 +318,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public function removeParent($parent)
     {
         $parents = $this->parents();
-        $parents->remove($parent);
-        if ($parents->count() === 0) {
-            $this->collector()->remove($this->uuid());
-        }
+        $parents->delete($parent);
         return $this;
     }
 
@@ -488,7 +415,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
 
         $value = $schema->cast($name, $value, [
-            'collector' => $this->collector(),
             'parent'    => $this,
             'basePath'  => $this->basePath(),
             'defaults'  => true
@@ -506,24 +432,24 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     /**
      * Sets one or several properties.
      *
-     * @param  mixed $name    A field name or an associative array of fields and values.
-     * @param  array $data    An associative array of fields and values or an options array.
-     * @param  array $options An options array.
-     * @return object         Returns `$this`.
+     * @param  mixed   $name    A field name or an associative array of fields and values.
+     * @param  array   $data    An associative array of fields and values or an options array.
+     * @param  boolean $exists  The exists value.
+     * @return object           Returns `$this`.
      */
-    public function set($name, $data = [])
+    public function set($name, $data = [], $exists = false)
     {
-        if (func_num_args() >= 2) {
-            $this->_set($name, $data);
+        if (is_string($name) || isset($name[0])) {
+            $this->_set($name, $data, $exists);
             return $this;
         }
-        $options = $data;
+        $exists = !!$data;
         $data = $name;
         if (!is_array($data)) {
             throw new ORMException('An array is required to set data in bulk.');
         }
         foreach ($data as $name => $value) {
-            $this->_set($name, $value);
+            $this->_set($name, $value, $exists);
         }
         return $this;
     }
@@ -557,11 +483,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * ];
      * ```
      *
-     * @param string $offset  The field name.
-     * @param mixed  $data    The value to set.
-     * @param array  $options An options array.
+     * @param string  $offset  The field name.
+     * @param mixed   $data    The value to set.
+     * @param boolean $exists  The exists value.
      */
-    protected function _set($name, $data)
+    protected function _set($name, $data, $exists = false)
     {
         $keys = is_array($name) ? $name : explode('.', $name);
 
@@ -575,7 +501,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
             if (!array_key_exists($name, $this->_data)) {
                 $this->_set($name, static::create([], [
-                    'collector' => $this->collector(),
+                    'exists'    => $exists,
                     'parent'    => $this,
                     'basePath'  => $this->basePath(),
                     'defaults'  => true
@@ -584,7 +510,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             if (!$this->_data[$name] instanceof DataStoreInterface) {
                 throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
             }
-            $this->_data[$name]->set($keys, $data);
+            $this->_data[$name]->set($keys, $data, $exists);
             return;
         }
 
@@ -592,7 +518,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
         $value = $this->schema()->cast($name, $data, [
-            'collector' => $this->collector(),
+            'exists'    => $exists,
             'parent'    => $this,
             'basePath'  => $this->basePath(),
             'defaults'  => true
@@ -917,6 +843,17 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $result = array_keys($result);
         $result = $field ? $result : !!$result;
         return $result;
+    }
+
+    /**
+     * Sync a document
+     *
+     * @return self
+     */
+    public function sync()
+    {
+        $this->_persisted = $this->_data;
+        return $this;
     }
 
     /**

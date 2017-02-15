@@ -834,4 +834,26 @@ describe("Document", function() {
 
     });
 
+    describe(".sync()", function() {
+
+        it("returns a boolean indicating if a field has been modified", function() {
+
+            $document = new Document([
+                'data' => [
+                    'title' => 'original'
+                ]
+            ]);
+
+            expect($document->modified('title'))->toBe(false);
+
+            $document->title = 'modified';
+            expect($document->modified('title'))->toBe(true);
+
+            $document->sync();
+            expect($document->modified('title'))->toBe(false);
+
+        });
+
+    });
+
 });

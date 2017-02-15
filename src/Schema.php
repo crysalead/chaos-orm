@@ -834,7 +834,6 @@ class Schema
     public function cast($field = null, $data = [], $options = [])
     {
         $defaults = [
-            'collector' => null,
             'parent'    => null,
             'basePath'  => null,
             'exists'    => false,
@@ -870,6 +869,7 @@ class Schema
             if ($data === array_values($data)) {
                 return $this->_castArray($name, $data, $options);
             } else {
+                $options['class'] = Document::class;
                 return $this->_cast($data, $options);
             }
         }
@@ -941,7 +941,6 @@ class Schema
         $class = ltrim($options['class'], '\\');
 
         $config = [
-            'collector' => $options['collector'],
             'schema'    => $class === Document::class ? $this : null,
             'basePath'  => $options['basePath'],
             'exists'    => $options['exists'],
@@ -975,7 +974,6 @@ class Schema
         $isDocument = $class === Document::class;
 
         $config = [
-            'collector' => $options['collector'],
             'schema'    => $isDocument ? $this : $class::definition(),
             'basePath'  => $isDocument ? $name : null,
             'data'      => $data ? $data : [],

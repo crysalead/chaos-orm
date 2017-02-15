@@ -30,16 +30,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @var array
      */
-    protected $_classes = [
-        'collector' => 'Chaos\ORM\Collector'
-    ];
-
-    /**
-     * The collector instance.
-     *
-     * @var object
-     */
-    protected $_collector = null;
+    protected $_classes = [];
 
     /**
      * A reference to `Document`'s parents object.
@@ -103,7 +94,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * Creates a collection.
      *
      * @param array $config Possible options are:
-     *                      - `'collector'` _object_ : A collector instance.
      *                      - `'parent'`    _object_ : The parent instance.
      *                      - `'schema'`    _object_ : The attached schema.
      *                      - `'basePath'`  _string_ : A dotted string field path.
@@ -113,7 +103,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function __construct($config = [])
     {
         $defaults = [
-            'collector' => null,
             'schema'    => null,
             'basePath'  => null,
             'meta'      => [],
@@ -123,35 +112,15 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         ];
         $config += $defaults;
 
-        $this->collector($config['collector']);
         $this->exists($config['exists']);
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
         $this->meta($config['meta']);
 
         foreach ($config['data'] as $key => $value) {
-            $this->set($key, $value);
+            $this->set($key, $value, $config['exists']);
         }
         $this->_parents = new Map();
-    }
-
-    /**
-     * Gets/sets the collector.
-     *
-     * @param  object $collector The collector instance to set or none to get the current one.
-     * @return object            Returns the collector instance on get or `$this` otherwise.
-     */
-    public function collector($collector = null)
-    {
-        if (func_num_args()) {
-            $this->_collector = $collector;
-            return $this;
-        }
-        if (!$this->_collector) {
-            $collector = $this->_classes['collector'];
-            $this->_collector = new $collector();
-        }
-        return $this->_collector;
     }
 
     /**
@@ -185,7 +154,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      */
     public function removeParent($parent)
     {
-        $this->_parents->remove($parent);
+        $this->_parents->delete($parent);
         return $this;
     }
 
@@ -322,11 +291,12 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Sets data inside the `Collection` instance.
      *
-     * @param  mixed $offset The offset.
-     * @param  mixed $data   The entity object or data to set.
-     * @return mixed         Returns `$this`.
+     * @param  mixed   $offset The offset.
+     * @param  mixed   $data   The entity object or data to set.
+     * @param  boolean $exists Define existence mode of related data.
+     * @return mixed           Returns `$this`.
      */
-    public function set($offset = null, $data = [])
+    public function set($offset = null, $data = [], $exists = false)
     {
         $keys = is_array($offset) ? $offset : ($offset !== null ? explode('.', $offset) : []);
 
@@ -338,10 +308,9 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
 
         if ($schema = $this->schema()) {
             $data = $schema->cast(null, $data, [
-                'collector' => $this->collector(),
                 'parent'    => $this,
                 'basePath'  => $this->basePath(),
-                'exists'    => $this->exists(),
+                'exists'    => $exists,
                 'defaults'  => true
             ]);
         }
@@ -361,6 +330,19 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         if ($data instanceof HasParentsInterface) {
             $data->setParent($this, $name);
         }
+        return $this;
+    }
+
+    /**
+     * Adds data into the `Collection` instance.
+     *
+     * @param  mixed   $data   The entity object or data to set.
+     * @param  boolean $exists Define existence mode of related data.
+     * @return mixed           Returns the set `Entity` object.
+     */
+    public function push($data, $exists = false)
+    {
+        $this->set(null, $data, $exists);
         return $this;
     }
 

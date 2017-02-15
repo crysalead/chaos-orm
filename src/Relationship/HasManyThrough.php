@@ -99,10 +99,6 @@ class HasManyThrough extends \Chaos\ORM\Relationship
      */
     public function embed(&$collection, $options = [])
     {
-        $options = Set::merge(['fetchOptions' => [
-            'collector' => $this->_collector($collection)
-        ]], $options);
-
         $name = $this->name();
         $through = $this->through();
         $using = $this->using();

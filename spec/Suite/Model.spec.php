@@ -7,6 +7,8 @@ use InvalidArgumentException;
 use Chaos\ORM\Model;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Collection\Collection;
+use Chaos\ORM\Spec\Fixture\Model\Image;
+use Chaos\ORM\Map;
 
 use Kahlan\Plugin\Double;
 
@@ -139,6 +141,34 @@ describe("Model", function() {
             $collection = $model::create($data, ['type' => 'set']);
 
             expect($collection)->toBeAnInstanceOf($MyCollection);
+
+        });
+
+        context("when unicity is enabled", function() {
+
+            it("keeps a single reference of entities with the same ID", function() {
+
+                $model = $this->model;
+                $model::unicity(true);
+                $data = ['id' => '1', 'title' => 'Amiga 1200'];
+                $entity = $model::create($data, ['exists' => true]);
+
+                expect($entity instanceof $model)->toBe(true);
+                expect($entity->data())->toBe($data);
+                expect($entity->exists())->toBe(true);
+
+                $shard = $model::shard();
+                expect($shard->has($entity->id()))->toBe(true);
+
+                $entity2 = $model::create($data, ['exists' => true]);
+
+                expect($entity)->toBe($entity2);
+
+                expect($shard->count())->toBe(1);
+
+                $model::reset();
+
+            });
 
         });
 
@@ -331,6 +361,66 @@ describe("Model", function() {
             $model = $this->model;
             $model::definition($schema);
             expect($model::definition())->toBe($schema);
+
+        });
+
+    });
+
+    describe(".unicity()", function() {
+
+        it("gets/sets unicity", function() {
+
+            $model = $this->model;
+            $model::unicity(true);
+            expect($model::unicity())->toBe(true);
+
+            $model = $this->model;
+            $model::reset();
+            expect($model::unicity())->toBe(false);
+
+        });
+
+    });
+
+    describe(".shard()", function() {
+
+        beforeEach(function() {
+            $model = $this->model;
+            $model::unicity(true);
+        });
+
+        afterEach(function() {
+            $model = $this->model;
+            $model::reset();
+        });
+
+        it("gets/sets a shard", function() {
+
+            $model = $this->model;
+            $shard = new Map();
+            expect($model::shard($shard))->toBe(null);
+            expect($model::shard())->toBe($shard);
+
+        });
+
+        it("gets the default shard", function() {
+
+            $model = $this->model;
+            $shard = $model::shard();
+            expect($model::shard())->toBeAnInstanceOf(Map::class);
+            expect($model::shard())->toBe($shard);
+
+            expect(Image::shard())->not->toBe($shard);
+
+        });
+
+        it("deletes a shard", function() {
+
+            $model = $this->model;
+            $shard = $model::shard();
+
+            $model::shard(false);
+            expect($model::shard())->not->toBe($shard);
 
         });
 
