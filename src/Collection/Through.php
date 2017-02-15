@@ -5,6 +5,8 @@ use Chaos\ORM\Contrat\DataStoreInterface;
 use Chaos\ORM\Contrat\HasParentsInterface;
 
 use Chaos\ORM\ORMException;
+use Chaos\ORM\Document;
+use Chaos\ORM\Model;
 use Chaos\ORM\Collection\Collection;
 
 /**
@@ -452,6 +454,107 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     }
 
     /**
+     * Return the collection indexed by an arbitrary field name.
+     *
+     * @param  string  $field   The field name to use for indexing
+     * @param  boolean $byIndex If `true` return index numbers attached to the index instead of documents.
+     * @return object           The indexed collection
+     */
+    public function indexBy($field, $byIndex = false)
+    {
+        $indexes = [];
+        $collection = $this->_parent->{$this->_through};
+
+        foreach ($this as $key => $document) {
+            if (!($document instanceof Document)) {
+                throw new ORMException("Only document can be indexed.");
+            }
+
+            $index = $document[$field];
+            $indexes[$index][] = $byIndex ? $key : $document;
+        }
+        return $indexes;
+    }
+
+    /**
+     * Find the index of an item (not optimized for negative fromIndex).
+     *
+     * @param  mixed   $item      The item to look for.
+     * @param  integer $fromIndex The index to start the search at If the provided index value is a negative number,
+     *                            it is taken as the offset from the end of the array.
+     *                            Note: if the provided index is negative, the array is still searched from front to back
+     * @return integer            The first index of the element in the array; -1 if not found.
+     */
+    public function indexOf($item, $fromIndex = 0)
+    {
+        $index = max($fromIndex >= 0 ? $fromIndex : $this->count() + $fromIndex, 0);
+        $collection = $this->_parent->{$this->_through};
+        $cpt = 0;
+
+        foreach ($collection as $key => $entity) {
+            $cpt++;
+            if ($cpt < $index + 1) {
+                continue;
+            }
+            if ($entity[$this->_using] === $item) {
+                return $key;
+            }
+            $index++;
+        }
+        return -1;
+    }
+
+    /**
+     * Find the last index of an item (not optimized for negative fromIndex).
+     *
+     * @param  mixed   $item      The item to look for.
+     * @param  integer $fromIndex The index to start the search at If the provided index value is a negative number,
+     *                            it is taken as the offset from the end of the array.
+     *                            Note: if the provided index is negative, the array is still searched from front to back
+     * @return integer            The first index of the element in the array; -1 if not found.
+     */
+    public function lastIndexOf($item, $fromIndex = 0)
+    {
+        $index = max($fromIndex >= 0 ? $fromIndex : $this->count() + $fromIndex, 0);
+        $collection = $this->_parent->{$this->_through};
+        $cpt = 0;
+        $result = -1;
+
+        foreach ($collection as $key => $entity) {
+            $cpt++;
+            if ($cpt < $index + 1) {
+                continue;
+            }
+            if ($entity[$this->_using] === $item) {
+                $result = $key;
+            }
+            $index++;
+        }
+        return $result;
+    }
+
+    /**
+     * Find the index of an entity with a defined id.
+     *
+     * @param  mixed        $id The entity id to look for.
+     * @return integer|null     The entity's index number in the collection or `-1` if not found.
+     */
+    public function indexOfId($id)
+    {
+        $collection = $this->_parent->{$this->_through};
+
+        foreach ($collection as $key => $entity) {
+            if (!($entity instanceof Model)) {
+                throw new ORMException('Error, `indexOfId()` is only available on models.');
+            }
+            if ($entity[$this->_using]->id() === $id) {
+                return $key;
+            }
+        }
+        return -1;
+    }
+
+    /**
      * Filters a copy of the items in the collection.
      *
      * @param  Closure $closure The closure to use for filtering, or an array of key/value pairs to match.
@@ -474,7 +577,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * @param  Closure $closure The closure to apply.
      * @return object           This collection instance.
      */
-    public function each($closure)
+    public function apply($closure)
     {
         foreach ($this as $key => $val) {
             $this->offsetSet($key, $closure($val, $key, $this));

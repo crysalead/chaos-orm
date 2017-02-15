@@ -624,6 +624,60 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     }
 
     /**
+     * Find the index of an item (not optimized for negative fromIndex).
+     *
+     * @param  mixed   $item      The item to look for.
+     * @param  integer $fromIndex The index to start the search at If the provided index value is a negative number,
+     *                            it is taken as the offset from the end of the array.
+     *                            Note: if the provided index is negative, the array is still searched from front to back
+     * @return integer            The first index of the element in the array; -1 if not found.
+     */
+    public function indexOf($item, $fromIndex = 0)
+    {
+        $index = max($fromIndex >= 0 ? $fromIndex : $this->count() + $fromIndex, 0);
+        $cpt = 0;
+        foreach ($this as $key => $entity) {
+            $cpt++;
+            if ($cpt < $index + 1) {
+                continue;
+            }
+            if ($entity === $item) {
+                return $key;
+            }
+            $index++;
+        }
+        return -1;
+    }
+
+    /**
+     * Find the last index of an item (not optimized for negative fromIndex).
+     *
+     * @param  mixed   $item      The item to look for.
+     * @param  integer $fromIndex The index to start the search at If the provided index value is a negative number,
+     *                            it is taken as the offset from the end of the array.
+     *                            Note: if the provided index is negative, the array is still searched from front to back
+     * @return integer            The first index of the element in the array; -1 if not found.
+     */
+    public function lastIndexOf($item, $fromIndex = 0)
+    {
+        $index = max($fromIndex >= 0 ? $fromIndex : $this->count() + $fromIndex, 0);
+        $cpt = 0;
+        $result = -1;
+
+        foreach ($this as $key => $entity) {
+            $cpt++;
+            if ($cpt < $index + 1) {
+                continue;
+            }
+            if ($entity === $item) {
+                $result = $key;
+            }
+            $index++;
+        }
+        return $result;
+    }
+
+    /**
      * Find the index of an entity with a defined id.
      *
      * @param  mixed        $id The entity id to look for.
@@ -637,24 +691,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
                 throw new Exception('Error, `indexOfId()` is only available on models.');
             }
             if ($id === (string) $entity->id()) {
-                return $key;
-            }
-        }
-    }
-
-    /**
-     * Find the index of an entity with a defined id.
-     *
-     * @param  string       $uuid The entity id to look for.
-     * @return integer|null       The entity's index number in the collection or `null` if not found.
-     */
-    public function indexOfUuid($uuid)
-    {
-        foreach ($this as $key => $document) {
-            if (!$document instanceof Document) {
-                throw new Exception('Error, `indexOfUuid()` is only available on documents.');
-            }
-            if ($uuid === $document->uuid()) {
                 return $key;
             }
         }
@@ -678,7 +714,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  Closure $closure The closure to apply.
      * @return object           This collection instance.
      */
-    public function each($closure)
+    public function apply($closure)
     {
         foreach ($this->_data as $key => $val) {
             $this->_data[$key] = $closure($val, $key, $this);

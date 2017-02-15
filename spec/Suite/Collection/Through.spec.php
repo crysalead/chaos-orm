@@ -142,7 +142,7 @@ describe("Through", function() {
 
     });
 
-    describe("->each()", function() {
+    describe("->apply()", function() {
 
         it("applies a filter on a collection", function() {
 
@@ -150,7 +150,7 @@ describe("Through", function() {
                 $item->hello = 'world';
                 return $item;
             };
-            $result = $this->through->each($filter);
+            $result = $this->through->apply($filter);
 
             foreach ($this->through as $tag) {
                 expect($tag->hello)->toBe('world');
@@ -484,6 +484,97 @@ describe("Through", function() {
         it("returns the number of items in the collection", function() {
 
             expect($this->through)->toHaveLength(5);
+
+        });
+
+    });
+
+    describe("->indexBy()", function() {
+
+        it("indexes a collection using index number", function() {
+
+            $indexes = $this->through->indexBy('name', true);
+            expect($indexes)->toBe([
+                '0' => [0],
+                '1' => [1],
+                '2' => [2],
+                '3' => [3],
+                '4' => [4]
+            ]);
+
+        });
+
+        it("indexes a collection using values", function() {
+
+            $indexes = $this->through->indexBy('name');
+
+            expect($indexes)->toEqual([
+                '0' => [$this->through[0]],
+                '1' => [$this->through[1]],
+                '2' => [$this->through[2]],
+                '3' => [$this->through[3]],
+                '4' => [$this->through[4]]
+            ]);
+
+        });
+
+    });
+
+    describe("->indexOf()", function() {
+
+        it("returns the index of an item", function() {
+
+            expect($this->through->indexOf($this->through[0]))->toBe(0);
+            expect($this->through->indexOf($this->through[1]))->toBe(1);
+            expect($this->through->indexOf($this->through[2]))->toBe(2);
+            expect($this->through->indexOf($this->through[3]))->toBe(3);
+            expect($this->through->indexOf($this->through[4]))->toBe(4);
+
+        });
+
+        it("returns the index of an item using a negative offset", function() {
+
+            expect($this->through->indexOf($this->through[3], -1))->toBe(-1);
+            expect($this->through->indexOf($this->through[4], -1))->toBe(4);
+
+        });
+
+    });
+
+    describe("->lastIndexOf()", function() {
+
+        it("returns the last index of an item", function() {
+
+            $this->through[] = $this->through[2];
+
+            expect($this->through->lastIndexOf($this->through[2]))->toBe(5);
+
+        });
+
+        it("returns the last index of an item using a negative offset", function() {
+
+            expect($this->through->lastIndexOf($this->through[3], -1))->toBe(-1);
+            expect($this->through->lastIndexOf($this->through[4], -1))->toBe(4);
+
+        });
+
+    });
+
+    describe("->indexOfId()", function() {
+
+        it("returns the index of an entity with a defined id", function() {
+
+            $filter = function($item) {
+              $item->id = (integer) $item->name;
+              return $item;
+            };
+            $result = $this->through->apply($filter);
+
+            expect($this->through->indexOfId(0))->toBe(0);
+            expect($this->through->indexOfId(1))->toBe(1);
+            expect($this->through->indexOfId(2))->toBe(2);
+            expect($this->through->indexOfId(3))->toBe(3);
+            expect($this->through->indexOfId(4))->toBe(4);
 
         });
 
