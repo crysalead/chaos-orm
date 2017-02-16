@@ -264,6 +264,7 @@ class Relationship
     public function get($entity, $options = [])
     {
         $name = $this->name();
+        $entity->sync();
 
         if (!$entity->exists()) {
             return $entity->schema()->cast($name, [], [

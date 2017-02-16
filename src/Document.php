@@ -169,6 +169,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     }
 
     /**
+     * Get/set the unicity .
+     *
+     * @return boolean
+     */
+    static function unicity($enable = null) {
+       return false;
+    }
+
+    /**
      * Instantiates a new record or document object, initialized with any data passed in. For example:
      *
      * ```php
@@ -254,7 +263,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $config['data'] = Set::merge($this->schema()->defaults($config['basePath']), $config['data']);
 
-        $this->set($config['data'], isset($config['exists']) ? $config['exists'] : null);
+        $this->set($config['data']);
         $this->_persisted = $this->_data;
     }
 
@@ -434,22 +443,20 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @param  mixed   $name    A field name or an associative array of fields and values.
      * @param  array   $data    An associative array of fields and values or an options array.
-     * @param  boolean $exists  The exists value.
      * @return object           Returns `$this`.
      */
-    public function set($name, $data = [], $exists = false)
+    public function set($name, $data = [])
     {
         if (is_string($name) || isset($name[0])) {
-            $this->_set($name, $data, $exists);
+            $this->_set($name, $data);
             return $this;
         }
-        $exists = !!$data;
         $data = $name;
         if (!is_array($data)) {
             throw new ORMException('An array is required to set data in bulk.');
         }
         foreach ($data as $name => $value) {
-            $this->_set($name, $value, $exists);
+            $this->_set($name, $value);
         }
         return $this;
     }
@@ -485,9 +492,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @param string  $offset  The field name.
      * @param mixed   $data    The value to set.
-     * @param boolean $exists  The exists value.
      */
-    protected function _set($name, $data, $exists = false)
+    protected function _set($name, $data)
     {
         $keys = is_array($name) ? $name : explode('.', $name);
 
@@ -501,7 +507,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
             if (!array_key_exists($name, $this->_data)) {
                 $this->_set($name, static::create([], [
-                    'exists'    => $exists,
                     'parent'    => $this,
                     'basePath'  => $this->basePath(),
                     'defaults'  => true
@@ -510,7 +515,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             if (!$this->_data[$name] instanceof DataStoreInterface) {
                 throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
             }
-            $this->_data[$name]->set($keys, $data, $exists);
+            $this->_data[$name]->set($keys, $data);
             return;
         }
 
@@ -518,7 +523,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
         $value = $this->schema()->cast($name, $data, [
-            'exists'    => $exists,
             'parent'    => $this,
             'basePath'  => $this->basePath(),
             'defaults'  => true
@@ -850,7 +854,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return self
      */
-    public function sync()
+    public function amend()
     {
         $this->_persisted = $this->_data;
         return $this;

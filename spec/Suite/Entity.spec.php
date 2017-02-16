@@ -48,7 +48,7 @@ describe("Entity", function() {
 
         });
 
-        it("applies same `exists` value for children", function() {
+        it("sets `exists` value to `null` for children", function() {
 
             $image = Image::create([
                 'id'      => 123,
@@ -58,7 +58,12 @@ describe("Entity", function() {
             ], ['exists' => true]);
 
             expect($image->exists())->toBe(true);
-            expect($image->gallery->exists())->toBe(true);
+
+            $closure = function() use ($image) {
+                $image->gallery->exists();
+            };
+
+            expect($closure)->toThrow(new ORMException("No persitance information is available for this entity use `sync()` to get an accurate existence value."));
 
         });
 
@@ -165,9 +170,9 @@ describe("Entity", function() {
 
     });
 
-    describe("->sync()", function() {
+    describe("->amend()", function() {
 
-        it("syncs an entity to its persisted value", function() {
+        it("amends an entity to its persisted value", function() {
 
             $model = $this->model;
             $entity = $model::create();
@@ -177,7 +182,7 @@ describe("Entity", function() {
             expect($entity->id())->toBe(null);
             expect($entity->modified('modified'))->toBe(true);
 
-            $entity->sync(123, ['added' => 'added'], ['exists' => true]);
+            $entity->amend(123, ['added' => 'added'], ['exists' => true]);
 
             expect($entity->exists())->toBe(true);
             expect($entity->id())->toBe(123);
@@ -187,28 +192,9 @@ describe("Entity", function() {
 
         });
 
-        it("syncs associated data", function() {
-
-            $image = Image::create([
-                'name'  => 'amiga_1200.jpg',
-                'title' => 'Amiga 1200'
-            ]);
-
-            expect($image->exists())->toBe(false);
-
-            $image->sync(123, [
-                'gallery' => ['id' => 456, 'name' => 'MyGallery']
-            ], ['exists' => true]);
-
-            expect($image->id())->toBe(123);
-            expect($image->exists())->toBe(true);
-            expect($image->gallery->exists())->toBe(true);
-
-        });
-
         context("when there's no primary key", function() {
 
-            it("syncs an entity to its persisted value", function() {
+            it("amends an entity to its persisted value", function() {
 
                 $model = $this->model;
                 $entity = $model::create();
@@ -218,7 +204,7 @@ describe("Entity", function() {
                 expect($entity->id())->toBe(null);
                 expect($entity->modified('modified'))->toBe(true);
 
-                $entity->sync(null, ['added' => 'added'], ['exists' => true]);
+                $entity->amend(null, ['added' => 'added'], ['exists' => true]);
 
                 expect($entity->exists())->toBe(true);
                 expect($entity->id())->toBe(null);
@@ -243,7 +229,7 @@ describe("Entity", function() {
 
                 expect($shard->has($entity->id()))->toBe(false);
 
-                $entity->sync(null, ['name' => 'file.jpg'], ['exists' => true]);
+                $entity->amend(null, ['name' => 'file.jpg'], ['exists' => true]);
 
                 expect($shard->has($entity->id()))->toBe(true);
                 expect($shard->count())->toBe(1);
@@ -266,7 +252,7 @@ describe("Entity", function() {
                 expect($shard->has($entity->id()))->toBe(true);
                 expect($shard->count())->toBe(1);
 
-                $entity->sync(null, ['name' => 'file.jpg'], ['exists' => false]);
+                $entity->amend(null, ['name' => 'file.jpg'], ['exists' => false]);
 
                 expect($shard->has($entity->id()))->toBe(false);
 

@@ -834,9 +834,9 @@ describe("Document", function() {
 
     });
 
-    describe(".sync()", function() {
+    describe(".amend()", function() {
 
-        it("returns a boolean indicating if a field has been modified", function() {
+        it("amends a document", function() {
 
             $document = new Document([
                 'data' => [
@@ -849,7 +849,7 @@ describe("Document", function() {
             $document->title = 'modified';
             expect($document->modified('title'))->toBe(true);
 
-            $document->sync();
+            $document->amend();
             expect($document->modified('title'))->toBe(false);
 
         });

@@ -117,6 +117,7 @@ class HasMany extends \Chaos\ORM\Relationship
         $result = true;
 
         foreach ($entity->{$name} as $item) {
+            $item->sync();
             if ($item->exists() && $indexes->has($item->id())) {
                 unset($previous[$indexes->get($item->id())]);
             }

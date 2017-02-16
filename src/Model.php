@@ -32,7 +32,7 @@ class Model extends Document
     protected static $_definition = 'Chaos\ORM\Schema';
 
     /**
-     * MUST BE re-defined in sub-classes which require a different unitity mode by default.
+     * MUST BE re-defined in sub-classes which require a different unicity mode by default.
      *
      * @var boolean
      */
@@ -130,10 +130,10 @@ class Model extends Document
     }
 
     /**
-     * Gets/sets the collector instance for the model.
+     * Get/set the unicity value.
      *
-     * @param  Object collector The collector instance to set or none to get it.
-     * @return Object           The collector instance on get and `this` on set.
+     * @param  boolean|null $enable The unicity value or none to get it.
+     * @return boolean|self         The unicity value on get and `this` on set.
      */
     static function unicity($enable = null) {
        if (!func_num_args()) {
@@ -270,7 +270,7 @@ class Model extends Document
         $type = $options['type'];
         $classname = $options['class'];
 
-        if ($type === 'entity' && $options['exists'] && $classname::unicity()) {
+        if ($type === 'entity' && $options['exists'] !== false && $classname::unicity()) {
             $data = $data ? $data : [];
             $schema = $classname::definition();
             $shard = $classname::shard();
@@ -278,7 +278,7 @@ class Model extends Document
             if (isset($data[$key]) && $shard->has($data[$key])) {
                 $id = $data[$key];
                 $instance = $shard->get($id);
-                $instance->sync(null, $data);
+                $instance->amend(null, $data, ['exists' => $options['exists']]);
                 return $instance;
             }
         }
@@ -513,11 +513,14 @@ class Model extends Document
      */
     public function exists($exists = null)
     {
-        if (!func_num_args()) {
-            return $this->_exists;
+        if (func_num_args()) {
+            $this->_exists = $exists;
+            return $this;
         }
-        $this->_exists = $exists;
-        return $this;
+        if ($this->_exists === null) {
+            throw new ORMException("No persitance information is available for this entity use `sync()` to get an accurate existence value.");
+        }
+        return $this->_exists;
     }
 
     /**
@@ -530,7 +533,7 @@ class Model extends Document
      *                       - `'exists'` _boolean_: Determines whether or not this entity exists
      *                         in data store. Defaults to `null`.
      */
-    public function sync($id = null, $data = [], $options = [])
+    public function amend($id = null, $data = [], $options = [])
     {
         $exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
         $this->_exists = $exists;
@@ -608,18 +611,26 @@ class Model extends Document
     }
 
     /**
-     * Reloads the entity from the datasource.
+     * Sync the entity existence from the database.
+     *
+     * @param boolean $data Indicate whether the data need to by synced or not.
      */
-    public function reload()
+    public function sync($data = false)
     {
-        $id = $this->id();
-        $persisted = $id !== null ? static::load($id) : null;
-        if (!$persisted) {
-            throw new ORMException("The entity id:`{$id}` doesn't exists.");
+        if ($this->_exists !== null) {
+            return;
         }
-        $this->_exists = true;
-        $this->set($persisted->get());
-        $this->_persisted = $this->_data;
+        $id = $this->id();
+        if ($id !== null) {
+            $persisted = static::load($id);
+            if ($persisted && $data) {
+                $this->amend(null, $persisted->data(), ['exists' => true]);
+            } else {
+                $this->_exists = !!$persisted;
+            }
+        } else {
+            $this->_exists = false;
+        }
     }
 
     /**
@@ -655,9 +666,11 @@ class Model extends Document
      */
     public function validates($options = [])
     {
+        $this->sync();
+        $exists = $this->exists();
         $defaults = [
-            'events'   => $this->exists() !== false ? 'update' : 'create',
-            'required' => $this->exists() !== false ? false : true,
+            'events'   => $exists ? 'update' : 'create',
+            'required' => $exists ? false : true,
             'entity'   => $this,
             'embed'    => true
         ];

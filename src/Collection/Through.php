@@ -228,14 +228,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     public function set($offset = null, $data = [], $exists = null)
     {
         $name = $this->_through;
-        $parent = $this->_parent;
-        $relThrough = $parent->schema()->relation($name);
-        $through = $relThrough->to();
-
-        $item = $through::create($this->_parent->exists() ? $relThrough->match($this->_parent) : []);
-        $item->{$this->_using} = $data;
-
-        $this->_parent->{$name}->set($offset, $item, $exists);
+        $this->_parent->{$name}->set($offset, $this->_item($data, $exists), $exists);
         return $this;
     }
 
@@ -249,15 +242,28 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     public function push($data = [], $exists = null)
     {
         $name = $this->_through;
+        $this->_parent->{$name}->push($offset, $this->_item($data, $exists), $exists);
+        return $this;
+    }
+
+    /**
+     * Create a pivot instance.
+     *
+     * @param  mixed   $data   The data.
+     * @param  boolean $exists The exists value.
+     * @return mixed           The pivot instance.
+     */
+    protected function _item($data, $exists)
+    {
+        $name = $this->_through;
         $parent = $this->_parent;
         $relThrough = $parent->schema()->relation($name);
         $through = $relThrough->to();
-
-        $item = $through::create($this->_parent->exists() ? $relThrough->match($this->_parent) : []);
+        $id = $this->_parent->id();
+        $item = $through::create($id !== null ? $relThrough->match($this->_parent) : [], ['exists' => $exists]);
         $item->{$this->_using} = $data;
-
-        $this->_parent->{$name}->push($item, $exists);
-        return $this;
+        $item->{$this->_using}->exists($exists);
+        return $item;
     }
 
     /**

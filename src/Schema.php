@@ -836,7 +836,7 @@ class Schema
         $defaults = [
             'parent'    => null,
             'basePath'  => null,
-            'exists'    => false,
+            'exists'    => null,
             'defaults'  => true
         ];
         $options += $defaults;
@@ -1235,15 +1235,11 @@ class Schema
         };
 
         foreach ($collection as $entity) {
-            $exists = $entity->exists();
-            if ($exists === false) {
+            $entity->sync();
+            if (!$entity->exists()) {
                 $inserts[] = $entity;
             } elseif ($entity->modified()) {
-                if ($exists) {
-                    $updates[] = $entity;
-                } else {
-                    throw new ORMException("Entites must have a valid `false`/`true` existing value to be either inserted or updated.");
-                }
+                $updates[] = $entity;
             }
         }
         return $this->bulkInsert($inserts, $filter) && $this->bulkUpdate($updates, $filter);
@@ -1297,6 +1293,7 @@ class Schema
         $keys = [];
 
         foreach ($collection as $entity) {
+            $entity->sync();
             if ($entity->exists()) {
                 $keys[] = $entity->id();
             }
@@ -1311,7 +1308,7 @@ class Schema
         }
 
         foreach ($collection as $entity) {
-            $entity->sync(null, [], ['exists' => false]);
+            $entity->amend(null, [], ['exists' => false]);
         }
 
         return true;

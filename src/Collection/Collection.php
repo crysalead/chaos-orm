@@ -296,7 +296,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  boolean $exists Define existence mode of related data.
      * @return mixed           Returns `$this`.
      */
-    public function set($offset = null, $data = [], $exists = false)
+    public function set($offset = null, $data = [], $exists = null)
     {
         $keys = is_array($offset) ? $offset : ($offset !== null ? explode('.', $offset) : []);
 
@@ -308,9 +308,9 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
 
         if ($schema = $this->schema()) {
             $data = $schema->cast(null, $data, [
+                'exists'    => $exists,
                 'parent'    => $this,
                 'basePath'  => $this->basePath(),
-                'exists'    => $exists,
                 'defaults'  => true
             ]);
         }
@@ -340,7 +340,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  boolean $exists Define existence mode of related data.
      * @return mixed           Returns the set `Entity` object.
      */
-    public function push($data, $exists = false)
+    public function push($data, $exists = null)
     {
         $this->set(null, $data, $exists);
         return $this;
