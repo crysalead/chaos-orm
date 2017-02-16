@@ -1,11 +1,12 @@
-sudo: false
+sudo: required
+dist: xenial
+group: edge
 language: php
 
 php:
-  - 5.5
-  - 5.6
   - 7.0
-  - hhvm
+  - 7.1
+  #- hhvm
 
 matrix:
   fast_finish: true
@@ -14,6 +15,7 @@ before_script:
   - composer config -g github-oauth.github.com $GITHUB_COMPOSER_AUTH
   - composer install
   - if [[ $TRAVIS_PHP_VERSION =~ ^hhvm ]]; then echo 'xdebug.enable = On' >> /etc/hhvm/php.ini; fi
+  - if [[ $TRAVIS_PHP_VERSION =~ ^hhvm ]]; then echo 'hhvm.php7.all = 1' >> /etc/hhvm/php.ini; fi
 
 script: bin/kahlan --coverage=3 --clover=clover.xml
 
