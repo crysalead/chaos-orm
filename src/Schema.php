@@ -938,6 +938,10 @@ class Schema
             return $data;
         }
 
+        if (!is_array($data)) {
+            return;
+        }
+
         $class = ltrim($options['class'], '\\');
 
         $config = [

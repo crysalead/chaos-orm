@@ -413,10 +413,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return $this->_data[$name];
         } elseif ($this instanceof Model && $schema->hasRelation($fieldName)) {
             $related = $schema->relation($fieldName)->get($this);
-            if ($related instanceof HasParentsInterface) {
-                $related->setParent($this, $name);
-            }
-            return $this->_data[$name] = $related;
+            $this->_set($name, $related);
+            return $related;
         } elseif (isset($field['type']) && $field['type'] === 'object') {
             $value = [];
         } else {
