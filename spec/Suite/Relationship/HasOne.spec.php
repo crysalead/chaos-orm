@@ -141,6 +141,11 @@ describe("HasOne", function() {
             });
 
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
+
+            expect(GalleryDetail::class)->toReceive('::all')->with([
+                'conditions' => ['gallery_id' => 1]
+            ], []);
+
             expect($gallery->detail)->toBe(null);
 
         });

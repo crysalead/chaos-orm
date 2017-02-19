@@ -172,7 +172,7 @@ describe("HasManyThrough", function() {
 
         it("embeds a hasManyThrough relationship using object hydration", function() {
 
-            $hasManyThrough = Image::definition()->relation('tags');
+            $hasManyThrough = Image::definition();
 
             $images = Image::create([
                 ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
@@ -192,7 +192,7 @@ describe("HasManyThrough", function() {
                 'conditions' => ['id' => [1, 3, 5, 6]]
             ], ['return' => 'object']);
 
-            $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'object']]);
+            $hasManyThrough->embed($images, 'tags', ['fetchOptions' => ['return' => 'object']]);
 
             foreach ($images as $image) {
                 foreach ($image->images_tags as $index => $image_tag) {
@@ -205,7 +205,7 @@ describe("HasManyThrough", function() {
 
         it("embeds a hasManyThrough relationship using array hydration", function() {
 
-            $hasManyThrough = Image::definition()->relation('tags');
+            $hasManyThrough = Image::definition();
 
             $images = Image::create([
                 ['id' => 1, 'gallery_id' => 1, 'title' => 'Amiga 1200'],
@@ -225,7 +225,7 @@ describe("HasManyThrough", function() {
                 'conditions' => ['id' => [1, 3, 5, 6]]
             ], ['return' => 'array']);
 
-            $hasManyThrough->embed($images, ['fetchOptions' => ['return' => 'array']]);
+            $hasManyThrough->embed($images, 'tags', ['fetchOptions' => ['return' => 'array']]);
 
             foreach ($images as $image) {
                 foreach ($image['images_tags'] as $index => $image_tag) {
@@ -240,7 +240,7 @@ describe("HasManyThrough", function() {
 
     describe("->get()", function() {
 
-        it("lazy loads a belongsTo relation", function() {
+        it("lazy loads a hasManyThrough relation", function() {
 
             Stub::on(ImageTag::class)->method('::all', function($options = [], $fetchOptions = []) {
                 $imagesTags =  ImageTag::create([

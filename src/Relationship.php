@@ -319,7 +319,7 @@ class Relationship
      */
     public function isMany()
     {
-        return preg_match('~Many~', static::class);
+        return !!preg_match('~Many~', static::class);
     }
 
     /**

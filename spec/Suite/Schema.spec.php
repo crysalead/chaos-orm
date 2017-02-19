@@ -876,7 +876,7 @@ describe("Schema", function() {
                         'name' => 'mountain'
                     ]
                 ]
-            ]);
+            ], [ 'exists' => false ]);
 
             expect($image->id)->toBe(1);
             expect($image->gallery_id)->toBe(2);

@@ -3,7 +3,7 @@ namespace Chaos\ORM\Relationship;
 
 use Traversable;
 use Lead\Set\Set;
-use Chaos\ORM\Model;
+use Chaos\ORM\Document;
 
 /**
  * The `HasMany` relationship.
@@ -71,7 +71,6 @@ class HasMany extends \Chaos\ORM\Relationship
         $related = $this->_find($indexes->keys(), $options);
 
         $name = $this->name();
-
         $this->_cleanup($collection);
 
         foreach ($related as $index => $entity) {
@@ -81,9 +80,13 @@ class HasMany extends \Chaos\ORM\Relationship
                 if ($indexes->has($value)) {
                     if (is_object($collection[$indexes->get($value)])) {
                         $source = $collection[$indexes->get($value)];
-                        $source->{$name}[] = $entity;
+                        if ($entity instanceof Document) {
+                            $source->__get($name)[] = $entity; // Too Many Magic Kill The Magic.
+                        } else {
+                            $source->{$name}[] = $entity;
+                        }
                     } else {
-                        $collection[$indexes->get($value)][$name][] = $entity;
+                        $collection[$indexes->get($value)][$name][] = &$related[$index];
                     }
                 }
             }

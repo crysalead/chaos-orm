@@ -34,7 +34,7 @@ class HasOne extends \Chaos\ORM\Relationship
             } else {
                 $value = $entity[$this->keys('to')];
                 if ($indexes->has($value)) {
-                    $collection[$indexes->get($value)][$name] = $entity;
+                    $collection[$indexes->get($value)][$name] = &$related[$index];
                 }
             }
         }

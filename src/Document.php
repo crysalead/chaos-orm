@@ -412,9 +412,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         } elseif ($schema->hasRelation($fieldName, false)) {
-            $related = $schema->relation($fieldName)->get($this);
-            $this->_set($name, $related);
-            return $related;
+            if ($this->_exists !== false || ($this->_exists === null && $this->id() !== null)) {
+                return $this->fetch($name);
+            }
+            $value = [];
         } elseif (isset($field['type']) && $field['type'] === 'object') {
             $value = [];
         } else {
@@ -434,6 +435,24 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return $value;
         }
         return $this->_data[$name] = $value;
+    }
+
+    /**
+     * Lazy load a relation and return its data.
+     *
+     * @param  string name The name of the relation to load.
+     * @return mixed.
+     */
+    public function fetch($name)
+    {
+        $this->sync();
+        if (!$this->exists()) {
+            $this->set($name, []);
+            return $this->get($name);
+        }
+        $collection = [$this];
+        $this->schema()->embed($collection, $name);
+        return isset($this->_data[$name]) ? $this->_data[$name] : null;
     }
 
     /**
@@ -885,7 +904,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 $result[] = $prefix ? $prefix . '.' . $field : $field;
                 continue;
             }
-            if ($childs = $this->{$field}->hierarchy($field, $ignore)) {
+            if ($childs = $this->__get($field)->hierarchy($field, $ignore)) { // Too Many Magic Kill The Magic.
                 $result = array_merge($result, $childs);
             } elseif ($childs !== false) {
                 $result[] = $prefix ? $prefix . '.' . $field : $field;

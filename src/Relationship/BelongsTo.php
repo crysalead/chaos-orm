@@ -51,7 +51,7 @@ class BelongsTo extends \Chaos\ORM\Relationship
             } else {
                 $value = $source[$this->keys('from')];
                 if ($indexes->has($value)) {
-                    $collection[$index][$name] = $related[$indexes->get($value)];
+                    $collection[$index][$name] = &$related[$indexes->get($value)];
                 }
             }
         }

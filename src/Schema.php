@@ -789,6 +789,9 @@ class Schema
      */
     public function expand($relations)
     {
+        if (is_string($relations)) {
+            $relations = [$relations];
+        }
         $relations = Set::normalize($relations);
 
         foreach ($relations as $path => $value) {
@@ -947,10 +950,6 @@ class Schema
             return $data;
         }
 
-        if (!is_array($data)) {
-            return;
-        }
-
         $class = ltrim($options['class'], '\\');
 
         $config = [
@@ -962,7 +961,7 @@ class Schema
         if (isset($options['config'])){
             $config = Set::merge($config, $options['config']);
         }
-        return $class::create($data, $config);
+        return $class::create($data ? $data : [], $config);
     }
 
     /**

@@ -449,16 +449,10 @@ class Model extends Document
         ];
         $config += $defaults;
         unset($config['basePath']);
-        parent::__construct($config);
 
-        /**
-         * Cached value indicating whether or not this instance exists somehow. If this instance has been loaded
-         * from the database, or has been created and subsequently saved this value should be automatically
-         * setted to `true`.
-         *
-         * @var Boolean
-         */
         $this->exists($config['exists']);
+
+        parent::__construct($config);
 
         if ($this->_exists !== true) {
             return;

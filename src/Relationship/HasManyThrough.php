@@ -105,11 +105,15 @@ class HasManyThrough extends \Chaos\ORM\Relationship
 
         $from = $this->from();
         $relThrough = $from::definition()->relation($through);
-        $middle = $relThrough->embed($collection, $options);
+
+        // Embedding twice is unstable
+        // $middle = $relThrough->embed($collection, $options);
 
         $pivot = $relThrough->to();
         $relUsing = $pivot::definition()->relation($using);
-        $related = $relUsing->embed($middle, $options);
+
+        // Embedding twice is unstable
+        // $related = $relUsing->embed($middle, $options);
 
         $to = $relUsing->to();
         $toSchema = $to::definition();
@@ -129,34 +133,19 @@ class HasManyThrough extends \Chaos\ORM\Relationship
             }
         }
 
-        $fromKey = $this->keys('from');
-        $indexes = $this->_index($related, $this->keys('to'));
-
         foreach ($collection as $index => $entity) {
             if ($entity instanceof Document) {
                 continue;
             } elseif (is_object($entity)) {
                 foreach ($entity->{$through} as $key => $item) {
-                    if (isset($item->{$using})) {
-                        $value = $item->{$using};
-                        if ($entity instanceof Model) {
-                            $entity->__get($name); // Too Many Magic Kill The Magic.
-                        } else {
-                            $entity->{$name}[] = $value;
-                        }
-                    }
+                    $entity->{$name}[] = $item->{$using};
                 }
             } else {
                 foreach ($entity[$through] as $key => $item) {
-                    if ($indexes->has($item[$fromKey])) {
-                        $collection[$index][$name][] = $related[$indexes->get($item[$fromKey])];
-                        $collection[$index][$through][$key][$using] = $related[$indexes->get($item[$fromKey])];
-                    }
+                    $collection[$index][$name][] = &$entity[$through][$key][$using];
                 }
             }
         }
-
-        return $related;
     }
 
     /**
