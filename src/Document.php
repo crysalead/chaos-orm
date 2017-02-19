@@ -411,7 +411,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $value = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
-        } elseif ($this instanceof Model && $schema->hasRelation($fieldName)) {
+        } elseif ($schema->hasRelation($fieldName, false)) {
             $related = $schema->relation($fieldName)->get($this);
             $this->_set($name, $related);
             return $related;

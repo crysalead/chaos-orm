@@ -1112,4 +1112,34 @@ describe("Schema", function() {
 
     });
 
+    describe("->hasRelation()", function() {
+
+        it("checks if an embedded relation exists", function() {
+
+            $schema = new Schema();
+            $schema->column('embedded', ['type' => 'object']);
+
+            expect($schema->hasRelation('embedded'))->toBe(true);
+            expect($schema->hasRelation('embedded', true))->toBe(true);
+            expect($schema->hasRelation('embedded', false))->toBe(false);
+
+        });
+
+        it("checks if an external relation exists", function() {
+
+            $schema = new Schema();
+            $schema->bind('external', [
+                'relation' => 'belongsTo',
+                'to'       => Image::class,
+                'keys'     => ['image_id' => 'id']
+            ]);
+
+            expect($schema->hasRelation('external'))->toBe(true);
+            expect($schema->hasRelation('external', false))->toBe(true);
+            expect($schema->hasRelation('external', true))->toBe(false);
+
+        });
+
+    });
+
 });

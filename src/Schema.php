@@ -716,12 +716,21 @@ class Schema
     /**
      * Checks if a relation exists.
      *
-     * @param  string  $name The name of a relation.
-     * @return boolean       Returns `true` if the relation exists, `false` otherwise.
+     * @param  string  $name     The name of a relation.
+     * @param  boolean $embedded Check for embedded relations or not. `null` means indifferent, `true` means embedded only
+     *                           and `false` mean external only.
+     * @return boolean           Returns `true` if the relation exists, `false` otherwise.
      */
-    public function hasRelation($name)
+    public function hasRelation($name, $embedded = null)
     {
-        return isset($this->_relations[$name]);
+        if (!isset($this->_relations[$name])) {
+            return false;
+        }
+        $relation = $this->_relations[$name];
+        if ($embedded === null) {
+            return true;
+        }
+        return $embedded === $relation['embedded'];
     }
 
     /**
