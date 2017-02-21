@@ -255,61 +255,61 @@ class Relationship
         return $conditions;
     }
 
-    /**
-     * Gets the related data.
-     *
-     * @param  object $entity An entity.
-     * @return                The related data.
-     */
-    public function get($entity, $options = [])
-    {
-        $name = $this->name();
-        $entity->sync();
+    // /**
+    //  * Gets the related data.
+    //  *
+    //  * @param  object $entity An entity.
+    //  * @return                The related data.
+    //  */
+    // public function get($entity, $options = [])
+    // {
+    //     $name = $this->name();
+    //     $entity->sync();
 
-        if (!$entity->exists()) {
-            return $entity->schema()->cast($name, [], [
-                'parent' => $entity
-            ]);
-        }
+    //     if (!$entity->exists()) {
+    //         return $entity->schema()->cast($name, [], [
+    //             'parent' => $entity
+    //         ]);
+    //     }
 
-        $link = $this->link();
-        $strategies = $this->strategies();
+    //     $link = $this->link();
+    //     $strategies = $this->strategies();
 
-        if (!isset($strategies[$link]) || !is_callable($strategies[$link])) {
-            throw new ORMException("Attempted to get object for invalid relationship link type `{$link}`.");
-        }
-        return $strategies[$link]($entity, $this, $options);
-    }
+    //     if (!isset($strategies[$link]) || !is_callable($strategies[$link])) {
+    //         throw new ORMException("Attempted to get object for invalid relationship link type `{$link}`.");
+    //     }
+    //     return $strategies[$link]($entity, $this, $options);
+    // }
 
-    /**
-     * Strategies used to query related objects.
-     */
-    public function strategies()
-    {
-        return [
-            static::LINK_EMBEDDED => function($entity, $relationship) {
-                return $entity->{$relationship->name()};
-            },
-            static::LINK_CONTAINED => function($entity, $relationship) {
-                return $relationship->isMany() ? $entity->parent()->parent() : $entity->parent();
-            },
-            static::LINK_KEY => function($entity, $relationship, $options) {
-                if ($relationship->type() === 'hasManyThrough') {
-                    $collection = [$entity];
-                    $this->embed($collection, $options);
-                    return $entity->__get($relationship->name()); // Too Many Magic Kill The Magic.
-                }
-                $collection = $this->_find($entity->{$relationship->keys('from')}, $options);
-                if ($relationship->isMany()) {
-                    return $collection;
-                }
-                return count($collection) ? $collection->rewind() : null;
-            },
-            static::LINK_KEY_LIST  => function($object, $relationship, $options) {
-                return $this->_find($entity->{$relationship->keys('from')}, $options);
-            }
-        ];
-    }
+    // /**
+    //  * Strategies used to query related objects.
+    //  */
+    // public function strategies()
+    // {
+    //     return [
+    //         static::LINK_EMBEDDED => function($entity, $relationship) {
+    //             return $entity->{$relationship->name()};
+    //         },
+    //         static::LINK_CONTAINED => function($entity, $relationship) {
+    //             return $relationship->isMany() ? $entity->parent()->parent() : $entity->parent();
+    //         },
+    //         static::LINK_KEY => function($entity, $relationship, $options) {
+    //             if ($relationship->type() === 'hasManyThrough') {
+    //                 $collection = [$entity];
+    //                 $this->embed($collection, $options);
+    //                 return $entity->__get($relationship->name()); // Too Many Magic Kill The Magic.
+    //             }
+    //             $collection = $this->_find($entity->{$relationship->keys('from')}, $options);
+    //             if ($relationship->isMany()) {
+    //                 return $collection;
+    //             }
+    //             return count($collection) ? $collection->rewind() : null;
+    //         },
+    //         static::LINK_KEY_LIST  => function($object, $relationship, $options) {
+    //             return $this->_find($entity->{$relationship->keys('from')}, $options);
+    //         }
+    //     ];
+    // }
 
     /**
      * Get a related object (or objects) for the given object connected to it by this relationship.
