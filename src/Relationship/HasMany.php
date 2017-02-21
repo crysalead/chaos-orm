@@ -81,7 +81,7 @@ class HasMany extends \Chaos\ORM\Relationship
                     if (is_object($collection[$indexes->get($value)])) {
                         $source = $collection[$indexes->get($value)];
                         if ($entity instanceof Document) {
-                            $source->__get($name)[] = $entity; // Too Many Magic Kill The Magic.
+                            $source->__get($name)->push($entity); // Too Many Magic Kill The Magic.
                         } else {
                             $source->{$name}[] = $entity;
                         }
