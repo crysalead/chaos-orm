@@ -412,7 +412,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         } elseif ($schema->hasRelation($fieldName, false)) {
-            if ($this->_exists !== false || ($this->_exists === null && $this->id() !== null)) {
+            if ($this->_exists !== false && $this->id() !== null) {
                 return $this->fetch($name);
             }
             $value = [];
@@ -445,8 +445,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function fetch($name)
     {
-        $this->sync();
-        if (!$this->exists()) {
+        if ($this->_exists === false || $this->id() === null) {
             $this->set($name, []);
             return $this->get($name);
         }
