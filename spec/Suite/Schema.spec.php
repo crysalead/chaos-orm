@@ -244,8 +244,8 @@ describe("Schema", function() {
         it("correctly sets default values with stars", function() {
 
             $schema = new Schema();
-            $schema->column('data', ['type' => 'object']);
-            $schema->column('data.*', ['type' => 'object']);
+            $schema->column('data', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*', ['type' => 'object', 'default' => []]);
             $schema->column('data.*.checked', ['type' => 'boolean', 'default' => true]);
             $schema->locked(true);
 
@@ -390,90 +390,42 @@ describe("Schema", function() {
 
         context("with a dynamic getter", function() {
 
-            context("with a normal field", function() {
+            beforeEach(function() {
 
-                beforeEach(function() {
-
-                    $this->schema = new Schema();
-                    $this->schema->column('date', ['type' => 'string']);
-                    $this->schema->column('time', ['type' => 'string']);
-                    $this->schema->column('datetime', [
-                        'type' => 'datetime',
-                        'getter' => function($entity, $data, $name) {
-                            return $entity['date'] . ' ' . $entity['time'];
-                        }
-                    ]);
-
-                });
-
-                it("builds the field", function() {
-
-                    $document = $this->schema->cast(null, [
-                        'date' => '2015-05-20',
-                        'time' => '21:50:00'
-                    ]);
-                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
-                    expect(isset($document->datetime))->toBe(true);
-
-                });
-
-                it("rebuilds the field on changes", function() {
-
-                    $document = $this->schema->cast(null, [
-                        'date' => '2015-05-20',
-                        'time' => '21:50:00'
-                    ]);
-                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
-
-                    $document['time'] = '22:15:00';
-                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 22:15:00');
-                    expect(isset($document->datetime))->toBe(true);
-
-                });
+                $this->schema = new Schema();
+                $this->schema->column('date', ['type' => 'string']);
+                $this->schema->column('time', ['type' => 'string']);
+                $this->schema->column('datetime', [
+                    'type' => 'datetime',
+                    'getter' => function($entity, $data, $name) {
+                        return $entity['date'] . ' ' . $entity['time'];
+                    }
+                ]);
 
             });
 
-            context("with a virtual field", function() {
+            it("builds the field", function() {
 
-                beforeEach(function() {
+                $document = $this->schema->cast(null, [
+                    'date' => '2015-05-20',
+                    'time' => '21:50:00'
+                ]);
+                expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
+                expect(isset($document->datetime))->toBe(false);
 
-                    $this->schema = new Schema();
-                    $this->schema->column('date', ['type' => 'string']);
-                    $this->schema->column('time', ['type' => 'string']);
-                    $this->schema->column('datetime', [
-                        'type'    => 'datetime',
-                        'virtual' => true,
-                        'getter'  => function($entity, $data, $name) {
-                            return $entity['date'] . ' ' . $entity['time'];
-                        }
-                    ]);
+            });
 
-                });
+            it("rebuilds the field on changes", function() {
 
-                it("builds the field", function() {
+                $document = $this->schema->cast(null, [
+                    'date' => '2015-05-20',
+                    'time' => '21:50:00'
+                ]);
+                expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
 
-                    $document = $this->schema->cast(null, [
-                        'date' => '2015-05-20',
-                        'time' => '21:50:00'
-                    ]);
-                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
-                    expect(isset($document->datetime))->toBe(false);
-
-                });
-
-                it("rebuilds the field on changes", function() {
-
-                    $document = $this->schema->cast(null, [
-                        'date' => '2015-05-20',
-                        'time' => '21:50:00'
-                    ]);
-                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 21:50:00');
-
-                    $document['time'] = '22:15:00';
-                    expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 22:15:00');
-                    expect(isset($document->datetime))->toBe(false);
-
-                });
+                $document['time'] = '22:15:00';
+                expect($document->datetime->format('Y-m-d H:i:s'))->toBe('2015-05-20 22:15:00');
+                expect(isset($document->datetime))->toBe(false);
 
             });
 
@@ -553,6 +505,7 @@ describe("Schema", function() {
                     $document->datetime = '2015-05-20 21:50:00';
                     expect($document->date)->toBe('2015-05-20');
                     expect($document->time)->toBe('21:50:00');
+                    expect(isset($document->datetime))->toBe(false);
 
                 });
 
@@ -566,6 +519,7 @@ describe("Schema", function() {
                     $document->datetime = '2015-05-20 22:15:00';
                     expect($document->date)->toBe('2015-05-20');
                     expect($document->time)->toBe('22:15:00');
+                    expect(isset($document->datetime))->toBe(false);
 
                 });
 
@@ -1008,12 +962,12 @@ describe("Schema", function() {
         it("correctly sets base path with stars", function() {
 
             $schema = new Schema();
-            $schema->column('data', ['type' => 'object']);
-            $schema->column('data.*', ['type' => 'object']);
+            $schema->column('data', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*', ['type' => 'object', 'default' => []]);
             $schema->column('data.*.checked', ['type' => 'boolean']);
-            $schema->column('data.*.test', ['type' => 'object']);
-            $schema->column('data.*.test.*', ['type' => 'object']);
-            $schema->column('data.*.test.*.nested', ['type' => 'object']);
+            $schema->column('data.*.test', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*.test.*', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*.test.*.nested', ['type' => 'object', 'default' => []]);
             $schema->column('data.*.test.*.nested.*', ['type' => 'boolean', 'array' => true]);
             $schema->locked(true);
 

@@ -877,8 +877,9 @@ class Schema
         if ($this->locked()) {
             throw new ORMException("Missing schema definition for field: `" . $name . "`.");
         }
+
         if (is_array($data)) {
-            if ($data === array_values($data)) {
+            if (isset($data[0])) {
                 return $this->_castArray($name, $data, $options);
             } else {
                 $options['class'] = Document::class;
@@ -946,6 +947,9 @@ class Schema
      */
     public function _cast($data, $options)
     {
+        if ($data === null) {
+            return;
+        }
         if ($data instanceof Document) {
             return $data;
         }

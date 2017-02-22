@@ -114,7 +114,7 @@ describe("Document", function() {
             $document = new Document(['schema' => $schema]);
 
             $document['a'] = 1;
-            expect($document->get('a'))->toBe('1');
+            expect($document->get('a'))->toBe(null);
 
         });
 
@@ -226,12 +226,12 @@ describe("Document", function() {
         it("correctly sets parents", function() {
 
             $schema = new Schema();
-            $schema->column('data', ['type' => 'object']);
-            $schema->column('data.*', ['type' => 'object']);
+            $schema->column('data', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*', ['type' => 'object', 'default' => []]);
             $schema->column('data.*.checked', ['type' => 'boolean']);
-            $schema->column('data.*.test', ['type' => 'object']);
-            $schema->column('data.*.test.*', ['type' => 'object']);
-            $schema->column('data.*.test.*.nested', ['type' => 'object']);
+            $schema->column('data.*.test', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*.test.*', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*.test.*.nested', ['type' => 'object', 'default' => []]);
             $schema->column('data.*.test.*.nested.*', ['type' => 'boolean', 'array' => true]);
             $schema->locked(true);
 

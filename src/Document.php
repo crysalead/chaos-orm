@@ -395,6 +395,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
         $schema = $this->schema();
 
+        $hasGenericFieldName = false;
+
         if ($schema->has($fieldName)) {
             $field = $schema->column($fieldName);
         } else {
@@ -402,39 +404,34 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             if ($schema->has($genericFieldName)) {
                 $field = $schema->column($genericFieldName);
                 $fieldName = $genericFieldName;
+                $hasGenericFieldName = true;
             } else {
                 $field = [];
             }
         }
 
+        $autoCreate = !empty($field['array']);
+        $value = [];
+
         if (!empty($field['getter'])) {
-            $value = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);
+            return $schema->cast($name, $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name));
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         } elseif ($schema->hasRelation($fieldName, false)) {
             if ($this->_exists !== false && $this->id() !== null) {
                 return $this->fetch($name);
             }
-            $value = [];
-        } elseif (isset($field['type']) && $field['type'] === 'object') {
-            $value = [];
-        } else {
-            return;
+            $relation = $schema->relation($fieldName);
+            $autoCreate = $relation->isMany();
+        } elseif ($hasGenericFieldName && isset($field['default'])) {
+            $autoCreate = true;
+            $value = $field['default'];
         }
 
-        $value = $schema->cast($name, $value, [
-            'parent'    => $this,
-            'basePath'  => $this->basePath(),
-            'defaults'  => true
-        ]);
-        if ($value instanceof HasParentsInterface) {
-            $value->setParent($this, $name);
+        if ($autoCreate) {
+            $this->_set($name, $value);
+            return $this->_data[$name];
         }
-
-        if (!empty($field['virtual'])) {
-            return $value;
-        }
-        return $this->_data[$name] = $value;
     }
 
     /**
@@ -463,13 +460,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function set($name, $data = [])
     {
-        if (is_string($name) || isset($name[0])) {
+        if (is_string($name) || (isset($name[0]) && is_string($name[0]))) {
             $this->_set($name, $data);
             return $this;
         }
         $data = $name;
-        if (!is_array($data)) {
-            throw new ORMException('An array is required to set data in bulk.');
+        if (!is_array($data) || isset($data[0])) {
+            throw new ORMException('Invalid bulk data for a document.');
         }
         foreach ($data as $name => $value) {
             $this->_set($name, $value);
@@ -519,14 +516,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
 
         if ($keys) {
-            $value = $this->get($name);
-
             if (!array_key_exists($name, $this->_data)) {
-                $this->_set($name, static::create([], [
-                    'parent'    => $this,
-                    'basePath'  => $this->basePath(),
-                    'defaults'  => true
-                ]));
+                $this->_set($name, []);
             }
             if (!$this->_data[$name] instanceof DataStoreInterface) {
                 throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
@@ -538,7 +529,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $schema = $this->schema();
 
         $previous = isset($this->_data[$name]) ? $this->_data[$name] : null;
-        $value = $this->schema()->cast($name, $data, [
+        $value = $schema->cast($name, $data, [
             'parent'    => $this,
             'basePath'  => $this->basePath(),
             'defaults'  => true
@@ -547,11 +538,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return;
         }
         $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
-        $this->_data[$name] = $value;
-
         if ($schema->isVirtual($fieldName)) {
             return;
         }
+
+        $this->_data[$name] = $value;
 
         if ($value instanceof HasParentsInterface) {
             $value->setParent($this, $name);
@@ -903,10 +894,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 $result[] = $prefix ? $prefix . '.' . $field : $field;
                 continue;
             }
-            if ($childs = $this->__get($field)->hierarchy($field, $ignore)) { // Too Many Magic Kill The Magic.
-                $result = array_merge($result, $childs);
-            } elseif ($childs !== false) {
-                $result[] = $prefix ? $prefix . '.' . $field : $field;
+            $entity = $this->__get($field); // Too Many Magic Kill The Magic.
+            if ($entity) {
+                if ($childs = $entity->hierarchy($field, $ignore)) {
+                    $result = array_merge($result, $childs);
+                } elseif ($childs !== false) {
+                    $result[] = $prefix ? $prefix . '.' . $field : $field;
+                }
             }
         }
         return $result;
