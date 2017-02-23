@@ -451,8 +451,9 @@ class Model extends Document
         unset($config['basePath']);
 
         $this->exists($config['exists']);
-
         parent::__construct($config);
+
+        $this->_exists = $this->_exists === 'all' ? true : $this->_exists;
 
         if ($this->_exists !== true) {
             return;
@@ -528,17 +529,19 @@ class Model extends Document
      */
     public function amend($data = [], $options = [])
     {
-        $exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
-        $this->_exists = $exists;
+        $this->_exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
 
-        $this->set($data + $this->_data, $exists);
+        $this->set($data + $this->_data);
         $this->_persisted = $this->_data;
+
+        $this->_exists = $this->_exists === 'all' ? true : $this->_exists;
+
         if (!static::unicity()) {
           return $this;
         }
         $id = $this->id();
         if ($id !== null) {
-            if ($exists) {
+            if ($this->_exists) {
                 static::shard()->set($id, $this);
             } else {
                 static::shard()->delete($id);

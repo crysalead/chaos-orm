@@ -532,7 +532,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $value = $schema->cast($name, $data, [
             'parent'    => $this,
             'basePath'  => $this->basePath(),
-            'defaults'  => true
+            'defaults'  => true,
+            'exists'    => $this instanceof Model && $this->_exists === 'all' ? 'all' : null
         ]);
         if ($previous !== null && $previous === $value) {
             return;

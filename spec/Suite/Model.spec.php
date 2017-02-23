@@ -99,6 +99,28 @@ describe("Model", function() {
 
         });
 
+        it("sets the exists value to all data using the `'all'` option", function() {
+
+            $image = Image::create([
+                'id'          => 1,
+                'title'       => 'Amiga 1200',
+                'gallery'     => ['id' => 1, 'name' => 'Gallery 1'],
+                'images_tags' => [
+                    ['id' => 1, 'image_id' => 1, 'tag_id' => 1, 'tag' => ['id' => 1, 'name' => 'Computer']],
+                    ['id' => 2, 'image_id' => 1, 'tag_id' => 2, 'tag' => ['id' => 2, 'name' => 'Science']]
+                ]
+            ], ['exists' => 'all']);
+
+            expect($image->exists())->toBe(true);
+            expect($image->gallery->exists())->toBe(true);
+            expect($image->images_tags->exists())->toBe(true);
+            expect($image->images_tags[0]->exists())->toBe(true);
+            expect($image->images_tags[1]->exists())->toBe(true);
+            expect($image->images_tags[0]->tag->exists())->toBe(true);
+            expect($image->images_tags[1]->tag->exists())->toBe(true);
+
+        });
+
         it("creates a collection of existing entities", function() {
 
             $model = $this->model;

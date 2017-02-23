@@ -192,6 +192,26 @@ describe("Entity", function() {
 
         });
 
+        it("amends all associated data", function() {
+
+            $image = Image::create([
+                'name'  => 'amiga_1200.jpg',
+                'title' => 'Amiga 1200'
+            ]);
+
+            expect($image->exists())->toBe(false);
+
+            $image->amend([
+                'id' => 123,
+                'gallery' => ['id' => 456, 'name' => 'MyGallery']
+            ], ['exists' => 'all']);
+
+            expect($image->id())->toBe(123);
+            expect($image->exists())->toBe(true);
+            expect($image->gallery->exists())->toBe(true);
+
+        });
+
         context("when there's no primary key", function() {
 
             it("amends an entity to its persisted value", function() {

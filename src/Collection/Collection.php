@@ -112,7 +112,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         ];
         $config += $defaults;
 
-        $this->exists($config['exists']);
+        $this->exists(!!$config['exists']);
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
         $this->meta($config['meta']);
