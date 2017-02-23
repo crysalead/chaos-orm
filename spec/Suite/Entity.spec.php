@@ -353,6 +353,7 @@ describe("Entity", function() {
             $image = Image::create();
             $image->set('gallery', [ 'id' => '1', 'name' => 'MyGallery' ]);
 
+            expect($image->get('gallery_id'))->toBe(1);
             expect($image->get('gallery') instanceof Gallery)->toBe(true);
             expect($image->get('gallery')->data())->toEqual([ 'id' => 1, 'name' => 'MyGallery' ]);
 
@@ -363,6 +364,8 @@ describe("Entity", function() {
             $image = Image::create();
             $image->set('gallery', [ 'id' => '1', 'name' => 'MyGallery' ]);
             $image->set('gallery', null);
+
+            expect($image->get('gallery_id'))->toBe(null);
             expect($image->get('gallery'))->toBe(null);
 
         });
@@ -931,7 +934,7 @@ describe("Entity", function() {
                 'name' => 'amiga_1200.jpg',
                 'title' => 'Amiga 1200',
                 'images_tags' => [
-                    ['tag' => ['name' => 'tag1']]
+                    ['tag_id' => null, 'tag' => ['name' => 'tag1']]
                 ],
                 'tags' => [
                     ['name' => 'tag1']
@@ -950,12 +953,13 @@ describe("Entity", function() {
 
             $image->gallery = ['name' => 'Gallery 1'];
 
-            expect($image->to('array'))->toBe([
+            expect($image->to('array'))->toEqual([
                 'title' => 'Amiga 1200',
                 'gallery' => ['name' => 'Gallery 1'],
+                'gallery_id' => null,
                 'images_tags' => [
-                    ['tag' => ['name' => 'Computer']],
-                    ['tag' => ['name' => 'Science']]
+                    ['tag_id' => null, 'tag' => ['name' => 'Computer']],
+                    ['tag_id' => null, 'tag' => ['name' => 'Science']]
                 ],
                 'tags'  => [
                     ['name' => 'Computer'],
@@ -963,13 +967,15 @@ describe("Entity", function() {
                 ]
             ]);
 
-            expect($image->to('array', ['embed' => ['gallery']]))->toBe([
+            expect($image->to('array', ['embed' => ['gallery']]))->toEqual([
                 'title'   => 'Amiga 1200',
-                'gallery' => ['name' => 'Gallery 1']
+                'gallery' => ['name' => 'Gallery 1'],
+                'gallery_id' => null
             ]);
 
-            expect($image->to('array', ['embed' => false]))->toBe([
-                'title' => 'Amiga 1200'
+            expect($image->to('array', ['embed' => false]))->toEqual([
+                'title' => 'Amiga 1200',
+                'gallery_id' => null
             ]);
         });
 

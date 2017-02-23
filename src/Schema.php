@@ -175,6 +175,8 @@ class Schema
         $this->formatter('array', 'null',      $handlers['array']['null']);
         $this->formatter('array', '_default_', $handlers['array']['string']);
 
+        $this->formatter('cast', 'id',       $handlers['cast']['integer']);
+        $this->formatter('cast', 'serial',   $handlers['cast']['integer']);
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
         $this->formatter('cast', 'float',    $handlers['cast']['float']);
         $this->formatter('cast', 'decimal',  $handlers['cast']['decimal']);

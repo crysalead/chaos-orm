@@ -545,6 +545,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $this->_data[$name] = $value;
 
+        if ($schema->hasRelation($fieldName, false)) {
+            $relation = $schema->relation($fieldName);
+            if ($relation->type() === 'belongsTo') {
+                $this->_set($relation->keys('from'), $value ? $value->id() : null);
+            }
+        }
+
         if ($value instanceof HasParentsInterface) {
             $value->setParent($this, $name);
         }
