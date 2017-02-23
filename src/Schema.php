@@ -1324,7 +1324,7 @@ class Schema
         }
 
         foreach ($collection as $entity) {
-            $entity->amend(null, [], ['exists' => false]);
+            $entity->amend([], ['exists' => false]);
         }
 
         return true;

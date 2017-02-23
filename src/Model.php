@@ -278,7 +278,7 @@ class Model extends Document
             if (isset($data[$key]) && $shard->has($data[$key])) {
                 $id = $data[$key];
                 $instance = $shard->get($id);
-                $instance->amend(null, $data, ['exists' => $options['exists']]);
+                $instance->amend($data, ['exists' => $options['exists']]);
                 return $instance;
             }
         }
@@ -521,27 +521,22 @@ class Model extends Document
      * Automatically called after an entity is saved. Updates the object's internal state
      * to reflect the corresponding database record.
      *
-     * @param mixed $id      The ID to assign, where applicable.
      * @param array $data    Any additional generated data assigned to the object by the database.
      * @param array $options Method options:
      *                       - `'exists'` _boolean_: Determines whether or not this entity exists
      *                         in data store. Defaults to `null`.
      */
-    public function amend($id = null, $data = [], $options = [])
+    public function amend($data = [], $options = [])
     {
         $exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
         $this->_exists = $exists;
 
-        $key = $this->schema()->key();
-        if ($id && $key) {
-            $data[$key] = $id;
-        }
         $this->set($data + $this->_data, $exists);
         $this->_persisted = $this->_data;
         if (!static::unicity()) {
           return $this;
         }
-        $id = $this->{$key};
+        $id = $this->id();
         if ($id !== null) {
             if ($exists) {
                 static::shard()->set($id, $this);
@@ -618,7 +613,7 @@ class Model extends Document
         if ($id !== null) {
             $persisted = static::load($id);
             if ($persisted && $data) {
-                $this->amend(null, $persisted->data(), ['exists' => true]);
+                $this->amend($persisted->data(), ['exists' => true]);
             } else {
                 $this->_exists = !!$persisted;
             }
