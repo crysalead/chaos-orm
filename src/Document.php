@@ -413,18 +413,21 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
 
         $autoCreate = !empty($field['array']);
-        $value = [];
 
         if (!empty($field['getter'])) {
             return $schema->cast($name, $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name));
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         } elseif ($schema->hasRelation($fieldName, false)) {
-            if ($this->_exists !== false && $this->id() !== null) {
-                return $this->fetch($name);
-            }
             $relation = $schema->relation($fieldName);
+            $hasManyThrough = $relation->type() === 'hasManyThrough';
+            if ($this->_exists !== false && $this->id() !== null) {
+                if (!$hasManyThrough || !$this->has($relation->through())) {
+                    return $this->fetch($name);
+                }
+            }
             $autoCreate = $relation->isMany();
+            $value = $hasManyThrough ? null : [];
         } elseif (isset($field['default'])) {
             $autoCreate = true;
             $value = $field['default'];

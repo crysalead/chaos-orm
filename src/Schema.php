@@ -637,7 +637,10 @@ class Schema
 
         if ($config['relation'] === 'hasManyThrough') {
             if (!isset($config['through'])) {
-                throw new ORMException("Missing `'through'` relation name.");
+                throw new ORMException("Missing through name for `'{$name}'` relation.");
+            }
+            if (!$this->_relations[$config['through']]) {
+                throw new ORMException("Unexisting through relation `'{$config['through']}'`, needed to be created first.");
             }
             $config += ['using' => $this->conventions()->apply('single', $name)];
             $config['type'] = 'through';
@@ -1011,8 +1014,8 @@ class Schema
 
         if ($data instanceof $collection) {
             return $data;
-        } else if ($isThrough) {
-            $config['parent']->get($config['through'])->clear();
+        } else if ($data !== null && $isThrough) {
+            $pivot = $config['parent']->get($config['through'])->clear();
         }
 
         return new $collection($config);
