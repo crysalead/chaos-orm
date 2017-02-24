@@ -726,11 +726,15 @@ describe("Entity", function() {
 
             $validator = Image::validator();
             $validator->rule('name', 'not:empty');
+
+            $validator = Tag::validator();
+            $validator->rule('name', 'not:empty');
         });
 
         afterEach(function() {
             Gallery::reset();
             Image::reset();
+            Tag::reset();
         });
 
         it("validates an entity", function() {
@@ -818,6 +822,64 @@ describe("Entity", function() {
             $gallery->images[1]->name = 'image2';
             expect($gallery->validates())->toBe(true);
             expect($gallery->errors())->toBe([]);
+
+        });
+
+        it("validates a hasManyThrough nested entities", function() {
+
+            $image = Image::create();
+            $image->tags[] = Tag::create();
+            $image->tags[] = Tag::create();
+
+            expect($image->validates())->toBe(false);
+            expect($image->errors())->toBe([
+                'name'   => ['is required'],
+                'images_tags' => [
+                   ['tag' => ['name' => ['is required']]],
+                   ['tag' => ['name' => ['is required']]]
+                ],
+                'tags' => [
+                   ['name' => ['is required']],
+                   ['name' => ['is required']]
+                ]
+            ]);
+
+            $image->name = '';
+            $image->tags[0]->name = '';
+            $image->tags[1]->name = '';
+            expect($image->validates())->toBe(false);
+            expect($image->errors())->toBe([
+                'name'   => ['must not be a empty'],
+                'images_tags' => [
+                   ['tag' => ['name' => ['must not be a empty']]],
+                   ['tag' => ['name' => ['must not be a empty']]]
+                ],
+                'tags' => [
+                   ['name' => ['must not be a empty']],
+                   ['name' => ['must not be a empty']]
+                ]
+            ]);
+
+            $image->name = 'new gallery';
+            $image->tags[0]->name = 'image1';
+            $image->tags[1]->name = '';
+            expect($image->validates())->toBe(false);
+            expect($image->errors())->toBe([
+                'images_tags' => [
+                   [],
+                   ['tag' => ['name' => ['must not be a empty']]]
+                ],
+                'tags' => [
+                    [],
+                    ['name' => ['must not be a empty']]
+                ]
+            ]);
+
+            $image->name = 'new gallery';
+            $image->tags[0]->name = 'image1';
+            $image->tags[1]->name = 'image2';
+            expect($image->validates())->toBe(true);
+            expect($image->errors())->toBe([]);
 
         });
 

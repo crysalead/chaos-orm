@@ -716,10 +716,15 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     public function errors($options = [])
     {
         $errors = [];
+        $errored = false;
         foreach ($this as $entity) {
-            $errors[] = $entity ? $entity->errors($options) : [];
+            $result = $entity->errors();
+            $errors[] = $result;
+            if ($result) {
+                $errored = true;
+            }
         }
-        return $errors;
+        return $errored ? $errors : [];
     }
 
     /**
