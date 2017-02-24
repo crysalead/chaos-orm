@@ -97,6 +97,32 @@ describe("Entity", function() {
 
     });
 
+    describe("::create()", function() {
+
+        it("eagerly populates default values by default", function() {
+
+            $model = $this->model;
+            $model::definition()->column('hello', ['type' => 'string', 'default' => 'world']);
+            $entity = $model::create();
+
+            expect($entity->has('hello'))->toBe(true);
+            expect($entity->get('hello'))->toBe('world');
+
+        });
+
+        it("lazily populates default values when the `'defaults'` option is set to false", function() {
+
+            $model = $this->model;
+            $model::definition()->column('hello', ['type' => 'string', 'default' => 'world']);
+            $entity = $model::create([], ['defaults' => false]);
+
+            expect($entity->has('hello'))->toBe(false);
+            expect($entity->get('hello'))->toBe('world');
+
+        });
+
+    });
+
     describe("->self()", function() {
 
         it("returns the entity class name", function() {

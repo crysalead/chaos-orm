@@ -261,7 +261,9 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
 
-        $config['data'] = Set::merge($this->schema()->defaults($config['basePath']), $config['data']);
+        if ($config['defaults']) {
+            $config['data'] = Set::merge($this->schema()->defaults($config['basePath']), $config['data']);
+        }
 
         $this->set($config['data']);
         $this->_persisted = $this->_data;
@@ -398,8 +400,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
         $schema = $this->schema();
 
-        $hasGenericFieldName = false;
-
         if ($schema->has($fieldName)) {
             $field = $schema->column($fieldName);
         } else {
@@ -407,7 +407,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             if ($schema->has($genericFieldName)) {
                 $field = $schema->column($genericFieldName);
                 $fieldName = $genericFieldName;
-                $hasGenericFieldName = true;
             } else {
                 $field = [];
             }
@@ -426,7 +425,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             }
             $relation = $schema->relation($fieldName);
             $autoCreate = $relation->isMany();
-        } elseif ($hasGenericFieldName && isset($field['default'])) {
+        } elseif (isset($field['default'])) {
             $autoCreate = true;
             $value = $field['default'];
         }
