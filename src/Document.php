@@ -386,6 +386,9 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         if ($keys) {
             $value = $this->get($name);
+            if (!$value) {
+                return;
+            }
             if (!$value instanceof DataStoreInterface) {
                 throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
             }

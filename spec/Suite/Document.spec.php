@@ -136,6 +136,26 @@ describe("Document", function() {
 
         });
 
+        it("returns `null` for undefined field", function() {
+
+            $document = new Document();
+            expect($document->get('value'))->toBe(null);
+            expect($document->get('nested.value'))->toBe(null);
+
+        });
+
+        it("throws an error when the path is invalid", function() {
+
+            $closure = function() {
+              $document = new Document();
+              $document->set('value', 'Hello World');
+              $document->get('value.invalid');
+            };
+
+            expect($closure)->toThrow(new ORMException("The field: `value` is not a valid document or entity."));
+
+        });
+
     });
 
     describe("->set()", function() {
