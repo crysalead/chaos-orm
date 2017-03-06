@@ -718,6 +718,76 @@ describe("Entity", function() {
 
     });
 
+    describe(".modified()", function() {
+
+        afterEach(function() {
+          Image::reset();
+        });
+
+        it("checks nested arbitraty value modifications in cascade", function() {
+
+            Image::definition()->lock(false);
+
+            $image = Image::create();
+            $image->set('a.nested.value', 'hello');
+            $image->amend();
+            expect($image->modified())->toBe(false);
+
+            $image->set('a.nested.value', 'world');
+            expect($image->modified())->toBe(true);
+
+        });
+
+        it("checks belongsTo relations modifications", function() {
+
+            $image = Image::create();
+            $image->set('gallery', ['id' => '1', 'name' => 'MyGallery']);
+            $image->amend();
+            expect($image->modified())->toBe(false);
+            expect($image->get('gallery')->modified())->toBe(false);
+
+            $image->set('gallery', ['id' => '2', 'name' => 'My New Gallery']);
+            expect($image->modified())->toBe(true);
+
+            $image->set('gallery', null);
+            expect($image->modified())->toBe(true);
+
+        });
+
+        it("checks hasMany relations modifications", function() {
+
+            $image = Image::create();
+            $image->set('images_tags.0', ['id' => '1', 'image_id' => '1', 'tag_id' => '1']);
+            $image->amend();
+            expect($image->modified())->toBe(false);
+
+            $image->set('images_tags.1', ['id' => '2', 'image_id' => '2', 'tag_id' => '2']);
+            expect($image->modified())->toBe(false);
+            expect($image->modified(['embed' => 'images_tags']))->toBe(true);
+            expect($image->modified(['embed' => 'tags']))->toBe(true);
+
+            $image->set('images_tags', null);
+            expect($image->modified())->toBe(false);
+            expect($image->modified(['embed' => 'images_tags']))->toBe(true);
+            expect($image->modified(['embed' => 'tags']))->toBe(true);
+
+        });
+
+        it("sets a single hasManyThrough relation", function() {
+
+            $image = Image::create();
+            $image->set('tags.0', ['id' => '1', 'name' => 'landscape']);
+            $image->amend();
+            expect($image->modified())->toBe(false);
+
+            $image->set('tags.1', ['id' => '2', 'name' => 'galaxy']);
+            expect($image->modified())->toBe(false);
+            expect($image->modified(['embed' => 'tags']))->toBe(true);
+
+        });
+
+    });
+
     describe("->validates()", function() {
 
         beforeEach(function() {

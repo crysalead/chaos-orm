@@ -823,62 +823,103 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     }
 
     /**
-     * Gets the modified state of a given field or, if no field is given, gets the state of the whole entity.
+     * Get the modified state of a given field or, if no field is given, gets the state of the whole entity.
      *
-     * @param  string $field The field name to check its state.
-     * @return array         Returns `true` if a field is given and was updated, `false` otherwise.
-     *                       If no field is given returns an array of all modified fields and their
-     *                       original values.
+     * @param  string|array  $field The field name to check or an options object.
+     * @return boolean|array        Returns `true` if a field is given and was updated, `false` otherwise.
+     *                              If no field is given returns an array of all modified fields and their
+     *                              original values.
      */
     public function modified($field = null)
     {
         $schema = $this->schema();
+        $options = [
+            'embed' => false
+        ];
 
-        $result = [];
+        if (is_array($field)) {
+
+            $options = $field + $options;
+            $field = null;
+
+            if (!empty($options['embed'])) {
+                $options['embed'] = $this->hierarchy();
+            }
+        }
+
+        $options['embed'] = $schema->treeify($options['embed']);
+
+        $updated = [];
         $fields = $field ? [$field] : array_keys($this->_data + $this->_persisted);
 
         foreach ($fields as $key) {
             if (!array_key_exists($key, $this->_data)) {
                 if (array_key_exists($key, $this->_persisted)) {
-                    $result[$key] = $this->_persisted[$key];
+                    $updated[$key] = $this->_persisted[$key];
                 }
                 continue;
             }
+
             if (!array_key_exists($key, $this->_persisted)) {
-                if (!$schema->hasRelation($key)) {
-                    $result[$key] = null;
+                $updated[$key] = null;
+                continue;
+            }
+
+            $persisted = $this->_persisted[$key];
+            $value = $this->_data[$key];
+
+            if ($schema->hasRelation($key, false)) {
+                $relation = $schema->relation($key);
+                if ($relation->type() !== 'hasManyThrough' && array_key_exists($key, $options['embed'])) {
+                    if ($value !== $persisted) {
+                        $updated[$key] = $persisted ? $persisted->persisted() : $persisted;
+                    } else if ($value && $value->modified(['embed' => $options['embed'][$key]])) {
+                        $updated[$key] = $value->persisted();
+                    }
                 }
                 continue;
             }
+
             $modified = false;
-            $value = array_key_exists($key, $this->_data) ? $this->_data[$key] : $this->_persisted[$key];
+
             if (method_exists($value, 'modified')) {
-                $modified = $this->_persisted[$key] !== $value || $value->modified();
+                $modified = $persisted !== $value || $value->modified();
             } elseif (is_object($value)) {
-                $modified = $this->_persisted[$key] != $value;
+                $modified = $persisted != $value;
             } else {
-                $modified = $this->_persisted[$key] !== $value;
+                $modified = $persisted !== $value;
             }
             if ($modified) {
-                $result[$key] = $this->_persisted[$key];
+                $updated[$key] = $persisted;
             }
         }
         if ($field) {
-            return !empty($result);
+            return !empty($updated);
         }
-        $result = array_keys($result);
-        $result = $field ? $result : !!$result;
-        return $result;
+        $updated = array_keys($updated);
+        $updated = $field ? $updated : !!$updated;
+        return $updated;
     }
 
     /**
-     * Sync a document
+     * Amend the document modifications.
      *
      * @return self
      */
     public function amend()
     {
         $this->_persisted = $this->_data;
+        $schema = $this->schema();
+
+        foreach ($this->_persisted as $key => $value) {
+            if ($schema->hasRelation($key, false)) {
+                continue;
+            }
+            $value = $this->_persisted[$key];
+            if ($value instanceof DataStoreInterface) {
+                $value->amend();
+            }
+        }
         return $this;
     }
 
@@ -961,15 +1002,12 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         foreach ($fields as $field) {
             $path = $basePath ? $basePath . '.' . $field : $field;
-            $rel = null;
-            if ($schema->hasRelation($path)) {
-                $rel = $schema->relation($path);
-                if (!$rel->embedded()) {
-                    if (!array_key_exists($field, $tree)) {
-                        continue;
-                    }
-                    $options['embed'] = $tree[$field];
+
+            if ($schema->hasRelation($path, false)) {
+                if (!array_key_exists($field, $tree)) {
+                    continue;
                 }
+                $options['embed'] = $tree[$field];
             }
             if (!$this->has($field)) {
                 continue;

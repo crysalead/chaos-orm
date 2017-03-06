@@ -1261,7 +1261,7 @@ class Schema
             $entity->sync();
             if (!$entity->exists()) {
                 $inserts[] = $entity;
-            } elseif ($entity->modified()) {
+            } elseif ($entity->modified($options)) {
                 $updates[] = $entity;
             }
         }

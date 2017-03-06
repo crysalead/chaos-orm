@@ -57,12 +57,26 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     protected $_exists = false;
 
     /**
+     * Indicating whether or not this collection has been modified or not after creation.
+     *
+     * @var Boolean
+     */
+    protected $_modified = false;
+
+    /**
      * The schema to which this collection is bound. This
      * is usually the schema that executed the query which created this object.
      *
      * @var object
      */
     protected $_schema = null;
+
+    /**
+     * Loaded data on construct.
+     *
+     * @var Array
+     */
+    protected $_persisted = [];
 
     /**
      * The items contained in the collection.
@@ -121,6 +135,8 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             $this->set($key, $value, $config['exists']);
         }
         $this->_parents = new Map();
+
+        $this->amend();
     }
 
     /**
@@ -330,6 +346,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         if ($data instanceof HasParentsInterface) {
             $data->setParent($this, $name);
         }
+        $this->_modified = true;
         return $this;
     }
 
@@ -433,6 +450,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         if ($value instanceof HasParentsInterface) {
             $value->unsetParent($this);
         }
+        $this->_modified = true;
     }
 
     /**
@@ -455,6 +473,28 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function unset($name)
     {
         return $this->offsetUnset($name);
+    }
+
+    /**
+     * Get the modified state of the collection.
+     *
+     * @return boolean
+     */
+    public function modified()
+    {
+      return $this->_modified;
+    }
+
+    /**
+     * Amend the collection modifications.
+     *
+     * @return self
+     */
+    public function amend()
+    {
+      $this->_persisted = $this->_data;
+      $this->_modified = false;
+      return $this;
     }
 
     /**
@@ -803,6 +843,19 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function data($options = [])
     {
         return $this->to('array', $options);
+    }
+
+    /**
+     * Returns the persisted data (i.e the data in the datastore) of the entity.
+     *
+     * @return mixed
+     */
+    public function persisted()
+    {
+      if (!func_num_args()) {
+        return $this->_persisted;
+      }
+      return isset($this->_persisted[$field]) ? $this->_persisted[$field] : null;
     }
 
     /**

@@ -533,6 +533,7 @@ class Model extends Document
 
         $this->set($data + $this->_data);
         $this->_persisted = $this->_data;
+        parent::amend();
 
         $this->_exists = $this->_exists === 'all' ? true : $this->_exists;
 

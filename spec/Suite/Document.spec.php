@@ -670,6 +670,23 @@ describe("Document", function() {
 
         });
 
+        it("returns `true` when a field is setted to `null`", function() {
+
+            $document = new Document([
+                'data' => [
+                    'title' => 'original'
+                ]
+            ]);
+
+            expect($document->modified('title'))->toBe(false);
+
+            $document->title = null;
+
+            expect($document->title)->toBe(null);
+            expect($document->modified('title'))->toBe(true);
+
+        });
+
         it("returns `false` when an unexisting field is checked", function() {
 
             $document = new Document();
