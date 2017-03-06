@@ -7,6 +7,7 @@ use Chaos\ORM\Model;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Document;
 use Chaos\ORM\Collection\Collection;
+use Chaos\ORM\Spec\Fixture\Model\Image;
 
 use Kahlan\Plugin\Double;
 
@@ -803,7 +804,7 @@ describe("Collection", function() {
 
     });
 
-    describe(".original()", function() {
+    describe("->original()", function() {
 
         it("return the original data", function() {
 
@@ -814,6 +815,36 @@ describe("Collection", function() {
             unset($collection[1]);
             expect($collection->data())->toEqual([]);
             expect($collection->original())->toEqual([1 => 1]);
+
+        });
+
+    });
+
+    describe("->save()", function() {
+
+        it("saves each item of a collection", function() {
+
+            $collection = Image::create([
+                ['name' => 'amiga_1200.jpg', 'title' => 'Amiga 1200'],
+                ['name' => 'amiga_1260.jpg', 'title' => 'Amiga 1260'],
+            ], ['type' => 'set']);
+
+            $schema = Image::definition();
+
+            allow($collection)->toReceive('validates')->andReturn(true);
+            allow($schema)->toReceive('save')->andReturn(true);
+
+            expect($collection)->toReceive('validates')->with([
+                'validate' => true,
+                'embed'    => false
+            ]);
+
+            expect($schema)->toReceive('save')->with($collection, [
+                'validate' => true,
+                'embed'    => false
+            ]);
+
+            expect($collection->save())->toBe(true);
 
         });
 

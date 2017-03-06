@@ -718,7 +718,7 @@ describe("Entity", function() {
 
     });
 
-    describe(".modified()", function() {
+    describe("->modified()", function() {
 
         afterEach(function() {
           Image::reset();

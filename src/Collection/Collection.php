@@ -864,26 +864,18 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *                                                      be immediately saved. Defaults to `true`.
      * @return boolean           Returns `true` on a successful save operation, `false` otherwise.
      */
-    public function broadcast($options = [])
+    public function save($options = [])
     {
-        $defaults = ['validate' => true];
+        $defaults = [
+            'validate' => true,
+            'embed'    => false
+        ];
         $options += $defaults;
         if ($options['validate'] && !$this->validates($options)) {
             return false;
         }
         $schema = $this->schema();
-        return $schema->broadcast($this, $options);
-    }
-
-    /**
-     * Similar to `->broadcast()` except the relationships has not been saved by default.
-     *
-     * @param  array   $options Same options as `->save()`.
-     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
-     */
-    public function save($options = [])
-    {
-        return $this->broadcast($options + ['embed' => false]);
+        return $schema->save($this, $options);
     }
 
     /**
