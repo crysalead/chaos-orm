@@ -1007,9 +1007,12 @@ class Schema
         }
 
         if ($isThrough) {
-          $config['parent'] = $options['parent'];
-          $config['through'] = $options['through'];
-          $config['using'] = $options['using'];
+            $config['parent'] = $options['parent'];
+            $config['through'] = $options['through'];
+            $config['using'] = $options['using'];
+            if (!$config['parent']->has($config['through'])) {
+                $config['parent']->set($config['through'], []);
+            }
         }
 
         if ($data instanceof $collection) {

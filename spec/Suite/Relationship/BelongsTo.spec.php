@@ -167,6 +167,17 @@ describe("BelongsTo", function() {
 
     });
 
+    describe(".fetch()", function() {
+
+        it("returns `null` for unexisting foreign key", function() {
+
+            $image = Image::create(['id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
+            expect($image->fetch('gallery'))->toBe(null);
+
+        });
+
+    });
+
     describe("->broadcast()", function() {
 
         it("bails out if no relation data hasn't been setted", function() {

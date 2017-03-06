@@ -421,9 +421,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         } elseif ($schema->hasRelation($fieldName, false)) {
             $relation = $schema->relation($fieldName);
             $hasManyThrough = $relation->type() === 'hasManyThrough';
-            if ($this->_exists !== false && $this->id() !== null) {
+            if ($this->id() !== null) {
                 if (!$hasManyThrough || !$this->has($relation->through())) {
-                    return $this->fetch($name);
+                    if (($this->_exists !== false && $relation->type() != 'belongsTo') || !$this->get($relation->keys('from')) !== null) {
+                        return $this->fetch($name);
+                    }
                 }
             }
             $autoCreate = $relation->isMany();
