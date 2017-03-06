@@ -596,17 +596,6 @@ class Model extends Document
     }
 
     /**
-     * Similar to `->save()` except the direct relationship has not been saved by default.
-     *
-     * @param  array   $options Same options as `->save()`.
-     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
-     */
-    public function persist($options = [])
-    {
-        return $this->save(['embed' => false] + $options);
-    }
-
-    /**
      * Sync the entity existence from the database.
      *
      * @param boolean $data Indicate whether the data need to by synced or not.

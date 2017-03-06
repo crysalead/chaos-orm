@@ -1042,30 +1042,6 @@ describe("Schema", function() {
 
     });
 
-    describe("->persist()", function() {
-
-        it("persists an entity", function() {
-
-            $data = [
-                'name' => 'amiga_1200.jpg',
-                'title' => 'Amiga 1200'
-            ];
-
-            $image = Image::create($data);
-
-            allow($image->schema())->toReceive('bulkInsert')->andReturn(true);
-            allow($image->schema())->toReceive('bulkUpdate')->andReturn(true);
-
-            expect($image)->toReceive('save')->with([
-                'embed' => false,
-                'custom' => 'option'
-            ]);
-
-            expect($image->persist(['custom' => 'option', 'embed' => true]))->toBe(true);
-        });
-
-    });
-
     describe("->hasRelation()", function() {
 
         it("checks if an embedded relation exists", function() {
