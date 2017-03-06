@@ -526,9 +526,9 @@ describe("Document", function() {
 
     });
 
-    describe("->persisted()", function() {
+    describe("->original()", function() {
 
-        it("returns persisted data", function() {
+        it("returns original data", function() {
 
             $document = new Document([
                 'data' => [
@@ -544,8 +544,8 @@ describe("Document", function() {
                 'body'  => 'Folks'
             ]);
 
-            expect($document->persisted('title'))->toBe('Hello');
-            expect($document->persisted('body'))->toBe('World');
+            expect($document->original('title'))->toBe('Hello');
+            expect($document->original('body'))->toBe('World');
 
             expect($document->title)->toBe('Good Bye');
             expect($document->body)->toBe('Folks');
@@ -555,7 +555,7 @@ describe("Document", function() {
 
         });
 
-        it("returns all persisted data with no parameter", function() {
+        it("returns all original data with no parameter", function() {
 
             $document = new Document([
                 'data' => [
@@ -571,7 +571,7 @@ describe("Document", function() {
                 'body'  => 'Folks'
             ]);
 
-            expect($document->persisted())->toBe([
+            expect($document->original())->toBe([
                 'id'    => 1,
                 'title' => 'Hello',
                 'body'  => 'World'

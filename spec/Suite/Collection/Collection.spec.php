@@ -803,6 +803,22 @@ describe("Collection", function() {
 
     });
 
+    describe(".original()", function() {
+
+        it("return the original data", function() {
+
+            $collection = new Collection(['data' => [
+                1 => 1
+            ]]);
+
+            unset($collection[1]);
+            expect($collection->data())->toEqual([]);
+            expect($collection->original())->toEqual([1 => 1]);
+
+        });
+
+    });
+
     describe("::toArray()", function() {
 
         it("converts a collection to an array", function() {

@@ -85,11 +85,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @var array
      */
-    protected $_persisted = [];
+    protected $_original = [];
 
     /**
-     * Contains the values of updated fields. These values will be persisted to the backend data
-     * store when the document is saved.
+     * Contains the values of updated fields.
      *
      * @var array
      */
@@ -266,7 +265,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
 
         $this->set($config['data']);
-        $this->_persisted = $this->_data;
+        $this->_original = $this->_data;
     }
 
     /**
@@ -809,17 +808,17 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     }
 
     /**
-     * Returns the persisted data (i.e the data in the datastore) of the entity.
+     * Returns the original data (i.e the data in the datastore) of the entity.
      *
-     * @param  string $field A field name or `null` to get all persisted data.
+     * @param  string $field A field name or `null` to get all original data.
      * @return mixed
      */
-    public function persisted($field = null)
+    public function original($field = null)
     {
         if (!$field) {
-            return $this->_persisted;
+            return $this->_original;
         }
-        return isset($this->_persisted[$field]) ? $this->_persisted[$field] : null;
+        return isset($this->_original[$field]) ? $this->_original[$field] : null;
     }
 
     /**
@@ -850,31 +849,31 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $options['embed'] = $schema->treeify($options['embed']);
 
         $updated = [];
-        $fields = $field ? [$field] : array_keys($this->_data + $this->_persisted);
+        $fields = $field ? [$field] : array_keys($this->_data + $this->_original);
 
         foreach ($fields as $key) {
             if (!array_key_exists($key, $this->_data)) {
-                if (array_key_exists($key, $this->_persisted)) {
-                    $updated[$key] = $this->_persisted[$key];
+                if (array_key_exists($key, $this->_original)) {
+                    $updated[$key] = $this->_original[$key];
                 }
                 continue;
             }
 
-            if (!array_key_exists($key, $this->_persisted)) {
+            if (!array_key_exists($key, $this->_original)) {
                 $updated[$key] = null;
                 continue;
             }
 
-            $persisted = $this->_persisted[$key];
+            $original = $this->_original[$key];
             $value = $this->_data[$key];
 
             if ($schema->hasRelation($key, false)) {
                 $relation = $schema->relation($key);
                 if ($relation->type() !== 'hasManyThrough' && array_key_exists($key, $options['embed'])) {
-                    if ($value !== $persisted) {
-                        $updated[$key] = $persisted ? $persisted->persisted() : $persisted;
+                    if ($value !== $original) {
+                        $updated[$key] = $original ? $original->original() : $original;
                     } else if ($value && $value->modified(['embed' => $options['embed'][$key]])) {
-                        $updated[$key] = $value->persisted();
+                        $updated[$key] = $value->original();
                     }
                 }
                 continue;
@@ -883,14 +882,14 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $modified = false;
 
             if (method_exists($value, 'modified')) {
-                $modified = $persisted !== $value || $value->modified();
+                $modified = $original !== $value || $value->modified();
             } elseif (is_object($value)) {
-                $modified = $persisted != $value;
+                $modified = $original != $value;
             } else {
-                $modified = $persisted !== $value;
+                $modified = $original !== $value;
             }
             if ($modified) {
-                $updated[$key] = $persisted;
+                $updated[$key] = $original;
             }
         }
         if ($field) {
@@ -908,14 +907,14 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function amend()
     {
-        $this->_persisted = $this->_data;
+        $this->_original = $this->_data;
         $schema = $this->schema();
 
-        foreach ($this->_persisted as $key => $value) {
+        foreach ($this->_original as $key => $value) {
             if ($schema->hasRelation($key, false)) {
                 continue;
             }
-            $value = $this->_persisted[$key];
+            $value = $this->_original[$key];
             if ($value instanceof DataStoreInterface) {
                 $value->amend();
             }

@@ -532,7 +532,7 @@ class Model extends Document
         $this->_exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
 
         $this->set($data + $this->_data);
-        $this->_persisted = $this->_data;
+        $this->_original = $this->_data;
         parent::amend();
 
         $this->_exists = $this->_exists === 'all' ? true : $this->_exists;

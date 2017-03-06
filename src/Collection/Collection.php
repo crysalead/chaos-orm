@@ -14,7 +14,7 @@ use Chaos\ORM\Model;
 use Chaos\ORM\Map;
 
 /**
- * `Collection` provide context-specific features for working with sets of data persisted by a backend data store.
+ * `Collection` provide context-specific features for working with sets of data.
  */
 class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAccess, \Iterator, \Countable
 {
@@ -76,7 +76,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @var Array
      */
-    protected $_persisted = [];
+    protected $_original = [];
 
     /**
      * The items contained in the collection.
@@ -492,7 +492,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      */
     public function amend()
     {
-      $this->_persisted = $this->_data;
+      $this->_original = $this->_data;
       $this->_modified = false;
       return $this;
     }
@@ -846,16 +846,13 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     }
 
     /**
-     * Returns the persisted data (i.e the data in the datastore) of the entity.
+     * Returns the original data (i.e the data in the datastore) of the entity.
      *
      * @return mixed
      */
-    public function persisted()
+    public function original()
     {
-      if (!func_num_args()) {
-        return $this->_persisted;
-      }
-      return isset($this->_persisted[$field]) ? $this->_persisted[$field] : null;
+        return $this->_original;
     }
 
     /**
