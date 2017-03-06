@@ -65,7 +65,7 @@ class BelongsTo extends \Chaos\ORM\Relationship
      * @param  array   $options Saving options.
      * @return boolean
      */
-    public function broadcast($entity, $options = [])
+    public function save($entity, $options = [])
     {
         if ($this->link() !== static::LINK_KEY) {
             return true;
@@ -76,7 +76,7 @@ class BelongsTo extends \Chaos\ORM\Relationship
             return true;
         }
         $related = $entity->{$name};
-        $result = $related->broadcast($options);
+        $result = $related->save($options);
 
         $keys = $this->keys();
         list($from, $to) = each($keys);

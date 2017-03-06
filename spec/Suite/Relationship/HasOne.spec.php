@@ -171,13 +171,13 @@ describe("HasOne", function() {
 
     });
 
-    describe("->broadcast()", function() {
+    describe("->save()", function() {
 
         it("bails out if no relation data hasn't been setted", function() {
 
             $hasOne = Gallery::definition()->relation('detail');
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
-            expect($hasOne->broadcast($gallery))->toBe(true);
+            expect($hasOne->save($gallery))->toBe(true);
 
         });
 
@@ -188,13 +188,13 @@ describe("HasOne", function() {
             $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery'], ['exists' => true]);
             $gallery->detail = ['description' => 'Foo Gallery Description'];
 
-            Stub::on($gallery->detail)->method('broadcast', function() use ($gallery) {
+            Stub::on($gallery->detail)->method('save', function() use ($gallery) {
                 $gallery->detail->id = 1;
                 return true;
             });
 
-            expect($gallery->detail)->toReceive('broadcast');
-            expect($hasOne->broadcast($gallery))->toBe(true);
+            expect($gallery->detail)->toReceive('save');
+            expect($hasOne->save($gallery))->toBe(true);
             expect($gallery->detail->gallery_id)->toBe($gallery->id);
 
         });

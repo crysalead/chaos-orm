@@ -1042,9 +1042,9 @@ describe("Schema", function() {
 
     });
 
-    describe("->save()", function() {
+    describe("->persist()", function() {
 
-        it("saves an entity", function() {
+        it("persists an entity", function() {
 
             $data = [
                 'name' => 'amiga_1200.jpg',
@@ -1056,12 +1056,12 @@ describe("Schema", function() {
             allow($image->schema())->toReceive('bulkInsert')->andReturn(true);
             allow($image->schema())->toReceive('bulkUpdate')->andReturn(true);
 
-            expect($image)->toReceive('broadcast')->with([
-                'custom' => 'option',
-                'embed' => false
+            expect($image)->toReceive('save')->with([
+                'embed' => false,
+                'custom' => 'option'
             ]);
 
-            expect($image->save(['custom' => 'option']))->toBe(true);
+            expect($image->persist(['custom' => 'option', 'embed' => true]))->toBe(true);
         });
 
     });

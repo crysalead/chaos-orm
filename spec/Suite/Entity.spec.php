@@ -948,7 +948,7 @@ describe("Entity", function() {
 
     });
 
-    describe("->broadcast()", function() {
+    describe("->save()", function() {
 
         afterEach(function() {
 
@@ -962,12 +962,12 @@ describe("Entity", function() {
             $image = Image::create([]);
             Image::validator()->rule('name', 'not:empty');
 
-            expect($image->broadcast())->toBe(false);
+            expect($image->save())->toBe(false);
             expect($image->exists())->toBe(false);
 
         });
 
-        it("validates direct relationships by default", function() {
+        it("doesn't validates direct relationships by default", function() {
 
             Gallery::validator()->rule('name', 'not:empty');
 
@@ -976,8 +976,30 @@ describe("Entity", function() {
                 'title'   => 'Amiga 1200',
                 'gallery' => []
             ]);
-            expect($image->broadcast())->toBe(false);
-            expect($image->exists())->toBe(false);
+
+            $schema = $image->schema();
+
+            allow($schema)->toReceive('bulkInsert')->andReturn(true);
+            allow($schema)->toReceive('bulkUpdate')->andReturn(true);
+            expect($schema)->toReceive('save')->with($image, [
+                'validate' => true,
+                'embed' => false
+            ]);
+
+            expect($image->save())->toBe(true);
+
+        });
+
+        it("validates embedded relationships", function() {
+
+            Gallery::validator()->rule('name', 'not:empty');
+
+            $image = Image::create([
+                'name'    => 'amiga_1200.jpg',
+                'title'   => 'Amiga 1200',
+                'gallery' => []
+            ]);
+            expect($image->save(['embed' => 'gallery']))->toBe(false);
 
         });
 

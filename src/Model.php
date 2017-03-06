@@ -557,14 +557,14 @@ class Model extends Document
      * {{{
      * $post = Post::create(); // Creates a new object, which doesn't exist in the database yet
      * $post->title = "My post";
-     * $success = $post->broadcast();
+     * $success = $post->save();
      * }}}
      *
      * It is also used to update existing database objects, as in the following:
      * {{{
      * $post = Post::first($id);
      * $post->title = "Revised title";
-     * $success = $post->broadcast();
+     * $success = $post->save();
      * }}}
      *
      * To override the validation checks and save anyway, you can pass the `'validate'` option:
@@ -572,7 +572,7 @@ class Model extends Document
      * {{{
      * $post->title = "We Don't Need No Stinkin' Validation";
      * $post->body = "I know what I'm doing.";
-     * $post->broadcast(['validate' => false]);
+     * $post->save(['validate' => false]);
      * }}}
      *
      * @param  array    $options Options:
@@ -580,26 +580,30 @@ class Model extends Document
      *                                                      be immediately saved. Defaults to `true`.
      * @return boolean           Returns `true` on a successful save operation, `false` otherwise.
      */
-    public function broadcast($options = [])
+    public function save($options = [])
     {
-        $defaults = ['validate' => true];
+        $defaults = [
+            'validate' => true,
+            'embed'    => false
+        ];
+
         $options += $defaults;
         if ($options['validate'] && !$this->validates($options)) {
             return false;
         }
         $schema = $this->schema();
-        return $schema->broadcast($this, $options);
+        return $schema->save($this, $options);
     }
 
     /**
-     * Similar to `->broadcast()` except the direct relationship has not been saved by default.
+     * Similar to `->save()` except the direct relationship has not been saved by default.
      *
      * @param  array   $options Same options as `->save()`.
      * @return boolean          Returns `true` on a successful save operation, `false` on failure.
      */
-    public function save($options = [])
+    public function persist($options = [])
     {
-        return $this->broadcast($options + ['embed' => false]);
+        return $this->save(['embed' => false] + $options);
     }
 
     /**

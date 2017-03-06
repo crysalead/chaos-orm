@@ -1189,12 +1189,12 @@ class Schema
      *                            - `'embed'`     _array_  : List of relations to save.
      * @return boolean            Returns `true` on a successful save operation, `false` otherwise.
      */
-    public function broadcast($instance, $options = [])
+    public function save($instance, $options = [])
     {
         $defaults = [
             'whitelist' => null,
-            'locked' => $this->locked(),
-            'embed' => $instance->schema()->relations()
+            'locked'    => $this->locked(),
+            'embed'     => false
         ];
         $options += $defaults;
 
@@ -1206,13 +1206,13 @@ class Schema
 
         $options['embed'] = $this->treeify($options['embed']);
 
-        if (!$this->persist($instance, 'belongsTo', $options)) {
+        if (!$this->saveRelation($instance, 'belongsTo', $options)) {
             return false;
         }
 
-        $success = $this->save($instance, $options);
+        $success = $this->persist($instance, $options);
 
-        return $success && $this->persist($instance, ['hasMany', 'hasOne'], $options);
+        return $success && $this->saveRelation($instance, ['hasMany', 'hasOne'], $options);
     }
 
     /**
@@ -1225,12 +1225,11 @@ class Schema
      *                            - `'embed'`     _array_  : List of relations to save.
      * @return boolean            Returns `true` on a successful save operation, `false` otherwise.
      */
-    public function save($instance, $options = [])
+    public function persist($instance, $options = [])
     {
         $defaults = [
             'whitelist' => null,
-            'locked' => $this->locked(),
-            'embed' => $instance->schema()->relations()
+            'locked' => $this->locked()
         ];
         $options += $defaults;
 
@@ -1277,7 +1276,7 @@ class Schema
      * @param  array   $options  Options array.
      * @return boolean           Returns `true` on a successful save operation, `false` on failure.
      */
-    public function persist($instance, $types, $options = [])
+    public function saveRelation($instance, $types, $options = [])
     {
         $defaults = ['embed' => []];
         $options += $defaults;
@@ -1292,7 +1291,7 @@ class Schema
                     if (!($rel = $this->relation($relName)) || $rel->type() !== $type) {
                         continue;
                     }
-                    $success = $success && $rel->broadcast($entity, ['embed' => $value] + $options);
+                    $success = $success && $rel->save($entity, ['embed' => $value] + $options);
                 }
             }
         }
