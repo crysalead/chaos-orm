@@ -240,6 +240,21 @@ describe("HasManyThrough", function() {
 
     describe("->get()", function() {
 
+        it("throws an exception when a lazy load is necessary", function() {
+
+            $closure = function() {
+                $image = Image::create(['id' => 1, 'title' => 'Amiga 1200', 'gallery_id' => 1 ], ['exists' => true]);
+                $image->get('tags');
+            };
+
+            expect($closure)->toThrow(new ORMException("The relation `'tags'` is an external relation, use `fetch()` to lazy load its data."));
+
+        });
+
+    });
+
+    describe("->fetch()", function() {
+
         it("lazy loads a hasManyThrough relation", function() {
 
             Stub::on(ImageTag::class)->method('::all', function($options = [], $fetchOptions = []) {

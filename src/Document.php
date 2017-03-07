@@ -367,10 +367,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     /**
      * Returns the current data.
      *
-     * @param  string $name If name is defined, it'll only return the field value.
-     * @return array.
+     * @param  string  $name         If name is defined, it'll only return the field value.
+     * @param  Closure $fetchHandler The fetching handler.
+     * @return mixed.
      */
-    public function get($name = null)
+    public function get($name = null, $fetchHandler = null)
     {
         if (!func_num_args()) {
             $data = [];
@@ -423,7 +424,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             if ($this->id() !== null) {
                 if (!$hasManyThrough || !$this->has($relation->through())) {
                     if (($this->_exists !== false && $relation->type() != 'belongsTo') || !$this->get($relation->keys('from')) !== null) {
-                        return $this->fetch($name);
+                        if ($fetchHandler) {
+                            return $fetchHandler($this, $name);
+                        }
+                        throw new ORMException("The relation `'{$name}'` is an external relation, use `fetch()` to lazy load its data.");
                     }
                 }
             }
@@ -438,23 +442,6 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $this->_set($name, $value);
             return $this->_data[$name];
         }
-    }
-
-    /**
-     * Lazy load a relation and return its data.
-     *
-     * @param  string name The name of the relation to load.
-     * @return mixed.
-     */
-    public function fetch($name)
-    {
-        if ($this->_exists === false || $this->id() === null) {
-            $this->set($name, []);
-            return $this->get($name);
-        }
-        $collection = [$this];
-        $this->schema()->embed($collection, $name);
-        return isset($this->_data[$name]) ? $this->_data[$name] : null;
     }
 
     /**

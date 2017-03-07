@@ -519,6 +519,45 @@ class Model extends Document
     }
 
     /**
+     * Allows fields to be accessed as an array, i.e. `$entity['id']`.
+     *
+     * @param  string $offset The field name.
+     * @return mixed
+     */
+    public function &offsetGet($offset)
+    {
+        $result = $this->fetch($offset);
+        return $result;
+    }
+
+    /**
+     * Overloading for reading inaccessible properties.
+     *
+     * @param  string $name Property name.
+     * @return mixed        Result.
+     */
+    public function &__get($name)
+    {
+        $value = $this->fetch($name);
+        return $value;
+    }
+
+    /**
+     * Lazy load a relation and return its data.
+     *
+     * @param  string name The name of the relation to load.
+     * @return mixed.
+     */
+    public function fetch($name)
+    {
+        return $this->get($name, function($instance, $name) {
+            $collection = [$instance];
+            $this->schema()->embed($collection, $name);
+            return isset($this->_data[$name]) ? $this->_data[$name] : null;
+        });
+    }
+
+    /**
      * Automatically called after an entity is saved. Updates the object's internal state
      * to reflect the corresponding database record.
      *

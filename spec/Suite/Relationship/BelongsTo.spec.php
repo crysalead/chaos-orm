@@ -147,6 +147,28 @@ describe("BelongsTo", function() {
 
         });
 
+        it("throws an exception when a lazy load is necessary", function() {
+
+            $closure = function() {
+                $image = Image::create(['id' => 1, 'title' => 'Amiga 1200', 'gallery_id' => 1 ]);
+                $image->get('gallery');
+            };
+
+            expect($closure)->toThrow(new ORMException("The relation `'gallery'` is an external relation, use `fetch()` to lazy load its data."));
+
+        });
+
+    });
+
+    describe("->fetch()", function() {
+
+        it("returns `null` for unexisting foreign key", function() {
+
+            $image = Image::create(['id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
+            expect($image->fetch('gallery'))->toBe(null);
+
+        });
+
         it("lazy loads a belongsTo relation", function() {
 
             Stub::on(Gallery::class)->method('::all', function($options = [], $fetchOptions = []) {
@@ -163,17 +185,6 @@ describe("BelongsTo", function() {
             ], []);
 
             expect($image->gallery->id)->toBe($image->gallery_id);
-        });
-
-    });
-
-    describe(".fetch()", function() {
-
-        it("returns `null` for unexisting foreign key", function() {
-
-            $image = Image::create(['id' => 1, 'title' => 'Amiga 1200'], ['exists' => true]);
-            expect($image->fetch('gallery'))->toBe(null);
-
         });
 
     });

@@ -134,6 +134,21 @@ describe("HasOne", function() {
 
     describe("->get()", function() {
 
+        it("throws an exception when a lazy load is necessary", function() {
+
+            $closure = function() {
+                $gallery = Gallery::create(['id' => 1, 'name' => 'Foo Gallery' ], ['exists' => true]);
+                $gallery->get('detail');
+            };
+
+            expect($closure)->toThrow(new ORMException("The relation `'detail'` is an external relation, use `fetch()` to lazy load its data."));
+
+        });
+
+    });
+
+    describe("->fetch()", function() {
+
         it("returns `null` for unexisting foreign key", function() {
 
             Stub::on(GalleryDetail::class)->method('::all', function($options = [], $fetchOptions = []) {
