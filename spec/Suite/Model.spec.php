@@ -113,7 +113,6 @@ describe("Model", function() {
 
             expect($image->exists())->toBe(true);
             expect($image->gallery->exists())->toBe(true);
-            expect($image->images_tags->exists())->toBe(true);
             expect($image->images_tags[0]->exists())->toBe(true);
             expect($image->images_tags[1]->exists())->toBe(true);
             expect($image->images_tags[0]->tag->exists())->toBe(true);

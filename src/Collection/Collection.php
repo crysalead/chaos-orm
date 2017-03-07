@@ -126,7 +126,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         ];
         $config += $defaults;
 
-        $this->exists(!!$config['exists']);
         $this->basePath($config['basePath']);
         $this->schema($config['schema']);
         $this->meta($config['meta']);
@@ -187,21 +186,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             $path = $parents->get($object);
             unset($object->{$path});
         }
-        return $this;
-    }
-
-    /**
-     * Gets/sets whether or not this instance has been persisted somehow.
-     *
-     * @param  boolean $exists The exists value to set or none to get the current one.
-     * @return mixed           Returns the exists value on get or `$this` otherwise.
-     */
-    public function exists($exists = null)
-    {
-        if (!func_num_args()) {
-            return $this->_exists;
-        }
-        $this->_exists = $exists;
         return $this;
     }
 

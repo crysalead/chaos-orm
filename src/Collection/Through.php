@@ -137,21 +137,6 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     }
 
     /**
-     * Gets/sets whether or not this instance has been persisted somehow.
-     *
-     * @param  boolean $exists The exists value to set or none to get the current one.
-     * @return mixed           Returns the exists value on get or `$this` otherwise.
-     */
-    public function exists($exists = null)
-    {
-        if (!func_num_args()) {
-            return $this->_parent->{$this->_through}->exists();
-        }
-        $this->_parent->{$this->_through}->exists($parent);
-        return $this;
-    }
-
-    /**
      * Gets/sets the schema instance.
      *
      * @param  Object schema The schema instance to set or none to get it.
