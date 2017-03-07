@@ -694,7 +694,7 @@ class Model extends Document
         foreach ($tree as $field => $value) {
             if (isset($this->{$field})) {
                 $rel = $schema->relation($field);
-                $success = $success && $rel->validates($this, ['embed' => $value] + $options);
+                $success = $success && $rel->validates($this, $value ? $value + $options : $options);
             }
         }
         return $success;
@@ -759,7 +759,7 @@ class Model extends Document
             if (!isset($this->{$field})) {
                 continue;
             }
-            if ($err = $this->{$field}->errors(['embed' => $value] + $options)) {
+            if ($err = $this->{$field}->errors($value ? $value + $options : $options)) {
                 $errors[$field] = $err;
             }
         }

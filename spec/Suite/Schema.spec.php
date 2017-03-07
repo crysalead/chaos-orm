@@ -745,14 +745,65 @@ describe("Schema", function() {
 
     describe("->treeify()", function() {
 
-        it("treeify schema paths", function() {
+        it("expands HasManyThrough relations", function() {
 
             expect($this->schema->treeify(['gallery', 'tags']))->toBe([
                 'gallery' => null,
                 'images_tags' => [
-                    'tag' => null
+                    'embed' => [
+                        'tag' => null
+                    ]
                 ],
                 'tags' => null
+            ]);
+
+        });
+
+        it("expands dotted relations", function() {
+
+            expect($this->schema->treeify(['gallery', 'images_tags.tag']))->toEqual([
+                'gallery' => null,
+                'images_tags' => [
+                    'embed' => [
+                        'tag' => null
+                    ]
+                ]
+            ]);
+
+        });
+
+        it("expands dotted relations with conditions", function() {
+
+            expect($this->schema->treeify([
+              'gallery',
+              'images_tags.tag' => ['conditions' => ['name' => 'computer']]
+            ]))->toEqual([
+                'gallery' => null,
+                'images_tags' => [
+                    'embed' => [
+                        'tag' => [
+                            'conditions' => [
+                                'name' => 'computer'
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+        });
+
+        it("works in a indempotent way", function() {
+
+            expect($this->schema->treeify([
+                'gallery' => ['conditions' => ['name' => 'Foo']],
+                'images_tags' => [
+                    'embed' => ['tag']
+                ]
+            ]))->toEqual([
+                'gallery' => ['conditions' => ['name' => 'Foo']],
+                'images_tags' => [
+                    'embed' => ['tag']
+                ]
             ]);
 
         });

@@ -824,7 +824,7 @@ class Schema
         if (!$embed) {
             return [];
         }
-        $embed = Set::expand(array_fill_keys(array_keys(Set::normalize((array) $embed)), null));
+        $embed = Set::expand(Set::normalize((array) $embed), ['affix' => 'embed']);
 
         $result = [];
         foreach ($embed as $relName => $value) {
@@ -833,7 +833,7 @@ class Schema
             }
             if ($this->_relations[$relName]['relation'] === 'hasManyThrough') {
                 $rel = $this->relation($relName);
-                $result[$rel->through()] = [$rel->using() => $value];
+                $result[$rel->through()] = ['embed' => [$rel->using() => $value]];
             }
             $result[$relName] = $value;
         }
@@ -1291,7 +1291,7 @@ class Schema
                     if (!($rel = $this->relation($relName)) || $rel->type() !== $type) {
                         continue;
                     }
-                    $success = $success && $rel->save($entity, ['embed' => $value] + $options);
+                    $success = $success && $rel->save($entity,  $value ? $value + $options : $options);
                 }
             }
         }

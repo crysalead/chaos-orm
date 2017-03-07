@@ -872,7 +872,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 if ($relation->type() !== 'hasManyThrough' && array_key_exists($key, $options['embed'])) {
                     if ($value !== $original) {
                         $updated[$key] = $original ? $original->original() : $original;
-                    } else if ($value && $value->modified(['embed' => $options['embed'][$key]])) {
+                    } else if ($value && $value->modified(['embed' => isset($options['embed'][$key]) ? $options['embed'][$key] : []])) {
                         $updated[$key] = $value->original();
                     }
                 }
@@ -985,7 +985,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $schema = $this->schema();
 
-        $tree = $schema->treeify($options['embed']);
+        $embed = $schema->treeify($options['embed']);
+
         $basePath = $options['basePath'];
 
         $result = [];
@@ -1001,12 +1002,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         foreach ($fields as $field) {
             $path = $basePath ? $basePath . '.' . $field : $field;
+            $options['embed'] = false;
 
             if ($schema->hasRelation($path, false)) {
-                if (!array_key_exists($field, $tree)) {
+                if (!array_key_exists($field, $embed)) {
                     continue;
                 }
-                $options['embed'] = $tree[$field];
+                if ($embed[$field]) {
+                    $options = Set::merge($options, $embed[$field]);
+                }
             }
             if (!$this->has($field)) {
                 continue;
