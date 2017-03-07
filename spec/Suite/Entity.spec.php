@@ -524,6 +524,49 @@ describe("Entity", function() {
 
         });
 
+        it("keeps existing value on resets with hasManyThrough data", function() {
+
+            $image = Image::create([
+                'id' => 1,
+                'name' => 'landscape',
+                'images_tags' => [
+                    [
+                        'id' => '1',
+                        'image_id' => '1',
+                        'tag_id' => '1',
+                        'tag' => [
+                            'id' => '1',
+                            'name' => 'landscape'
+                        ]
+                    ],
+                    [
+                        'id' => '2',
+                        'image_id' => '1',
+                        'tag_id' => '2',
+                        'tag' => [
+                            'id' => '2',
+                            'name' => 'mountain'
+                        ]
+                    ]
+                ]
+            ], ['exists' => 'all']);
+
+            expect($image->get('tags') instanceof Through)->toBe(true);
+            expect($image->get('tags')->count())->toBe(2);
+            expect($image->get('tags.0')->data())->toEqual(['id' => 1, 'name' => 'landscape']);
+            expect($image->get('tags.0')->exists())->toBe(true);
+            expect($image->get('tags.1')->data())->toEqual(['id' => 2, 'name' => 'mountain']);
+            expect($image->get('tags.1')->exists())->toBe(true);
+
+            $image->set('tags', $image->get('tags')->get());
+            expect($image->get('tags')->count())->toBe(2);
+            expect($image->get('tags.0')->data())->toEqual(['id' => 1, 'name' => 'landscape']);
+            expect($image->get('tags.0')->exists())->toBe(true);
+            expect($image->get('tags.1')->data())->toEqual(['id' => 2, 'name' => 'mountain']);
+            expect($image->get('tags.1')->exists())->toBe(true);
+
+        });
+
         it("gets the hasManyThrough array from hasMany/belongsTo data", function() {
 
             $image = Image::create(['id' => 1], ['exists' => true]);

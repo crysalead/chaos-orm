@@ -57,10 +57,11 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     {
         $defaults = [
             'parent'  => null,
-            'schema'   => null,
+            'schema'  => null,
             'through' => null,
             'using'   => null,
-            'data'     => []
+            'data'    => [],
+            'exists'  => false
         ];
         $config += $defaults;
         $this->_parent = $config['parent'];
@@ -76,9 +77,16 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
             $this->{$key} = $config[$name];
         }
 
+        // Existing tags will require valid pivot ID, so existing data must be setted through the pivot table.
+        if (!empty($config['exists'])) {
+            return;
+        }
+
         foreach ($config['data'] as $entity) {
             $this[] = $entity;
         }
+
+        $this->_parent->{$this->_through}->amend();
     }
 
     /**
@@ -261,8 +269,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
         $through = $relThrough->to();
         $id = $this->_parent->id();
         $item = $through::create($id !== null ? $relThrough->match($this->_parent) : [], ['exists' => $exists]);
-        $item->{$this->_using} = $data;
-        $item->{$this->_using}->exists($exists);
+        $item->set($this->_using, $data, $exists);
         return $item;
     }
 
