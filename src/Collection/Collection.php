@@ -912,10 +912,12 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Returns an array of all external relations and nested relations names.
      *
-     * @param  boolean     $embedded Include or not embedded relations.
-     * @return array|false           Returns an array of relation names or `false` when a circular loop is reached.
+     * @param  string      $prefix The parent relation path.
+     * @param  array       $ignore The already processed entities to ignore (address circular dependencies).
+     * @param  boolean     $index  Returns an indexed array or not.
+     * @return array|false         Returns an array of relation names or `false` when a circular loop is reached.
      */
-    public function hierarchy($prefix = '', &$ignore = [])
+    public function hierarchy($prefix = '', &$ignore = [], $index = false)
     {
         $hash = spl_object_hash($this);
         if (isset($ignore[$hash])) {
@@ -926,12 +928,12 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         $result = [];
 
         foreach ($this as $entity) {
-            if ($hierarchy = $entity->hierarchy($prefix, $ignore)) {
-                $result += array_fill_keys($hierarchy, true);
+            if ($hierarchy = $entity->hierarchy($prefix, $ignore, true)) {
+                $result += $hierarchy;
             }
         }
 
-        return array_keys($result);
+        return $index ? $result : array_keys($result);
     }
 
     /**

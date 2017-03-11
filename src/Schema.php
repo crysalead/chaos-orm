@@ -833,7 +833,9 @@ class Schema
             }
             if ($this->_relations[$relName]['relation'] === 'hasManyThrough') {
                 $rel = $this->relation($relName);
-                $result[$rel->through()] = ['embed' => [$rel->using() => $value]];
+                if (!isset($result[$rel->through()]['embed'][$rel->using()])) {
+                    $result[$rel->through()]['embed'][$rel->using()] = $value;
+                }
             }
             $result[$relName] = $value;
         }

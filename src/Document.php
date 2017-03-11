@@ -914,9 +914,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @param  string      $prefix The parent relation path.
      * @param  array       $ignore The already processed entities to ignore (address circular dependencies).
+     * @param  boolean     $index  Returns an indexed array or not.
      * @return array|false         Returns an array of relation names or `false` when a circular loop is reached.
      */
-    public function hierarchy($prefix = '', &$ignore = [])
+    public function hierarchy($prefix = '', &$ignore = [], $index = false)
     {
         $hash = spl_object_hash($this);
         if (isset($ignore[$hash])) {
@@ -925,27 +926,41 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $ignore[$hash] = true;
 
         $tree = array_fill_keys($this->schema()->relations(), true);
+
         $result = [];
+        $habtm = [];
 
         foreach ($tree as $field => $value) {
-            if (!isset($this->{$field})) {
-                continue;
-            }
             $rel = $this->schema()->relation($field);
             if ($rel->type() === 'hasManyThrough') {
-                $result[] = $prefix ? $prefix . '.' . $field : $field;
+                $habtm[$field] = $rel;
+                continue;
+            }
+            if (!isset($this->{$field})) {
                 continue;
             }
             $entity = $this->__get($field); // Too Many Magic Kill The Magic.
             if ($entity) {
-                if ($childs = $entity->hierarchy($field, $ignore)) {
-                    $result = array_merge($result, $childs);
-                } elseif ($childs !== false) {
-                    $result[] = $prefix ? $prefix . '.' . $field : $field;
+                $path = $prefix ? $prefix . '.' . $field : $field;
+                if ($children = $entity->hierarchy($path, $ignore, true)) {
+                    $result += $children;
+                } elseif ($children !== false) {
+                    $result[$path] = $path;
                 }
             }
         }
-        return $result;
+
+        foreach ($habtm as $field => $rel) {
+            $using = $rel->through() . '.' . $rel->using();
+            $path = $prefix ? $prefix . '.' . $using : $using;
+            foreach ($result as $key) {
+                if (strpos($key, $path) === 0) {
+                    $path = $prefix ? $prefix . '.' . $field : $field;
+                    $result[$path] = $path;
+                }
+            }
+        }
+        return $index ? $result : array_values($result);
     }
 
     /**
@@ -991,6 +1006,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $path = $basePath ? $basePath . '.' . $field : $field;
             $options['embed'] = false;
 
+            $key = $field;
+
             if ($schema->hasRelation($path, false)) {
                 if (!array_key_exists($field, $embed)) {
                     continue;
@@ -998,10 +1015,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 if ($embed[$field]) {
                     $options = Set::merge($options, $embed[$field]);
                 }
+                $rel = $schema->relation($path);
+                if ($rel->type() === 'hasManyThrough') {
+                    $key = $rel->through();
+                }
             }
-            if (!$this->has($field)) {
+            if (!$this->has($key)) {
                 continue;
             }
+
             $value = $this[$field];
             if ($value instanceof Document) {
                 $options['basePath'] = $value->basePath();
