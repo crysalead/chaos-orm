@@ -789,6 +789,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function splice($offset, $length = 0) {
         $result = array_slice($this->_data, $offset, $length);
         array_splice($this->_data, $offset, $length);
+        $this->_modified = true;
         return $result;
     }
 

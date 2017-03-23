@@ -82,21 +82,74 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
             return;
         }
 
-        $isNew = false;
-
-        if (!$this->_parent->has($this->_through)) {
-            $this->_parent->{$this->_through} = [];
-            $isNew = true;
-        } elseif ($config['data']) {
-            $this->_parent->{$this->_through}->clear();
+        if ($this->_parent->has($this->_through)) {
+            $this->_merge($config['data'], $config['exists']);
+            return;
         }
+
+        $this->_parent->{$this->_through} = [];
 
         foreach ($config['data'] as $entity) {
             $this[] = $entity;
         }
 
-        if ($isNew) {
-            $this->_parent->{$this->_through}->amend();
+        $this->_parent->{$this->_through}->amend();
+    }
+
+    /**
+     * Merge pivot data based on entities ids
+     *
+     * @param array   $data   The pivot data.
+     * @param boolean $exists The existance value.
+     */
+    protected function _merge($data, $exists)
+    {
+        if (!$data) {
+            return;
+        }
+
+        $pivot = $this->_parent->{$this->_through};
+
+        $relThrough = $this->_parent->schema()->relation($this->_through);
+        $through = $relThrough->to();
+        $schema = $through::definition();
+        $rel = $schema->relation($this->_using);
+        $fromKey = $rel->keys('from');
+        $toKey = $rel->keys('to');
+
+        $i = 0;
+
+        while ($i < $pivot->count()) {
+            $found = false;
+            $entity = $pivot->get($i);
+            $id1 = $entity->get($fromKey);
+            if ($id1 === null) {
+                $pivot->splice($i, 1);
+                continue;
+            }
+            foreach ($data as $key => $item) {
+                $isDocument = $item instanceof Document;
+                $id2 = $isDocument ? $item->get($toKey) : (isset($item[$toKey]) ?$item[$toKey] : null);
+
+                if ((string) $id1 === (string) $id2) {
+                    if ($isDocument) {
+                        $entity->set($this->_using, $item);
+                    } else {
+                        $entity->get($this->_using)->amend($item);
+                    }
+                    unset($data[$key]);
+                    $i++;
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $pivot->splice($i, 1);
+            }
+        }
+
+        foreach ($data as $entity) {
+            $this[] = $entity;
         }
     }
 

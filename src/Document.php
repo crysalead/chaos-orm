@@ -846,26 +846,29 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 continue;
             }
 
-            if (!array_key_exists($key, $this->_original)) {
-                $updated[$key] = null;
-                continue;
-            }
-
-            $original = $this->_original[$key];
             $value = $this->_data[$key];
 
             if ($schema->hasRelation($key, false)) {
                 $relation = $schema->relation($key);
                 if ($relation->type() !== 'hasManyThrough' && array_key_exists($key, $options['embed'])) {
-                    if ($value !== $original) {
-                        $updated[$key] = $original ? $original->original() : $original;
-                    } else if ($value && $value->modified(['embed' => isset($options['embed'][$key]) ? $options['embed'][$key] : []])) {
-                        $updated[$key] = $value->original();
+                    if (!array_key_exists($key, $this->_original)) {
+                        $updated[$key] = null;
+                    } else {
+                        $original = $this->_original[$key];
+                        if ($value !== $original) {
+                            $updated[$key] = $original ? $original->original() : $original;
+                        } else if ($value && $value->modified(['embed' => isset($options['embed'][$key]) ? $options['embed'][$key] : []])) {
+                            $updated[$key] = $value->original();
+                        }
                     }
                 }
                 continue;
+            } elseif (!array_key_exists($key, $this->_original)) {
+                $updated[$key] = null;
+                continue;
             }
 
+            $original = $this->_original[$key];
             $modified = false;
 
             if (method_exists($value, 'modified')) {
