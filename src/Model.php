@@ -278,7 +278,7 @@ class Model extends Document
             if (isset($data[$key]) && $shard->has($data[$key])) {
                 $id = $data[$key];
                 $instance = $shard->get($id);
-                $instance->amend($data, ['exists' => $options['exists']]);
+                $instance->amend($data, ['exists' => $options['exists'], 'rebuild' => true]);
                 return $instance;
             }
         }
@@ -570,8 +570,16 @@ class Model extends Document
     {
         $this->_exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
 
-        $this->set($data + $this->_data);
-        $this->_original = $this->_data;
+        $previousId = $this->id();
+        $schema = $this->schema();
+
+        foreach ($data as $key => $value) {
+            if (!empty($options['rebuild']) || !$this->has($key) || !$schema->hasRelation($key, false)) {
+                $this->set($key, $value);
+            } else {
+                $this->get($key)->amend($value, $options);
+            }
+        }
         parent::amend();
 
         $this->_exists = $this->_exists === 'all' ? true : $this->_exists;
@@ -579,7 +587,13 @@ class Model extends Document
         if (!static::unicity()) {
           return $this;
         }
+
         $id = $this->id();
+
+        if ($previousId !== null && $previousId !== $id) {
+            static::shard()->delete($previousId);
+        }
+
         if ($id !== null) {
             if ($this->_exists) {
                 static::shard()->set($id, $this);

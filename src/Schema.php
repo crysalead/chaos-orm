@@ -1012,15 +1012,10 @@ class Schema
             $config['parent'] = $options['parent'];
             $config['through'] = $options['through'];
             $config['using'] = $options['using'];
-            if (!$config['parent']->has($config['through'])) {
-                $config['parent']->set($config['through'], []);
-            }
         }
 
         if ($data instanceof $collection) {
             return $data;
-        } else if ($data !== null && $isThrough) {
-            $pivot = $config['parent']->get($config['through'])->clear();
         }
 
         return new $collection($config);

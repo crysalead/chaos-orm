@@ -82,15 +82,22 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
             return;
         }
 
+        $isNew = false;
+
         if (!$this->_parent->has($this->_through)) {
             $this->_parent->{$this->_through} = [];
+            $isNew = true;
+        } elseif ($config['data']) {
+            $this->_parent->{$this->_through}->clear();
         }
 
         foreach ($config['data'] as $entity) {
             $this[] = $entity;
         }
 
-        $this->_parent->{$this->_through}->amend();
+        if ($isNew) {
+            $this->_parent->{$this->_through}->amend();
+        }
     }
 
     /**
