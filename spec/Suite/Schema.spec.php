@@ -505,7 +505,7 @@ describe("Schema", function() {
                     $document->datetime = '2015-05-20 21:50:00';
                     expect($document->date)->toBe('2015-05-20');
                     expect($document->time)->toBe('21:50:00');
-                    expect(isset($document->datetime))->toBe(false);
+                    expect(isset($document->datetime))->toBe(true);
 
                 });
 
@@ -519,7 +519,7 @@ describe("Schema", function() {
                     $document->datetime = '2015-05-20 22:15:00';
                     expect($document->date)->toBe('2015-05-20');
                     expect($document->time)->toBe('22:15:00');
-                    expect(isset($document->datetime))->toBe(false);
+                    expect(isset($document->datetime))->toBe(true);
 
                 });
 
@@ -1118,6 +1118,45 @@ describe("Schema", function() {
             expect($schema->hasRelation('external'))->toBe(true);
             expect($schema->hasRelation('external', false))->toBe(true);
             expect($schema->hasRelation('external', true))->toBe(false);
+
+        });
+
+    });
+
+    describe("->persist()", function() {
+
+        beforeEach(function() {
+            $this->schema = new Schema(['locked' => false]);
+            $this->data = [];
+            $data = &$this->data;
+            $this->filter = null;
+            $filter = &$this->filter;
+            allow($this->schema)->toReceive('bulkInsert')->andRun(function ($inserts, $closure) use (&$data, &$filter) {
+                $data['inserts'] = $inserts;
+                $filter = $closure;
+
+            });
+            allow($this->schema)->toReceive('bulkUpdate')->andRun(function ($updates, $closure) use (&$data, &$filter) {
+                $data['updates'] = $updates;
+                $filter = $closure;
+            });
+        });
+
+        it("filters out virtual values", function() {
+
+            $this->schema->column('a', ['type' => 'string', 'virtual' => true]);
+
+            $entity = Model::create([], ['schema' => $this->schema]);
+
+            $entity['a'] = 1;
+            $entity['b'] = 2;
+            expect($entity->get('a'))->toBe('1');
+            expect($entity->get('b'))->toBe(2);
+
+            $this->schema->persist($entity);
+
+            expect($this->data['inserts'])->toBe([$entity]);
+            expect($this->filter($entity))->toBe(['b' => 2]);
 
         });
 

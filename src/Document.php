@@ -532,11 +532,12 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return;
         }
         $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
+
+        $this->_data[$name] = $value;
+
         if ($schema->isVirtual($fieldName)) {
             return;
         }
-
-        $this->_data[$name] = $value;
 
         if ($schema->hasRelation($fieldName, false)) {
             $relation = $schema->relation($fieldName);

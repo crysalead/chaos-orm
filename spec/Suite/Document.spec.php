@@ -114,7 +114,7 @@ describe("Document", function() {
             $document = new Document(['schema' => $schema]);
 
             $document['a'] = 1;
-            expect($document->get('a'))->toBe(null);
+            expect($document->get('a'))->toBe('1');
 
         });
 

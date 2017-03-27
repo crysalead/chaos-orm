@@ -1247,7 +1247,7 @@ class Schema
             $fields = array_diff($whitelist ? $whitelist : array_keys($entity->get()), $this->relations());
             $values = [];
             foreach ($fields as $field) {
-                if ($entity->has($field)) {
+                if ($entity->has($field) && !$this->isVirtual($field)) {
                     $values[$field] = $entity->get($field);
                 }
             }
