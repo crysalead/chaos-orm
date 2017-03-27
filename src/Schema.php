@@ -523,6 +523,25 @@ class Schema
     }
 
     /**
+     * Checks if the schema has a field/some private fields.
+     *
+     * @param  string|array $name The field name or an array of field names to check.
+     * @return boolean            Returns `true` if present, `false` otherwise.
+     */
+    public function isPrivate($name)
+    {
+        if (!is_array($name)) {
+            return !empty($this->_columns[$name]['private']);
+        }
+        foreach ($name as $field) {
+            if (!$this->isPrivate($field)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Sets a BelongsTo relation.
      *
      * @param  string  $name   The name of the relation (i.e. field name where it will be binded).

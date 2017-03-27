@@ -1007,6 +1007,9 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
 
         foreach ($fields as $field) {
+            if ($schema->isPrivate($field)) {
+                continue;
+            }
             $path = $basePath ? $basePath . '.' . $field : $field;
             $options['embed'] = false;
 

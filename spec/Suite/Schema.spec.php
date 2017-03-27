@@ -611,10 +611,65 @@ describe("Schema", function() {
 
         it("returns all virtual fields", function() {
 
-            $this->schema->column('virtualField1', ['virtual' => true]);
-            $this->schema->column('virtualField2', ['virtual' => true]);
+            $schema = new Schema();
+            $schema->column('virtualField1', ['virtual' => true]);
+            $schema->column('virtualField2', ['virtual' => true]);
 
-            expect($this->schema->virtuals())->toBe(['virtualField1', 'virtualField2']);
+            expect($schema->virtuals())->toBe(['virtualField1', 'virtualField2']);
+
+        });
+
+    });
+
+    describe("->isVirtual()", function() {
+
+        it("checks virtual fields", function() {
+
+            $schema = new Schema();
+            $schema->column('virtualField1', ['virtual' => true]);
+            $schema->column('virtualField2', ['virtual' => true]);
+            $schema->column('field3', []);
+
+            expect($schema->isVirtual('virtualField1'))->toBe(true);
+            expect($schema->isVirtual('virtualField2'))->toBe(true);
+            expect($schema->isVirtual(['virtualField1', 'virtualField2']))->toBe(true);
+            expect($schema->isVirtual(['virtualField1', 'field3']))->toBe(false);
+
+        });
+
+    });
+
+    describe("->isPrivate()", function() {
+
+        it("checks private fields", function() {
+
+            $schema = new Schema();
+            $schema->column('privateField1', ['private' => true]);
+            $schema->column('privateField2', ['private' => true]);
+            $schema->column('field3', []);
+
+            expect($schema->isPrivate('privateField1'))->toBe(true);
+            expect($schema->isPrivate('privateField2'))->toBe(true);
+            expect($schema->isPrivate(['privateField1', 'privateField2']))->toBe(true);
+            expect($schema->isPrivate(['privateField1', 'fField3']))->toBe(false);
+
+        });
+
+        it("filter private fields out from exports", function() {
+            $schema = new Schema();
+            $schema->column('privateField1', ['private' => true]);
+            $schema->column('privateField2', ['private' => true]);
+            $schema->column('field3', []);
+
+            $document = Document::create([
+                'privateField1' => 'privatedata1',
+                'privateField2' => 'privatedata2',
+                'field3' => 'hello'
+            ], ['schema' => $schema]);
+
+            expect($document->data())->toBe([
+                'field3' => 'hello'
+            ]);
 
         });
 
