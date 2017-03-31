@@ -432,7 +432,7 @@ class Schema
             unset($column[0]);
         }
         $column += $defaults;
-        return $column + ['null' => ($column['type'] !== 'serial')];
+        return $column + ['null' => false];
     }
 
     /**

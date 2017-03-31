@@ -203,18 +203,18 @@ describe("Schema", function() {
                 'name' => [
                     'type'    => 'string',
                     'array'   => false,
-                    'null'    => true
+                    'null'    => false
                 ],
                 'title' => [
                     'type'    => 'string',
                     'length'  => 50,
                     'array'   => false,
-                    'null'    => true
+                    'null'    => false
                 ],
                 'score' => [
                     'type'    => 'float',
                     'array'   => false,
-                    'null'    => true
+                    'null'    => false
                 ],
                 'gallery_id' => [
                     'type'  => 'id',
@@ -292,20 +292,20 @@ describe("Schema", function() {
             expect($schema->column('name'))->toBe([
                 'type'  => 'string',
                 'array' => false,
-                'null'  => true
+                'null'  => false
             ]);
 
             expect($schema->column('title'))->toBe([
                 'type'  => 'string',
                 'length'  => 50,
                 'array' => false,
-                'null'  => true
+                'null'  => false
             ]);
 
             expect($schema->column('score'))->toBe([
                 'type'  => 'float',
                 'array' => false,
-                'null'  => true
+                'null'  => false
             ]);
 
         });
@@ -316,7 +316,7 @@ describe("Schema", function() {
             expect($this->schema->column('age'))->toBe([
                 'type' => 'integer',
                 'array' => false,
-                'null' => true
+                'null' => false
             ]);
 
         });
@@ -327,7 +327,7 @@ describe("Schema", function() {
             expect($this->schema->column('age'))->toBe([
                 'type' => 'integer',
                 'array' => false,
-                'null' => true
+                'null' => false
             ]);
 
         });
@@ -338,7 +338,7 @@ describe("Schema", function() {
             expect($this->schema->column('age'))->toBe([
                 'type' => 'integer',
                 'array' => false,
-                'null' => true
+                'null' => false
             ]);
 
         });
@@ -349,7 +349,7 @@ describe("Schema", function() {
             expect($this->schema->column('ids'))->toBe([
                 'type' => 'integer',
                 'array' => true,
-                'null' => true
+                'null' => false
             ]);
 
         });
@@ -362,7 +362,7 @@ describe("Schema", function() {
                 'length' => 11,
                 'use'    => 'bigint',
                 'array'  => false,
-                'null'   => true
+                'null'   => false
             ]);
 
         });
