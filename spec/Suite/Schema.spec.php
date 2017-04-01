@@ -1108,7 +1108,6 @@ describe("Schema", function() {
 
         it("formats according default `'cast'` handlers", function() {
 
-            expect($this->schema->format('cast', 'id', 123))->toBe(123);
             expect($this->schema->format('cast', 'value', 123))->toBe(123);
             expect($this->schema->format('cast', 'double', 12.3))->toBe(12.3);
             expect($this->schema->format('cast', 'revenue', 12.3))->toBe('12.30');
@@ -1128,7 +1127,6 @@ describe("Schema", function() {
 
         it("formats according default `'array'` handlers", function() {
 
-            expect($this->schema->format('array', 'id', 123))->toBe(123);
             expect($this->schema->format('array', 'value', 123))->toBe(123);
             expect($this->schema->format('array', 'double', 12.3))->toBe(12.3);
             expect($this->schema->format('array', 'revenue', 12.3))->toBe('12.3');

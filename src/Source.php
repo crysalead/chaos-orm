@@ -41,8 +41,15 @@ class Source
 
         $handlers = $this->_handlers;
 
-        $this->formatter('cast', 'id',       $handlers['cast']['integer']);
-        $this->formatter('cast', 'serial',   $handlers['cast']['integer']);
+        $this->formatter('array', 'integer',   $handlers['array']['integer']);
+        $this->formatter('array', 'float',     $handlers['array']['float']);
+        $this->formatter('array', 'decimal',   $handlers['array']['string']);
+        $this->formatter('array', 'date',      $handlers['array']['date']);
+        $this->formatter('array', 'datetime',  $handlers['array']['datetime']);
+        $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
+        $this->formatter('array', 'null',      $handlers['array']['null']);
+        $this->formatter('array', '_default_', $handlers['array']['string']);
+
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
         $this->formatter('cast', 'float',    $handlers['cast']['float']);
         $this->formatter('cast', 'decimal',  $handlers['cast']['decimal']);
@@ -68,6 +75,34 @@ class Source
     protected function _handlers()
     {
         return [
+            'array' => [
+                'string' => function($value, $options = []) {
+                    return (string) $value;
+                },
+                'integer' => function($value, $options = []) {
+                    return (int) $value;
+                },
+                'float' => function($value, $options = []) {
+                    return (float) $value;
+                },
+                'date' => function($value, $options = []) {
+                    return $this->convert('array', 'datetime', $value, ['format' => 'Y-m-d']);
+                },
+                'datetime' => function($value, $options = []) {
+                    $options += ['format' => 'Y-m-d H:i:s'];
+                    $format = $options['format'];
+                    if ($value instanceof DateTime) {
+                        return $value->format($format);
+                    }
+                    return date($format, is_numeric($value) ? $value : strtotime($value));
+                },
+                'boolean' => function($value, $options = []) {
+                    return $value;
+                },
+                'null' => function($value, $options = []) {
+                    return;
+                }
+            ],
             'cast' => [
                 'string' => function($value, $options = []) {
                     return (string) $value;

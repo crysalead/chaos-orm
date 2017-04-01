@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Fixture\Model;
 
-class Gallery extends \Chaos\ORM\Model
+class Gallery extends BaseModel
 {
     protected static function _define($schema)
     {

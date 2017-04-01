@@ -164,8 +164,6 @@ class Schema
 
         $handlers = $this->_handlers;
 
-        $this->formatter('array', 'id',        $handlers['array']['integer']);
-        $this->formatter('array', 'serial',    $handlers['array']['integer']);
         $this->formatter('array', 'integer',   $handlers['array']['integer']);
         $this->formatter('array', 'float',     $handlers['array']['float']);
         $this->formatter('array', 'decimal',   $handlers['array']['string']);
@@ -175,12 +173,10 @@ class Schema
         $this->formatter('array', 'null',      $handlers['array']['null']);
         $this->formatter('array', '_default_', $handlers['array']['string']);
 
-        $this->formatter('cast', 'id',       $handlers['cast']['integer']);
-        $this->formatter('cast', 'serial',   $handlers['cast']['integer']);
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
         $this->formatter('cast', 'float',    $handlers['cast']['float']);
         $this->formatter('cast', 'decimal',  $handlers['cast']['decimal']);
-        $this->formatter('cast', 'date',     $handlers['cast']['datetime']);
+        $this->formatter('cast', 'date',     $handlers['cast']['date']);
         $this->formatter('cast', 'datetime', $handlers['cast']['datetime']);
         $this->formatter('cast', 'boolean',  $handlers['cast']['boolean']);
         $this->formatter('cast', 'null',     $handlers['cast']['null']);
@@ -1083,7 +1079,7 @@ class Schema
                 'integer' => function($value, $options = []) {
                     return (integer) $value;
                 },
-                'float' => function($value, $options = []) {
+                'float'   => function($value, $options = []) {
                     return (float) $value;
                 },
                 'decimal' => function($value, $options = []) {
@@ -1093,20 +1089,23 @@ class Schema
                 'boolean' => function($value, $options = []) {
                     return !!$value;
                 },
-                'date' => function($value, $options = []) {
-                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d'])->setTime(0, 0, 0);
+                'date'    => function($value, $options = []) {
+                    $date = $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                    $date->setTime(0, 0, 0);
+                    return $date;
                 },
-                'datetime' => function($value, $options = []) {
+                'datetime'    => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
-                    if (is_numeric($value)) {
-                        return new DateTime('@' . $value);
-                    }
                     if ($value instanceof DateTime) {
                         return $value;
                     }
-                    return DateTime::createFromFormat($options['format'], date($options['format'], strtotime($value)));
+                    $timestamp = is_numeric($value) ? $value : strtotime($value);
+                    if ($timestamp < 0 || $timestamp === false) {
+                        $timestamp = 0;
+                    }
+                    return DateTime::createFromFormat($options['format'], date($options['format'], $timestamp));
                 },
-                'null' => function($value, $options = []) {
+                'null'    => function($value, $options = []) {
                     return null;
                 }
             ]

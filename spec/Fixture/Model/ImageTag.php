@@ -1,7 +1,7 @@
 <?php
 namespace Chaos\ORM\Spec\Fixture\Model;
 
-class ImageTag extends \Chaos\ORM\Model
+class ImageTag extends BaseModel
 {
     protected static function _define($schema)
     {

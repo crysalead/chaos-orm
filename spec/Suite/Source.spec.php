@@ -58,8 +58,6 @@ describe("Source", function() {
 
         it("formats according default `'datasource'` handlers", function() {
 
-            expect($this->source->convert('datasource', 'id', 123))->toBe('123');
-            expect($this->source->convert('datasource', 'serial', 123))->toBe('123');
             expect($this->source->convert('datasource', 'integer', 123))->toBe('123');
             expect($this->source->convert('datasource', 'float', 12.3))->toBe('12.3');
             expect($this->source->convert('datasource', 'decimal', 12.3))->toBe('12.3');
@@ -80,8 +78,6 @@ describe("Source", function() {
 
         it("doesn't format `null` value on export", function() {
 
-            expect($this->source->convert('datasource', 'id', null))->toBe('');
-            expect($this->source->convert('datasource', 'serial', null))->toBe('');
             expect($this->source->convert('datasource', 'integer', null))->toBe('');
             expect($this->source->convert('datasource', 'float', null))->toBe('');
             expect($this->source->convert('datasource', 'decimal', null))->toBe('');
@@ -121,8 +117,6 @@ describe("Source", function() {
 
         it("formats according default `'cast'` handlers", function() {
 
-            expect($this->source->convert('cast', 'id', '123'))->toBe(123);
-            expect($this->source->convert('cast', 'serial', '123'))->toBe(123);
             expect($this->source->convert('cast', 'integer', '123'))->toBe(123);
             expect($this->source->convert('cast', 'float', '12.3'))->toBe(12.3);
             expect($this->source->convert('cast', 'decimal', '12.3'))->toBe('12.30');
@@ -144,8 +138,6 @@ describe("Source", function() {
 
         it("doesn't format `null` value on import", function() {
 
-            expect($this->source->convert('cast', 'id', null))->toBe(null);
-            expect($this->source->convert('cast', 'serial', null))->toBe(null);
             expect($this->source->convert('cast', 'integer', null))->toBe(null);
             expect($this->source->convert('cast', 'float', null))->toBe(null);
             expect($this->source->convert('cast', 'decimal', null))->toBe(null);
