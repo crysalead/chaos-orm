@@ -164,7 +164,52 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             'class'       => Document::class
         ]);
         $schema->lock(false);
+        static::_define($schema);
         return $schema;
+    }
+
+    /**
+     * This function called once for initializing the model's schema.
+     *
+     * Example of schema initialization:
+     * ```php
+     * $schema->column('id', ['type' => 'id']);
+     *
+     * $schema->column('title', ['type' => 'string', 'default' => true]);
+     *
+     * $schema->column('body', ['type' => 'string', 'use' => 'longtext']);
+     *
+     * // Custom object
+     * $schema->column('comments',       ['type' => 'object', 'array' => true, 'default' => []]);
+     * $schema->column('comments.id',    ['type' => 'id']);
+     * $schema->column('comments.email', ['type' => 'string']);
+     * $schema->column('comments.body',  ['type' => 'string']);
+     *
+     * // Custom object with a dedicated class
+     * $schema->column('comments', [
+     *     'type'     => 'object',
+     *     'class'    => 'Name\Space\Model\Comment',
+     *     'array'    => true,
+     *     'default'  => []
+     * ]);
+     *
+     * $schema->bind('tags', [
+     *     'relation'    => 'hasManyThrough',
+     *     'through'     => 'post_tag',
+     *     'using'       => 'tag'
+     * ]);
+     *
+     * $schema->bind('post_tag', [
+     *     'relation'    => 'hasMany',
+     *     'to'          => 'Name\Space\Model\PostTag',
+     *     'key'         => ['id' => 'post_id']
+     * ]);
+     * ```
+     *
+     * @param object $schema The schema instance.
+     */
+    protected static function _define($schema)
+    {
     }
 
     /**
