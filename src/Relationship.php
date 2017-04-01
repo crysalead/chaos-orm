@@ -343,14 +343,23 @@ class Relationship
             throw new ORMException("This relation is not based on a foreign key.");
         }
         $to = $this->to();
+        $schema = $to::definition();
 
         if (!$id) {
             return $to::create([], ['type' => 'set']);
         }
-        if (is_array($id) && count($id) === 1) {
-            $id = reset($id);
+
+        $ids = is_array($id) ? $id : [$id];
+        $key = $schema->key();
+
+        foreach ($ids as $i => $value) {
+            $ids[$i] = $schema->format('cast', $key, $value);
         }
-        $query = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $id]]);
+
+        if (count($ids) === 1) {
+            $ids = reset($ids);
+        }
+        $query = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $ids]]);
         return $to::all($query, $fetchOptions);
     }
 
@@ -359,20 +368,20 @@ class Relationship
      *
      * @param  mixed  $collection An collection to extract index from.
      * @param  string $name       The field name to build index for.
-     * @return Map                An array of indexes where keys are `$name` values and
+     * @return Array              An array of indexes where keys are `$name` values and
      *                            values the corresponding index in the collection.
      */
     protected function _index($collection, $name)
     {
-        $indexes = new Map();
+        $indexes = [];
         foreach ($collection as $key => $entity) {
             if (is_object($entity)) {
                 if ($entity->{$name}) {
-                    $indexes->set($entity->{$name}, $key);
+                    $indexes[(string) $entity->{$name}] = $key;
                 }
             } else {
                 if (isset($entity[$name])) {
-                    $indexes->set($entity[$name], $key);
+                    $indexes[(string) $entity[$name]] = $key;
                 }
             }
         }

@@ -36,7 +36,7 @@ class BelongsTo extends \Chaos\ORM\Relationship
     public function embed(&$collection, $options = [])
     {
         $indexes = $this->_index($collection, $this->keys('from'));
-        $related = $this->_find($indexes->keys(), $options);
+        $related = $this->_find(array_keys($indexes), $options);
 
         $name = $this->name();
         $indexes = $this->_index($related, $this->keys('to'));
@@ -44,14 +44,14 @@ class BelongsTo extends \Chaos\ORM\Relationship
 
         foreach ($collection as $index => $source) {
             if (is_object($source)) {
-                $value = $source->{$this->keys('from')};
-                if ($indexes->has($value)) {
-                    $source->{$name} = $related[$indexes->get($value)];
+                $value = (string) $source->{$this->keys('from')};
+                if (isset($indexes[$value])) {
+                    $source->{$name} = $related[$indexes[$value]];
                 }
             } else {
-                $value = $source[$this->keys('from')];
-                if ($indexes->has($value)) {
-                    $collection[$index][$name] = &$related[$indexes->get($value)];
+                $value = (string) $source[$this->keys('from')];
+                if (isset($indexes[$value])) {
+                    $collection[$index][$name] = &$related[$indexes[$value]];
                 }
             }
         }

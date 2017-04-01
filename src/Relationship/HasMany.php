@@ -68,7 +68,7 @@ class HasMany extends \Chaos\ORM\Relationship
     public function embed(&$collection, $options = [])
     {
         $indexes = $this->_index($collection, $this->keys('from'));
-        $related = $this->_find($indexes->keys(), $options);
+        $related = $this->_find(array_keys($indexes), $options);
 
         $name = $this->name();
         $this->_cleanup($collection);
@@ -77,16 +77,17 @@ class HasMany extends \Chaos\ORM\Relationship
             $values = is_object($entity) ? $entity->{$this->keys('to')} : $entity[$this->keys('to')];
             $values = is_array($values) || $values instanceof Traversable ? $values : [$values];
             foreach ($values as $value) {
-                if ($indexes->has($value)) {
-                    if (is_object($collection[$indexes->get($value)])) {
-                        $source = $collection[$indexes->get($value)];
+                $value = (string) $value;
+                if (isset($indexes[$value])) {
+                    if (is_object($collection[$indexes[$value]])) {
+                        $source = $collection[$indexes[$value]];
                         if ($entity instanceof Document) {
                             $source->__get($name)->push($entity); // Too Many Magic Kill The Magic.
                         } else {
                             $source->{$name}[] = $entity;
                         }
                     } else {
-                        $collection[$indexes->get($value)][$name][] = &$related[$index];
+                        $collection[$indexes[$value]][$name][] = &$related[$index];
                     }
                 }
             }
@@ -121,8 +122,9 @@ class HasMany extends \Chaos\ORM\Relationship
 
         foreach ($entity->{$name} as $item) {
             $item->sync();
-            if ($item->exists() && $indexes->has($item->id())) {
-                unset($previous[$indexes->get($item->id())]);
+            $value = (string) $item->id();
+            if ($item->exists() && isset($indexes[$value])) {
+                unset($previous[$indexes[$value]]);
             }
             $item->set($conditions);
             $result = $result && $item->save($options);

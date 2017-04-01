@@ -18,7 +18,7 @@ class HasOne extends \Chaos\ORM\Relationship
     public function embed(&$collection, $options = [])
     {
         $indexes = $this->_index($collection, $this->keys('from'));
-        $related = $this->_find($indexes->keys(), $options);
+        $related = $this->_find(array_keys($indexes), $options);
 
         $name = $this->name();
 
@@ -26,15 +26,15 @@ class HasOne extends \Chaos\ORM\Relationship
 
         foreach ($related as $index => $entity) {
             if (is_object($entity)) {
-                $value = $entity->{$this->keys('to')};
-                if ($indexes->has($value)) {
-                    $source = $collection[$indexes->get($value)];
+                $value = (string) $entity->{$this->keys('to')};
+                if (isset($indexes[$value])) {
+                    $source = $collection[$indexes[$value]];
                     $source->{$name} = $entity;
                 }
             } else {
                 $value = $entity[$this->keys('to')];
-                if ($indexes->has($value)) {
-                    $collection[$indexes->get($value)][$name] = &$related[$index];
+                if (isset($indexes[$value])) {
+                    $collection[$indexes[$value]][$name] = &$related[$index];
                 }
             }
         }
