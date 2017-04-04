@@ -479,6 +479,40 @@ describe("Schema", function() {
 
             });
 
+            context("with a dynamic getter and a dynamic setter", function() {
+
+                beforeEach(function() {
+
+                    $this->schema = new Schema();
+                    $this->schema->column('hello', [
+                        'type' => 'string',
+                        'getter' => function($entity, $data, $name) {
+                            return 'world';
+                        },
+                        'setter' => function($entity, $data, $name) {
+                            return $entity->set('amiga', 1200);
+                        }
+                    ]);
+
+                });
+
+                it("builds the field", function() {
+
+                    $document = $this->schema->cast();
+                    expect($document->get('hello'))->toBe('world');
+
+                });
+
+                it("doesn't call the setter", function() {
+
+                    $document = $this->schema->cast();
+                    expect($document->get('hello'))->toBe('world');
+                    expect($document->get('amiga'))->toBe(null);
+
+                });
+
+            });
+
             context("with a virtual field", function() {
 
                 beforeEach(function() {

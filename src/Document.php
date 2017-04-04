@@ -460,7 +460,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $autoCreate = !empty($field['array']);
 
         if (!empty($field['getter'])) {
-            return $schema->cast($name, $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name));
+            return $schema->format('cast', $name, $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name));
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         } elseif ($schema->hasRelation($fieldName, false)) {
