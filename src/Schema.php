@@ -1014,7 +1014,6 @@ class Schema
         $config = [
             'schema'    => $isDocument ? $this : $class::definition(),
             'basePath'  => $isDocument ? $name : null,
-            'data'      => $data ? $data : [],
             'meta'      => isset($options['meta']) ? $options['meta'] : [],
             'exists'    => $options['exists'],
             'defaults'  => $options['defaults']
@@ -1027,6 +1026,9 @@ class Schema
             $config['parent'] = $options['parent'];
             $config['through'] = $options['through'];
             $config['using'] = $options['using'];
+            $config['data'] = $data;
+        } else {
+            $config['data'] = $data ?: [];
         }
 
         if ($data instanceof $collection) {

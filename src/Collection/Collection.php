@@ -513,6 +513,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function clear()
     {
         $this->_data = [];
+        $this->_modified = true;
         return $this;
     }
 

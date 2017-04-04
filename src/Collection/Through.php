@@ -60,7 +60,6 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
             'schema'  => null,
             'through' => null,
             'using'   => null,
-            'data'    => [],
             'exists'  => false
         ];
         $config += $defaults;
@@ -83,11 +82,15 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
         }
 
         if ($this->_parent->has($this->_through)) {
-            $this->_merge($config['data'], $config['exists']);
+            if (isset($config['data'])) {
+                $this->_merge($config['data'], $config['exists']);
+            }
             return;
         }
 
         $this->_parent->{$this->_through} = [];
+
+        $config['data'] = isset($config['data']) ? $config['data'] : [];
 
         foreach ($config['data'] as $entity) {
             $this[] = $entity;
@@ -105,6 +108,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     protected function _merge($data, $exists)
     {
         if (!$data) {
+            $this->_parent->get($this->_through)->clear();
             return;
         }
 

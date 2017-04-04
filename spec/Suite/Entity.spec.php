@@ -823,6 +823,25 @@ describe("Entity", function() {
 
         });
 
+        it("clears the pivot collection when an empty array is setted as hasManyThrough data", function() {
+
+            $image = Image::create();
+            $image->set('tags', [
+              [
+                'id' => '1',
+                'name' => 'landscape'
+              ]
+            ]);
+
+            expect($image->get('images_tags')->modified())->toBe(false);
+
+            $image->set('tags', []);
+
+            expect($image->get('images_tags')->count())->toBe(0);
+            expect($image->get('images_tags')->modified())->toBe(true);
+
+        });
+
         it("throws an exception when trying to set nested arbitraty value in cascade when locked is `true`", function() {
 
             $closure = function() {
