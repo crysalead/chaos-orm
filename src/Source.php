@@ -115,7 +115,11 @@ class Source
                 },
                 'decimal' => function($value, $options = []) {
                     $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
-                    return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
+                    if (is_numeric($value)) {
+                        return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
+                    } else {
+                        return NAN;
+                    }
                 },
                 'boolean' => function($value, $options = []) {
                     return !!$value;
