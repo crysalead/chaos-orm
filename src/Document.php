@@ -427,7 +427,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
         $keys = is_array($name) ? $name : explode('.', $name);
         $name = array_shift($keys);
-        if (!$name) {
+        if ($name === null || $name === '') {
             throw new ORMException("Field name can't be empty.");
         }
 
@@ -498,7 +498,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function set($name, $data = [])
     {
-        if (is_string($name) || (isset($name[0]) && is_string($name[0]))) {
+        if (!is_array($name) || (isset($name[0]) && is_string($name[0]))) {
             $this->_set($name, $data);
             return $this;
         }
@@ -549,7 +549,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $keys = is_array($name) ? $name : explode('.', $name);
 
         $name = array_shift($keys);
-        if (!$name) {
+        if ($name === null || $name === '') {
             throw new ORMException("Field name can't be empty.");
         }
 

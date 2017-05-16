@@ -877,7 +877,7 @@ class Schema
 
         $options['class'] = $this->reference();
 
-        if ($field) {
+        if ($field !== null) {
             $name = $options['basePath'] ? $options['basePath'] . '.' . $field : (string) $field;
         } else {
             $name = $options['basePath'];

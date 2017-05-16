@@ -233,6 +233,17 @@ describe("Document", function() {
 
         });
 
+        it("sets and gets the 0 field name", function() {
+
+            $document = new Document();
+            $document->set('0', 'zero');
+            expect($document->get('0'))->toBe('zero');
+
+            $document->set(0, 'zero');
+            expect($document->get(0))->toBe('zero');
+
+        });
+
         it("throws an exception if the field name is not valid", function() {
 
             $closure = function() {
