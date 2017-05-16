@@ -72,7 +72,7 @@ class Conventions
                 }
             ]
         ];
-        $config = Set::merge($defaults, $config);
+        $config = Set::extend($defaults, $config);
         $this->_conventions = $config['conventions'];
     }
 

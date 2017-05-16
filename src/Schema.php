@@ -141,12 +141,12 @@ class Schema
             'classes'     => $this->_classes
         ];
 
-        $config = Set::merge($defaults, $config);
+        $config = Set::extend($defaults, $config);
 
         $this->_classes = $config['classes'];
         $this->_locked = $config['locked'];
         $this->_meta = $config['meta'];
-        $this->_handlers = Set::merge($config['handlers'], $this->_handlers());
+        $this->_handlers = Set::extend($config['handlers'], $this->_handlers());
         $this->_conventions = $config['conventions'] ?: new Conventions();
 
         $config += [
@@ -985,7 +985,7 @@ class Schema
             'defaults'  => $options['defaults']
         ];
         if (isset($options['config'])){
-            $config = Set::merge($config, $options['config']);
+            $config = Set::extend($config, $options['config']);
         }
         return $class::create($data ? $data : [], $config);
     }
@@ -1019,7 +1019,7 @@ class Schema
             'defaults'  => $options['defaults']
         ];
         if (isset($options['config'])){
-            $config = Set::merge($config, $options['config']);
+            $config = Set::extend($config, $options['config']);
         }
 
         if ($isThrough) {

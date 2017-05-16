@@ -359,7 +359,7 @@ class Relationship
         if (count($ids) === 1) {
             $ids = reset($ids);
         }
-        $query = Set::merge($options['query'], ['conditions' => [$this->keys('to') => $ids]]);
+        $query = Set::extend($options['query'], ['conditions' => [$this->keys('to') => $ids]]);
         return $to::all($query, $fetchOptions);
     }
 

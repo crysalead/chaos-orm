@@ -126,7 +126,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             static::$_dependencies[static::class] = static::$_classes;
         }
         if (func_num_args()) {
-            static::$_dependencies[static::class] = Set::merge(static::$_dependencies[static::class], $classes);
+            static::$_dependencies[static::class] = Set::extend(static::$_dependencies[static::class], $classes);
         }
         return static::$_dependencies[static::class];
     }
@@ -306,7 +306,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $this->schema($config['schema']);
 
         if ($config['defaults']) {
-            $config['data'] = Set::merge($this->schema()->defaults($config['basePath']), $config['data']);
+            $config['data'] = Set::extend($this->schema()->defaults($config['basePath']), $config['data']);
         }
 
         $this->set($config['data']);
@@ -503,7 +503,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             return $this;
         }
         $data = $name;
-        if (!is_array($data) || isset($data[0])) {
+        if (!is_array($data)) {
             throw new ORMException('Invalid bulk data for a document.');
         }
         foreach ($data as $name => $value) {
@@ -1065,7 +1065,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                     continue;
                 }
                 if ($embed[$field]) {
-                    $options = Set::merge($options, $embed[$field]);
+                    $options = Set::extend($options, $embed[$field]);
                 }
                 $rel = $schema->relation($path);
                 if ($rel->type() === 'hasManyThrough') {
@@ -1079,7 +1079,12 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $value = $this[$field];
             if ($value instanceof Document) {
                 $options['basePath'] = $value->basePath();
-                $result[$field] = $value->to($format, $options);
+                $path = $options['basePath'] ? $options['basePath'] . '.' . $field : $field;
+                if ($schema->has($path)) {
+                    $result[$field] = $schema->format($format, $path, $value);
+                } else {
+                    $result[$field] = $value->to($format, $options);
+                }
             } elseif ($value instanceof Traversable) {
                 $options['basePath'] = $value->basePath();
                 $result[$field] = Collection::toArray($value, $options);

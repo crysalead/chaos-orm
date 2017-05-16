@@ -252,7 +252,7 @@ class Model extends Document
      */
     public static function find($options = [])
     {
-        $options = Set::merge(static::query(), $options);
+        $options = Set::extend(static::query(), $options);
         $schema = static::definition();
         return $schema->query(['query' => $options] + ['finders' => static::finders()]);
     }

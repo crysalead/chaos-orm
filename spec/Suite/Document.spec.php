@@ -880,6 +880,47 @@ describe("Document", function() {
 
         });
 
+        context("with some JSON column", function() {
+
+            beforeEach(function() {
+
+                $this->schema = new Schema();
+
+                $this->schema->formatter('array', 'json', function($value) {
+                    return is_array($value) ? $value : $value->data();
+                });
+
+                $this->schema->formatter('cast', 'json', function($value) {
+                    return is_string($value) ? new Document(['data' => json_decode($value, true)]) : $value;
+                });
+
+                $this->schema->formatter('datasource', 'json', function($value) {
+                    return is_string($value) ? $value : json_encode($value->data());
+                });
+
+                $this->schema->column('timeSheet', ['type' => 'json', 'default' => '{"1":null,"2":null,"3":null,"4":null,"5":null,"6":null,"7":null}']);
+
+            });
+
+            it("casts according JSON casting handlers", function() {
+
+                $document = new Document(['schema' => $this->schema]);
+                $document->set('timeSheet', '{"1":8,"2":8,"3":8,"4":8,"5":8,"6":8,"7":8}');
+                expect($document->get('timeSheet')->data())->toEqual(['1' => 8, '2' => 8, '3' => 8, '4' => 8, '5' => 8, '6' => 8, '7' => 8]);
+                expect($document->to('datasource'))->toEqual(['timeSheet' => '{"1":8,"2":8,"3":8,"4":8,"5":8,"6":8,"7":8}']);
+                expect($document->data())->toEqual(['timeSheet' => [1 => 8, 2 => 8, 3 => 8, 4 => 8, 5 => 8, 6 => 8, 7 => 8]]);
+
+            });
+
+            it("casts column default value according casting handlers", function() {
+
+                $document = new Document(['schema' => $this->schema]);
+                expect($document->get('timeSheet.1'))->toBe(null);
+
+            });
+
+        });
+
     });
 
     describe(".amend()", function() {

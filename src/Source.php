@@ -37,7 +37,7 @@ class Source
         ];
         $config += $defaults;
 
-        $this->_handlers = Set::merge($this->_handlers(), $config['handlers']);
+        $this->_handlers = Set::extend($this->_handlers(), $config['handlers']);
 
         $handlers = $this->_handlers;
 
