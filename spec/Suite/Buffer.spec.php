@@ -16,7 +16,9 @@ describe("Buffer", function() {
 
         it("retuns all records", function() {
 
-            $buffer = new Buffer($this->collection);
+            $buffer = new Buffer(function() {
+                return $this->collection;
+            });
             expect($buffer->all())->toEqual($this->collection);
 
         });
@@ -27,7 +29,9 @@ describe("Buffer", function() {
 
         it("retuns all records", function() {
 
-            $buffer = new Buffer($this->collection);
+            $buffer = new Buffer(function() {
+                return $this->collection;
+            });
             expect($buffer->get())->toEqual($this->collection);
 
         });
@@ -38,7 +42,9 @@ describe("Buffer", function() {
 
         it("finds the first record", function() {
 
-            $buffer = new Buffer($this->collection);
+            $buffer = new Buffer(function() {
+                return $this->collection;
+            });
             expect($buffer->first())->toEqual(reset($this->collection));
 
         });
@@ -49,7 +55,9 @@ describe("Buffer", function() {
 
         it("implements `IteratorAggregate`", function() {
 
-            $buffer = new Buffer($this->collection);
+            $buffer = new Buffer(function() {
+                return $this->collection;
+            });
 
             $result = [];
 
@@ -67,7 +75,9 @@ describe("Buffer", function() {
 
         it("returns the records count", function() {
 
-            $buffer = new Buffer($this->collection);
+            $buffer = new Buffer(function() {
+                return $this->collection;
+            });
             expect($buffer->count())->toBe(2);
 
         });

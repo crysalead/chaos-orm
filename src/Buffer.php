@@ -14,16 +14,24 @@ class Buffer implements IteratorAggregate
      *
      * @var mixed
      */
-    protected $_collection = [];
+    protected $_data = [];
 
     /**
      * Creates a new record object with default values.
      *
-     * @param mixed $collection The data.
+     * @param mixed $handler The handler.
      */
-    public function __construct($collection)
+    public function __construct($handler)
     {
-        $this->_collection = $collection;
+        $this->_handler = $handler;
+    }
+
+    /**
+     * Log calls
+     */
+    public function __call($name, $params = [])
+    {
+        $this->_data[$name][] = $params;
     }
 
     /**
@@ -47,7 +55,8 @@ class Buffer implements IteratorAggregate
      */
     public function get($options = [])
     {
-        return $this->_collection;
+        $handler = $this->_handler;
+        return $handler($this->_data, $options);
     }
 
     /**
@@ -78,6 +87,6 @@ class Buffer implements IteratorAggregate
      */
     public function count()
     {
-        return (int) count($this->_collection);
+        return (int) count($this->get());
     }
 }
