@@ -2,8 +2,10 @@
 namespace Chaos\ORM;
 
 use Iterator;
+use InvalidArgumentException;
 use DateTime;
 use Lead\Set\Set;
+use Chaos\ORM\Collection\Collection;
 
 class Schema
 {
@@ -164,6 +166,7 @@ class Schema
 
         $handlers = $this->_handlers;
 
+        $this->formatter('array', 'object',    $handlers['array']['object']);
         $this->formatter('array', 'integer',   $handlers['array']['integer']);
         $this->formatter('array', 'float',     $handlers['array']['float']);
         $this->formatter('array', 'decimal',   $handlers['array']['string']);
@@ -171,8 +174,10 @@ class Schema
         $this->formatter('array', 'datetime',  $handlers['array']['datetime']);
         $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
         $this->formatter('array', 'null',      $handlers['array']['null']);
+        $this->formatter('array', 'json',      $handlers['array']['json']);
         $this->formatter('array', '_default_', $handlers['array']['string']);
 
+        $this->formatter('cast', 'object',   $handlers['cast']['object']);
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
         $this->formatter('cast', 'float',    $handlers['cast']['float']);
         $this->formatter('cast', 'decimal',  $handlers['cast']['decimal']);
@@ -180,6 +185,7 @@ class Schema
         $this->formatter('cast', 'datetime', $handlers['cast']['datetime']);
         $this->formatter('cast', 'boolean',  $handlers['cast']['boolean']);
         $this->formatter('cast', 'null',     $handlers['cast']['null']);
+        $this->formatter('cast', 'json',     $handlers['cast']['json']);
         $this->formatter('cast', 'string',   $handlers['cast']['string']);
     }
 
@@ -282,16 +288,9 @@ class Schema
      *
      * @return array An array of column names.
      */
-    public function names()
+    public function names($rootOnly = false)
     {
-        $fields = [];
-        foreach ($this->_columns as $name => $field) {
-            if (!empty($field['virtual'])) {
-                continue;
-            }
-            $fields[] = $name;
-        }
-        return $fields;
+        return array_keys($this->columns($rootOnly));
     }
 
     /**
@@ -324,14 +323,16 @@ class Schema
      *
      * @return array
      */
-    public function columns()
+    public function columns($rootOnly = false)
     {
         $columns = [];
         foreach ($this->_columns as $name => $field) {
             if (!empty($field['virtual'])) {
                 continue;
             }
-            $columns[$name] = $field;
+            if (!$rootOnly || strpos($name, '.') === false) {
+                $columns[$name] = $field;
+            }
         }
         return $columns;
     }
@@ -391,7 +392,7 @@ class Schema
         }
         $column = $this->_initColumn($params);
 
-        if ($column['type'] !== 'object') {
+        if ($column['type'] !== 'object' && !$column['array']) {
             $this->_columns[$name] = $column;
             return $this;
         }
@@ -623,7 +624,6 @@ class Schema
     public function bind($name, $config = [])
     {
         $relationship = $this->_classes['relationship'];
-
         $config += [
             'type' => 'entity',
             'from' => $this->reference(),
@@ -884,7 +884,7 @@ class Schema
         }
 
         if ($name === null) {
-            return $this->_cast($data, $options);
+            return $this->_cast($name, $data, $options);
         }
 
         foreach([$name, preg_replace('~[^.]*$~', '*', $name, 1)] as $entry) {
@@ -905,7 +905,7 @@ class Schema
                 return $this->_castArray($name, $data, $options);
             } else {
                 $options['class'] = Document::class;
-                return $this->_cast($data, $options);
+                return $this->_cast($name, $data, $options);
             }
         }
 
@@ -932,11 +932,14 @@ class Schema
             $through = $this->relation($name);
             $options['class'] = $through->to();
         }
-
-        if ($options['array'] && $field) {
-            return $this->_castArray($name, $data, $options);
+        if ($field) {
+            return $options['array'] ? $this->_castArray($name, $data, $options) : $this->_cast($name, $data, $options);
         }
-        return $this->_cast($data, $options);
+        if (!isset($this->_columns[$name])) {
+            return $data;
+        }
+        $column = $this->_columns[$name];
+        return $this->convert('cast', $column['type'], $data, $column);
     }
 
     /**
@@ -950,24 +953,26 @@ class Schema
      */
     protected function _columnCast($field, $name, $data, $options)
     {
-        $options = $this->_columns[$name] + $options;
+        $column = $this->_columns[$name];
+        $options = $column + $options;
         if (!empty($options['setter'])) {
             $data = $options['setter']($options['parent'], $data, $name);
         }
         if ($options['array'] && $field) {
             return $this->_castArray($name, $data, $options);
         }
-        return $this->format('cast', $name, $data);
+        return $this->convert('cast', $column['type'], $data, $column);
     }
 
     /**
      * Casting helper for entities.
      *
+     * @param  string $name       The field name to cast.
      * @param  array  $data       Some data to cast.
      * @param  array  $options    Options for the casting.
      * @return mixed              The casted data.
      */
-    public function _cast($data, $options)
+    public function _cast($name, $data, $options)
     {
         if ($data === null) {
             return;
@@ -987,6 +992,12 @@ class Schema
         if (isset($options['config'])){
             $config = Set::extend($config, $options['config']);
         }
+
+        $column = isset($this->_columns[$name]) ? $this->_columns[$name] : [];
+        if (!empty($column['format'])) {
+            $data = $this->convert('cast', $column['format'], $data, $column);
+        }
+
         return $class::create($data ? $data : [], $config);
     }
 
@@ -1001,12 +1012,14 @@ class Schema
     public function _castArray($name, $data, $options)
     {
         $options['type'] = isset($options['relation']) && $options['relation'] === 'hasManyThrough' ? 'through' : 'set';
-
         $class = ltrim($options['class'], '\\');
-
         $classes = $class::classes();
-
         $collection = $classes[$options['type']];
+
+        if ($data instanceof $collection) {
+            return $data;
+        }
+
         $isThrough = $options['type'] === 'through';
 
         $isDocument = $class === Document::class;
@@ -1022,6 +1035,12 @@ class Schema
             $config = Set::extend($config, $options['config']);
         }
 
+        $column = isset($this->_columns[$name]) ? $this->_columns[$name] : [];
+        if (!empty($column['format']) && $data !== null) {
+            $type = $column['format'];
+            $data = $this->convert('cast', $type, $data, $column);
+        }
+
         if ($isThrough) {
             $config['parent'] = $options['parent'];
             $config['through'] = $options['through'];
@@ -1030,11 +1049,6 @@ class Schema
         } else {
             $config['data'] = $data ?: [];
         }
-
-        if ($data instanceof $collection) {
-            return $data;
-        }
-
         return new $collection($config);
     }
 
@@ -1047,6 +1061,9 @@ class Schema
     {
         return [
             'array' => [
+                'object' => function($value, $options = []) {
+                    return $value->to('array', $options);
+                },
                 'string' => function($value, $options = []) {
                     return (string) $value;
                 },
@@ -1072,9 +1089,15 @@ class Schema
                 },
                 'null' => function($value, $options = []) {
                     return;
+                },
+                'json' => function($value, $options = []) {
+                    return is_array($value) ? $value : $value->to('array', $options);
                 }
             ],
             'cast' => [
+                'object' => function($value, $options) {
+                    return is_array($value) ? new Document(['data' => $value]) : $value;
+                },
                 'string' => function($value, $options = []) {
                     return (string) $value;
                 },
@@ -1109,6 +1132,9 @@ class Schema
                 },
                 'null'    => function($value, $options = []) {
                     return null;
+                },
+                'json' => function($value, $options = []) {
+                    return is_string($value) ? json_decode($value, true) : $value;
                 }
             ]
         ];
@@ -1117,15 +1143,32 @@ class Schema
     /**
      * Formats a value according to a field definition.
      *
-     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $name    The field name.
-     * @param   mixed  $value   The value to format.
-     * @return  mixed           The formated value.
+     * @param   string $mode The format mode (i.e. `'array'` or `'datasource'`).
+     * @param   string $name The field name.
+     * @param   mixed  $data The data to format.
+     * @return  mixed        The formated value.
      */
-    public function format($mode, $name, $value)
+    public function format($mode, $name, $data)
     {
-        $type = $value === null ? 'null' : $this->type($name);
-        return $this->convert($mode, $type, $value, isset($this->_columns[$name]) ? $this->_columns[$name] : []);
+        if ($mode === 'cast') {
+            throw new InvalidArgumentException("Use `Schema::cast()` to perform casting.");
+        }
+        if (!isset($this->_columns[$name])) {
+            // Formatting non defined columns or relations doesn't make sense, bailing out.
+            return $data;
+        }
+        $column = $this->_columns[$name];
+        $type = $data === null ? 'null' : $this->type($name);
+
+        if (!$column['array']) {
+            $data = $this->convert($mode, $type, $data, $column);
+        } else {
+            $data = Collection::format($mode, $data);
+        }
+        if (!empty($column['format'])) {
+            $data = $this->convert($mode, $column['format'], $data, $column);
+        }
+        return $data;
     }
 
     /**
@@ -1133,20 +1176,20 @@ class Schema
      *
      * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
      * @param   string $type    The field name.
-     * @param   mixed  $value   The value to format.
+     * @param   mixed  $data    The value to format.
      * @param   mixed  $options The options array to pass the the formatter handler.
      * @return  mixed           The formated value.
      */
-    public function convert($mode, $type, $value, $options = [])
+    public function convert($mode, $type, $data, $options = [])
     {
         $formatter = null;
-
+        $type = $data === null ? 'null' : $type;
         if (isset($this->_formatters[$mode][$type])) {
             $formatter = $this->_formatters[$mode][$type];
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-        return $formatter ? $formatter($value, $options) : $value;
+        return $formatter ? $formatter($data, $options) : $data;
     }
 
     /**

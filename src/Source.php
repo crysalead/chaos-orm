@@ -41,6 +41,7 @@ class Source
 
         $handlers = $this->_handlers;
 
+        $this->formatter('array', 'object',    $handlers['array']['object']);
         $this->formatter('array', 'integer',   $handlers['array']['integer']);
         $this->formatter('array', 'float',     $handlers['array']['float']);
         $this->formatter('array', 'decimal',   $handlers['array']['string']);
@@ -48,8 +49,10 @@ class Source
         $this->formatter('array', 'datetime',  $handlers['array']['datetime']);
         $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
         $this->formatter('array', 'null',      $handlers['array']['null']);
+        $this->formatter('array', 'json',      $handlers['array']['json']);
         $this->formatter('array', '_default_', $handlers['array']['string']);
 
+        $this->formatter('cast', 'object',   $handlers['cast']['object']);
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
         $this->formatter('cast', 'float',    $handlers['cast']['float']);
         $this->formatter('cast', 'decimal',  $handlers['cast']['decimal']);
@@ -57,6 +60,7 @@ class Source
         $this->formatter('cast', 'datetime', $handlers['cast']['datetime']);
         $this->formatter('cast', 'boolean',  $handlers['cast']['boolean']);
         $this->formatter('cast', 'null',     $handlers['cast']['null']);
+        $this->formatter('cast', 'json',     $handlers['cast']['json']);
         $this->formatter('cast', 'string',   $handlers['cast']['string']);
 
         $this->formatter('datasource', 'object',    $handlers['datasource']['object']);
@@ -64,6 +68,7 @@ class Source
         $this->formatter('datasource', 'datetime',  $handlers['datasource']['datetime']);
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
         $this->formatter('datasource', 'null',      $handlers['datasource']['null']);
+        $this->formatter('datasource', 'json',      $handlers['datasource']['json']);
         $this->formatter('datasource', '_default_', $handlers['datasource']['string']);
     }
 
@@ -76,6 +81,9 @@ class Source
     {
         return [
             'array' => [
+                'object' => function($value, $options = []) {
+                    return $value->to('array', $options);
+                },
                 'string' => function($value, $options = []) {
                     return (string) $value;
                 },
@@ -101,9 +109,15 @@ class Source
                 },
                 'null' => function($value, $options = []) {
                     return;
+                },
+                'json' => function($value, $options = []) {
+                    return is_array($value) ? $value : $value->to('array', $options);
                 }
             ],
             'cast' => [
+                'object' => function($value, $options) {
+                    return is_array($value) ? new Document(['data' => $value]) : $value;
+                },
                 'string' => function($value, $options = []) {
                     return (string) $value;
                 },
@@ -142,6 +156,9 @@ class Source
                 },
                 'null'    => function($value, $options = []) {
                     return null;
+                },
+                'json' => function($value, $options = []) {
+                    return is_string($value) ? json_decode($value, true) : $value;
                 }
             ],
             'datasource' => [
@@ -172,6 +189,12 @@ class Source
                 },
                 'null'     => function($value, $options = []) {
                     return '';
+                },
+                'json'     => function($value, $options = []) {
+                    if (is_object($value)) {
+                        $value = $value->data();
+                    }
+                    return json_encode($value);
                 }
             ]
         ];

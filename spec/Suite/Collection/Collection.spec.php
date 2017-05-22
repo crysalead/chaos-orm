@@ -792,12 +792,12 @@ describe("Collection", function() {
 
     describe("->data()", function() {
 
-        it("calls `to()`", function() {
+        it("calls `format()`", function() {
 
             $collection = new Collection(['data' => [
                 1 => 1
             ]]);
-            expect($collection)->toReceive('to')->with('array', []);
+            expect(Collection::class)->toReceive('::format')->with('array', $collection, []);
 
             $collection->data([]);
 
@@ -851,12 +851,12 @@ describe("Collection", function() {
 
     });
 
-    describe("::toArray()", function() {
+    describe("::format()", function() {
 
         it("converts a collection to an array", function() {
 
             $collection = new Collection(['data' => [1, 2, 3, 4, 5]]);
-            expect(Collection::toArray($collection))->toBe([1, 2, 3, 4, 5]);
+            expect(Collection::format('array', $collection))->toBe([1, 2, 3, 4, 5]);
 
         });
 
@@ -866,7 +866,7 @@ describe("Collection", function() {
             allow($stringable)->toReceive('__toString')->andReturn('hello');
             $collection = new Collection(['data' => [new $stringable()]]);
 
-            expect(Collection::toArray($collection))->toBe(['hello']);
+            expect(Collection::format('array', $collection))->toBe(['hello']);
 
         });
 
@@ -876,14 +876,14 @@ describe("Collection", function() {
             $handlers = [$handlable => function($value) { return 'world'; }];
             $collection = new Collection(['data' => [new $handlable()]]);
 
-            expect(Collection::toArray($collection, compact('handlers')))->toBe(['world']);
+            expect(Collection::format('array', $collection, compact('handlers')))->toBe(['world']);
 
         });
 
         it("doesn't convert unsupported objects", function() {
 
             $collection = new Collection(['data' => [(object) 'an object']]);
-            expect(Collection::toArray($collection))->toEqual([(object) 'an object']);
+            expect(Collection::format('array', $collection))->toEqual([(object) 'an object']);
 
         });
 
@@ -894,7 +894,7 @@ describe("Collection", function() {
                     1, 2, 3, new Collection(['data' => [4, 5, 6]])
                 ]
             ]);
-            expect(Collection::toArray($collection))->toBe([1, 2, 3, [4, 5, 6]]);
+            expect(Collection::format('array', $collection))->toBe([1, 2, 3, [4, 5, 6]]);
 
         });
 
@@ -907,7 +907,7 @@ describe("Collection", function() {
                     ]
                 ]
             ]);
-            expect(Collection::toArray($collection))->toBe([1, 2, 3, [[4, 5, 6]]]);
+            expect(Collection::format('array', $collection))->toBe([1, 2, 3, [[4, 5, 6]]]);
 
         });
 

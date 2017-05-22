@@ -641,9 +641,9 @@ describe("Through", function() {
 
     describe("->data()", function() {
 
-        it("calls `to()`", function() {
+        it("calls `format()`", function() {
 
-            expect($this->through)->toReceive('to')->with('array', []);
+            expect(Collection::class)->toReceive('::format')->with('array', $this->through, []);
 
             $this->through->data([]);
 

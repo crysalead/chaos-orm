@@ -460,7 +460,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $autoCreate = !empty($field['array']);
 
         if (!empty($field['getter'])) {
-            return $schema->format('cast', $name, $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name));
+            $data = $field['getter']($this, array_key_exists($name, $this->_data) ? $this->_data[$name] : null, $name);
+            if (!empty($field['type'])) {
+                $data = $schema->convert('cast', $field['type'], $data, $field);
+            }
+            return $data;
         } elseif (array_key_exists($name, $this->_data)) {
             return $this->_data[$name];
         } elseif ($schema->hasRelation($fieldName, false)) {
@@ -1015,7 +1019,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     /**
      * Converts the data in the record set to a different format, i.e. an array.
      *
-     * @param string $format  Currently only `array`.
+     * @param string $format  The format.
      * @param array  $options Options for converting:
      *                        - `'indexed'` _boolean_: Allows to control how converted data of nested collections
      *                        is keyed. When set to `true` will force indexed conversion of nested collection
@@ -1077,17 +1081,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             }
 
             $value = $this[$field];
-            if ($value instanceof Document) {
+            if ($value instanceof Document || $value instanceof Traversable) {
                 $options['basePath'] = $value->basePath();
-                $path = $options['basePath'] ? $options['basePath'] . '.' . $field : $field;
                 if ($schema->has($path)) {
                     $result[$field] = $schema->format($format, $path, $value);
                 } else {
                     $result[$field] = $value->to($format, $options);
                 }
-            } elseif ($value instanceof Traversable) {
-                $options['basePath'] = $value->basePath();
-                $result[$field] = Collection::toArray($value, $options);
             } else {
                 $options['basePath'] = $path;
                 $result[$field] = $schema->has($options['basePath']) ? $schema->format($format, $options['basePath'], $value) : $value;

@@ -416,7 +416,7 @@ class Model extends Document
         }
 
         if (!$id = $this->id()) {
-          throw new ORMException("Existing entities must have a valid ID.");
+            throw new ORMException("Existing entities must have a valid ID.");
         }
 
         if (!static::unicity()) {

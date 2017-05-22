@@ -19,13 +19,6 @@ use Chaos\ORM\Map;
 class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAccess, \Iterator, \Countable
 {
     /**
-     * Contains all exportable formats and their handler
-     *
-     * @var array
-     */
-    protected static $_formats = [];
-
-    /**
      * Class dependencies.
      *
      * @var array
@@ -836,7 +829,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      */
     public function data($options = [])
     {
-        return $this->to('array', $options);
+        return Collection::format('array', $this, $options);
     }
 
     /**
@@ -959,86 +952,43 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * $collection->to('xml'); // returns an XML string
      * ```
      *
-     * @param  string $format  By default the only supported value is `'array'`. However, additional
-     *                         format handlers can be registered using the `formats()` method.
+     * @param  string $format  By default the only supported value is `'array'`.
      * @param  array  $options Options for converting the collection.
      * @return mixed           The converted collection.
      */
     public function to($format, $options = [])
     {
         $defaults = [
-        'cast' => true
+            'embed'    => true,
+            'basePath' => $this->basePath()
         ];
-
         $options += $defaults;
 
-        $data = $options['cast'] ? Collection::toArray($this, $options) : $this;
+        $data = Collection::format('array', $this, $options);
 
-        if (is_callable($format)) {
-            return $format($data, $options);
-        } elseif ($formatter = static::formats($format)) {
-            return $formatter($data, $options);
+        $path = $options['basePath'];
+        if (!$schema = $this->schema()) {
+            return $data;
         }
-        return $data;
-    }
 
-    /**
-     * Accessor method for adding format handlers to `Collection` instances.
-     *
-     * The values assigned are used by `Collection::to()` to convert `Collection` instances into
-     * different formats, i.e. JSON.
-     *
-     * This can be accomplished in two ways. First, format handlers may be registered on a
-     * case-by-case basis, as in the following:
-     *
-     * ```php
-     * Collection::formats('json', function($collection, $options) {
-     *  return json_encode($collection->to('array'));
-     * });
-     *
-     * // You can also implement the above as a static class method, and register it as follows:
-     * Collection::formats('json', 'my\custom\Formatter::toJson');
-     * ```
-     *
-     * @param  string $format  A string representing the name of the format that a `Collection`
-     *                         can be converted to. If `false`, reset the `$_formats` attribute.
-     *                         If `null` return the content of the `$_formats` attribute.
-     * @param  mixed  $handler The function that handles the conversion, either an anonymous function,
-     *                         a fully namespaced class method or `false` to remove the `$format` handler.
-     * @return mixed
-     */
-    public static function formats($format = null, $handler = null)
-    {
-        if (func_num_args() === 0) {
-            return static::$_formats;
-        }
-        if (func_num_args() === 1) {
-            return isset(static::$_formats[$format]) ? static::$_formats[$format] : null;
-        }
-        if ($format === false) {
-            return static::$_formats = [];
-        }
-        if ($handler === false) {
-            unset(static::$_formats[$format]);
-            return;
-        }
-        return static::$_formats[$format] = $handler;
+        return $schema->format($format, $path, $data);
     }
 
     /**
      * Exports a `Collection` instance to an array. Used by `Collection::to()`.
      *
-     * @param  mixed $data    Either a `Collection` instance, or an array representing a
-     *                        `Collection`'s internal state.
-     * @param  array $options Options used when converting `$data` to an array:
-     *                        - `'handlers'` _array_: An array where the keys are fully-namespaced class
-     *                          names, and the values are closures that take an instance of the class as a
-     *                          parameter, and return an array or scalar value that the instance represents.
+     * @param  string $format   The format.
+     * @param  mixed  $data     Either a `Collection` instance, or an array representing a
+     *                          `Collection`'s internal state.
+     * @param  array  $options  Options used when converting `$data` to an array:
+     *                          - `'handlers'` _array_: An array where the keys are fully-namespaced class
+     *                            names, and the values are closures that take an instance of the class as a
+     *                            parameter, and return an array or scalar value that the instance represents.
      *
-     * @return array          Returns the value of `$data` as a pure PHP array, recursively converting all
-     *                        sub-objects and other values to their closest array or scalar equivalents.
+     * @return array            Returns the value of `$data` as a pure PHP array, recursively converting all
+     *                          sub-objects and other values to their closest array or scalar equivalents.
      */
-    public static function toArray($data, $options = [])
+    public static function format($format, $data, $options = [])
     {
         $defaults = [
             'handlers' => []
@@ -1050,7 +1000,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         foreach ($data as $key => $item) {
             switch (true) {
                 case is_array($item):
-                    $result[] = static::toArray($item, $options);
+                    $result[] = static::format($format, $item, $options);
                 break;
                 case (!is_object($item)):
                     $result[] = $item;
@@ -1059,10 +1009,10 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
                     $result[] = $options['handlers'][$class]($item);
                 break;
                 case $item instanceof Document:
-                    $result[] = $item->to('array', $options);
+                    $result[] = $item->to($format, $options);
                 break;
                 case $item instanceof Traversable:
-                    $result[] = static::toArray($item, $options);
+                    $result[] = static::format($format, $item, $options);
                 break;
                 case (method_exists($item, '__toString')):
                     $result[] = (string) $item;

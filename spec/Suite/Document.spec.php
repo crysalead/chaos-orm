@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use Chaos\ORM\ORMException;
 use Chaos\ORM\Document;
 use Chaos\ORM\Schema;
+use Chaos\ORM\Collection\Collection;
 
 use Kahlan\Plugin\Stub;
 
@@ -292,6 +293,36 @@ describe("Document", function() {
             expect($document1->get('data.value1.test'))->toBe(false);
             expect($document2->get('data.value1.test'))->toBe(false);
 
+        });
+
+        context("with JSON formatter", function() {
+
+            beforeEach(function() {
+                $this->schema = new Schema();
+            });
+
+            it("pre casts objects according JSON casting handlers", function() {
+
+                $this->schema->column('holidays', ['type' => 'string', 'array' => true, 'format' => 'json']);
+
+                $document = new Document(['schema' => $this->schema]);
+                $holidays = [
+                    'allSaintsDay',
+                    'armisticeDay',
+                    'ascensionDay',
+                    'assumptionOfMary',
+                    'bastilleDay',
+                    'christmasDay',
+                    'easterMonday',
+                    'internationalWorkersDay',
+                    'newYearsDay',
+                    'pentecostMonday',
+                    'victoryInEuropeDay'
+                ];
+                $document->holidays = $holidays;
+                expect($document->holidays->data())->toEqual($holidays);
+
+            });
         });
 
     });
@@ -880,35 +911,46 @@ describe("Document", function() {
 
         });
 
-        context("with some JSON column", function() {
+        context("with JSON formatter", function() {
 
             beforeEach(function() {
 
                 $this->schema = new Schema();
-
-                $this->schema->formatter('array', 'json', function($value) {
-                    return is_array($value) ? $value : $value->data();
-                });
-
-                $this->schema->formatter('cast', 'json', function($value) {
-                    return is_string($value) ? new Document(['data' => json_decode($value, true)]) : $value;
-                });
-
                 $this->schema->formatter('datasource', 'json', function($value) {
-                    return is_string($value) ? $value : json_encode($value->data());
+                    if (is_object($value)) {
+                        $value = $value->data();
+                    }
+                    return json_encode($value);
                 });
-
-                $this->schema->column('timeSheet', ['type' => 'json', 'default' => '{"1":null,"2":null,"3":null,"4":null,"5":null,"6":null,"7":null}']);
-
             });
 
-            it("casts according JSON casting handlers", function() {
+            it("casts objects according JSON casting handlers", function() {
+
+                $this->schema->column('timeSheet', [
+                    'type' => 'object',
+                    'default' => '{"1":null,"2":null,"3":null,"4":null,"5":null,"6":null,"7":null}',
+                    'format' => 'json'
+                ]);
+                $this->schema->column('timeSheet.*', ['type' => 'integer']);
 
                 $document = new Document(['schema' => $this->schema]);
                 $document->set('timeSheet', '{"1":8,"2":8,"3":8,"4":8,"5":8,"6":8,"7":8}');
                 expect($document->get('timeSheet')->data())->toEqual(['1' => 8, '2' => 8, '3' => 8, '4' => 8, '5' => 8, '6' => 8, '7' => 8]);
                 expect($document->to('datasource'))->toEqual(['timeSheet' => '{"1":8,"2":8,"3":8,"4":8,"5":8,"6":8,"7":8}']);
-                expect($document->data())->toEqual(['timeSheet' => [1 => 8, 2 => 8, 3 => 8, 4 => 8, 5 => 8, 6 => 8, 7 => 8]]);
+                expect($document->data())->toEqual(['timeSheet' => ['1' => 8, '2' => 8, '3' => 8, '4' => 8, '5' => 8, '6' => 8, '7' => 8]]);
+
+            });
+
+            it("casts array according JSON casting handlers", function() {
+
+                $this->schema->column('weekend', ['type' => 'integer', 'array' => true, 'format' => 'json', 'default' => '[6,7]']);
+
+                $document = new Document(['schema' => $this->schema]);
+                $document->set('weekend', '[1,2]');
+                expect($document->weekend)->toBeAnInstanceOf(Collection::class);
+                expect($document->weekend->data())->toBe([1, 2]);
+                expect($document->to('datasource'))->toEqual(['weekend' => '[1,2]']);
+                expect($document->data())->toEqual(['weekend' => [1, 2]]);
 
             });
 

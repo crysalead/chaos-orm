@@ -1121,7 +1121,7 @@ describe("Schema", function() {
 
     });
 
-    describe(".format()", function() {
+    describe("->format()", function() {
 
         beforeEach(function() {
             $this->schema = new Schema();
@@ -1138,25 +1138,7 @@ describe("Schema", function() {
             $this->schema->column('active',     ['type' => 'boolean']);
             $this->schema->column('registered', ['type' => 'date']);
             $this->schema->column('created',    ['type' => 'datetime']);
-        });
-
-        it("formats according default `'cast'` handlers", function() {
-
-            expect($this->schema->format('cast', 'value', 123))->toBe(123);
-            expect($this->schema->format('cast', 'double', 12.3))->toBe(12.3);
-            expect($this->schema->format('cast', 'revenue', 12.3))->toBe('12.30');
-            $date = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 00:00:00');
-            expect($this->schema->format('cast', 'registered', $date))->toEqual($date);
-            expect($this->schema->format('cast', 'registered', '2014-11-21'))->toEqual($date);
-            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
-            expect($this->schema->format('cast', 'created', $datetime))->toEqual($datetime);
-            expect($this->schema->format('cast', 'created', '2014-11-21 10:20:45'))->toEqual($datetime);
-            expect($this->schema->format('cast', 'active', true))->toBe(true);
-            expect($this->schema->format('cast', 'active', false))->toBe(false);
-            expect($this->schema->format('cast', 'null', null))->toBe(null);
-            expect($this->schema->format('cast', 'name', 'abc'))->toBe('abc');
-            expect($this->schema->format('cast', 'unexisting', 123))->toBe(123);
-
+            $this->schema->column('json',       ['type' => 'json']);
         });
 
         it("formats according default `'array'` handlers", function() {
@@ -1174,7 +1156,42 @@ describe("Schema", function() {
             expect($this->schema->format('array', 'active', false))->toBe(false);
             expect($this->schema->format('array', 'null', null))->toBe(null);
             expect($this->schema->format('array', 'name', 'abc'))->toBe('abc');
-            expect($this->schema->format('array', 'unexisting', 123))->toBe('123');
+            expect($this->schema->format('array', 'unexisting', 123))->toBe(123);
+            expect($this->schema->format('array', 'json', new Collection(['data' => [1,2]])))->toBe([1,2]);
+
+        });
+
+        it("throws an InvalidArgumentException for `'cast'` handlers", function() {
+
+            $closure = function() {
+                $this->schema->format('cast', 'value', 123);
+            };
+
+            expect($closure)->toThrow(new InvalidArgumentException("Use `Schema::cast()` to perform casting."));
+
+        });
+
+    });
+
+    describe("->convert()", function() {
+
+        it("formats according default `'cast'` handlers", function() {
+
+            expect($this->schema->convert('cast', 'integer', 123))->toBe(123);
+            expect($this->schema->convert('cast', 'float', 12.3))->toBe(12.3);
+            expect($this->schema->convert('cast', 'decimal', 12.3, ['length' =>  20, 'precision' =>  2]))->toBe('12.30');
+            $date = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 00:00:00');
+            expect($this->schema->convert('cast', 'date', $date))->toEqual($date);
+            expect($this->schema->convert('cast', 'date', '2014-11-21'))->toEqual($date);
+            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
+            expect($this->schema->convert('cast', 'datetime', $datetime))->toEqual($datetime);
+            expect($this->schema->convert('cast', 'datetime', '2014-11-21 10:20:45'))->toEqual($datetime);
+            expect($this->schema->convert('cast', 'boolean', true))->toBe(true);
+            expect($this->schema->convert('cast', 'boolean', false))->toBe(false);
+            expect($this->schema->convert('cast', 'null', null))->toBe(null);
+            expect($this->schema->convert('cast', 'string', 'abc'))->toBe('abc');
+            expect($this->schema->convert('cast', 'unexisting', 123))->toBe(123);
+            expect($this->schema->convert('cast', 'json', '[1,2]'))->toBe([1,2]);
 
         });
 

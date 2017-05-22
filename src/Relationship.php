@@ -351,9 +351,10 @@ class Relationship
 
         $ids = is_array($id) ? $id : [$id];
         $key = $schema->key();
+        $column = $schema->column($key);
 
         foreach ($ids as $i => $value) {
-            $ids[$i] = $schema->format('cast', $key, $value);
+            $ids[$i] = $schema->convert('cast', $column['type'], $value, $column);
         }
 
         if (count($ids) === 1) {

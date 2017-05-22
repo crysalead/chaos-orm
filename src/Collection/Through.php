@@ -807,19 +807,6 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      */
     public function to($format, $options = [])
     {
-        $defaults = [
-        'cast' => true
-        ];
-
-        $options += $defaults;
-
-        $data = $options['cast'] ? Collection::toArray($this, $options) : $this;
-
-        if (is_callable($format)) {
-            return $format($data, $options);
-        } elseif ($formatter = Collection::formats($format)) {
-            return $formatter($data, $options);
-        }
-        return $data;
+        return Collection::format($format, $this, $options);
     }
 }
