@@ -166,16 +166,15 @@ class Schema
 
         $handlers = $this->_handlers;
 
-        $this->formatter('array', 'object',    $handlers['array']['object']);
-        $this->formatter('array', 'integer',   $handlers['array']['integer']);
-        $this->formatter('array', 'float',     $handlers['array']['float']);
-        $this->formatter('array', 'decimal',   $handlers['array']['string']);
-        $this->formatter('array', 'date',      $handlers['array']['date']);
-        $this->formatter('array', 'datetime',  $handlers['array']['datetime']);
-        $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
-        $this->formatter('array', 'null',      $handlers['array']['null']);
-        $this->formatter('array', 'json',      $handlers['array']['json']);
-        $this->formatter('array', '_default_', $handlers['array']['string']);
+        $this->formatter('array', 'object',   $handlers['array']['object']);
+        $this->formatter('array', 'integer',  $handlers['array']['integer']);
+        $this->formatter('array', 'float',    $handlers['array']['float']);
+        $this->formatter('array', 'decimal',  $handlers['array']['string']);
+        $this->formatter('array', 'date',     $handlers['array']['date']);
+        $this->formatter('array', 'datetime', $handlers['array']['datetime']);
+        $this->formatter('array', 'boolean',  $handlers['array']['boolean']);
+        $this->formatter('array', 'null',     $handlers['array']['null']);
+        $this->formatter('array', 'json',     $handlers['array']['json']);
 
         $this->formatter('cast', 'object',   $handlers['cast']['object']);
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
@@ -1155,7 +1154,7 @@ class Schema
         }
         if (!isset($this->_columns[$name])) {
             // Formatting non defined columns or relations doesn't make sense, bailing out.
-            return $data;
+            return $this->convert($mode, '_default_', $data, []);
         }
         $column = $this->_columns[$name];
         $type = $data === null ? 'null' : $this->type($name);

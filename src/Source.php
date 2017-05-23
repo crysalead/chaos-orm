@@ -50,7 +50,6 @@ class Source
         $this->formatter('array', 'boolean',   $handlers['array']['boolean']);
         $this->formatter('array', 'null',      $handlers['array']['null']);
         $this->formatter('array', 'json',      $handlers['array']['json']);
-        $this->formatter('array', '_default_', $handlers['array']['string']);
 
         $this->formatter('cast', 'object',   $handlers['cast']['object']);
         $this->formatter('cast', 'integer',  $handlers['cast']['integer']);
@@ -236,23 +235,23 @@ class Source
     }
 
     /**
-     * Formats a value according to its definition.
+     * Formats a value according to its type.
      *
-     * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $type  The type name.
-     * @param   mixed  $value The value to format.
-     * @return  mixed         The formated value.
+     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param   string $type    The field name.
+     * @param   mixed  $data    The value to format.
+     * @param   mixed  $options The options array to pass the the formatter handler.
+     * @return  mixed           The formated value.
      */
-    public function convert($mode, $type, $value, $options = [])
+    public function convert($mode, $type, $data, $options = [])
     {
-        $type = $value === null ? 'null' : $type;
         $formatter = null;
-
+        $type = $data === null ? 'null' : $type;
         if (isset($this->_formatters[$mode][$type])) {
             $formatter = $this->_formatters[$mode][$type];
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-        return $formatter ? $formatter($value, $options) : $value;
+        return $formatter ? $formatter($data, $options) : $data;
     }
 }
