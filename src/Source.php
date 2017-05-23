@@ -3,6 +3,7 @@ namespace Chaos\ORM;
 
 use InvalidArgumentException;
 use DateTime;
+use DateTimeZone;
 use Lead\Set\Set;
 
 /**
@@ -151,7 +152,7 @@ class Source
                     if ($timestamp < 0 || $timestamp === false) {
                         $timestamp = 0;
                     }
-                    return DateTime::createFromFormat($options['format'], date($options['format'], $timestamp));
+                    return DateTime::createFromFormat($options['format'], date($options['format'], $timestamp), new DateTimeZone('UTC'));
                 },
                 'null'    => function($value, $options = []) {
                     return null;
