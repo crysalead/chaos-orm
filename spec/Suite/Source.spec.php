@@ -153,12 +153,12 @@ describe("Source", function() {
 
         });
 
-        it("format invalid date as `'1970-01-01'` on import", function() {
+        it("format invalid date as `null` on import", function() {
 
-            expect($this->source->convert('cast', 'date', '0000-00-00')->format('Y-m-d'))->toBe('1970-01-01');
-            expect($this->source->convert('cast', 'date', '2016-25-15')->format('Y-m-d'))->toBe('1970-01-01');
-            expect($this->source->convert('cast', 'datetime', '2016-12-15 80:90:00')->format('Y-m-d H:i:s'))->toBe('1970-01-01 00:00:00');
-            expect($this->source->convert('cast', 'datetime', '0000-00-00 00:00:00')->format('Y-m-d H:i:s'))->toBe('1970-01-01 00:00:00');
+            expect($this->source->convert('cast', 'date', '0000-00-00'))->toBe(null);
+            expect($this->source->convert('cast', 'date', '2016-25-15'))->toBe(null);
+            expect($this->source->convert('cast', 'datetime', '2016-12-15 80:90:00'))->toBe(null);
+            expect($this->source->convert('cast', 'datetime', '0000-00-00 00:00:00'))->toBe(null);
 
         });
 

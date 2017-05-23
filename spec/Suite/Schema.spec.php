@@ -1198,6 +1198,7 @@ describe("Schema", function() {
             $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
             expect($this->schema->convert('cast', 'datetime', $datetime))->toEqual($datetime);
             expect($this->schema->convert('cast', 'datetime', '2014-11-21 10:20:45'))->toEqual($datetime);
+            expect($this->schema->convert('cast', 'datetime', 'abcd'))->toEqual(null);
             expect($this->schema->convert('cast', 'boolean', true))->toBe(true);
             expect($this->schema->convert('cast', 'boolean', false))->toBe(false);
             expect($this->schema->convert('cast', 'null', null))->toBe(null);

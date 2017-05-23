@@ -140,8 +140,7 @@ class Source
                 },
                 'date'    => function($value, $options = []) {
                     $date = $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
-                    $date->setTime(0, 0, 0);
-                    return $date;
+                    return $date ? $date->setTime(0, 0, 0) : null;
                 },
                 'datetime'    => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
@@ -150,7 +149,7 @@ class Source
                     }
                     $timestamp = is_numeric($value) ? $value : strtotime($value);
                     if ($timestamp < 0 || $timestamp === false) {
-                        $timestamp = 0;
+                        return;
                     }
                     return DateTime::createFromFormat($options['format'], date($options['format'], $timestamp), new DateTimeZone('UTC'));
                 },
