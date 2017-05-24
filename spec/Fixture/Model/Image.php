@@ -11,7 +11,8 @@ class Image extends BaseModel
         $schema->column('score', ['type' => 'float' ]);
 
         $schema->belongsTo('gallery', Gallery::class, [
-            'keys' => ['gallery_id' => 'id']
+            'keys' => ['gallery_id' => 'id'],
+            'null' => true
         ]);
 
         $schema->hasMany('images_tags', ImageTag::class, [

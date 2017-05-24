@@ -662,10 +662,10 @@ class Schema
             $this->_relations[$config['through']]['junction'] = true;
         } elseif ($config['relation'] === 'belongsTo' && $config['link'] === $relationship::LINK_KEY) {
             $fieldName = $this->conventions()->apply('reference', $name);
-            $this->column($fieldName, ['type' => 'id', 'array' => false, 'null' => true]);
+            $this->column($fieldName, ['type' => 'id', 'array' => false, 'null' => !empty($config['null'])]);
         } elseif ($config['relation'] === 'hasMany' && $config['link'] === $relationship::LINK_KEY_LIST) {
             $fieldName = $this->conventions()->apply('references', $name);
-            $this->column($fieldName, ['type' => 'id', 'array' => true, 'null' => true]);
+            $this->column($fieldName, ['type' => 'id', 'array' => true]);
         }
 
         if (isset($this->_relations[$name]['junction'])) {
