@@ -161,7 +161,7 @@ class Source
             ],
             'datasource' => [
                 'object'   => function($value, $options = []) {
-                    return $value->to('datasource', $options);
+                    return $value->to('plain'); // Unexisting handlers will simply return raw data
                 },
                 'string'   => function($value, $options = []) {
                     return (string) $value;
