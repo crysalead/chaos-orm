@@ -360,7 +360,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function setParent($parent, $from)
     {
-        $this->parents()->set($parent, $from);
+        $this->parents()->set($parent, $parent instanceof Document ? $from : '*');
         return $this;
     }
 

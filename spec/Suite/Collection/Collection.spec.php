@@ -330,7 +330,7 @@ describe("Collection", function() {
                 ];
                 $entity = $collection[0];
                 expect($entity)->toBeAnInstanceOf($this->model);
-                expect($entity->parents()->get($collection))->toBe(0);
+                expect($entity->parents()->get($collection))->toBe('*');
                 expect($entity->basePath())->toBe(null);
 
             });

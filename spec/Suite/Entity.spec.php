@@ -888,20 +888,20 @@ describe("Entity", function() {
         context("when a model is defined", function() {
 
             beforeEach(function() {
-                $this->model = Double::classname(['extends' => $this->model]);
+                $this->model = $model = Double::classname(['extends' => Model::class]);
+                $schema = $model::definition();
+                $schema->column('id', ['type' => 'serial']);
+                $schema->lock(false);
             });
 
             it("autoboxes object columns", function() {
 
                 $model = $this->model;
 
-                $schema = new Schema(['class' => $model]);
+                $schema = $model::definition();
                 $schema->column('child', [
                     'type'  => 'object'
                 ]);
-                $schema->lock(false);
-
-                $model::definition($schema);
 
                 $entity = $model::create();
 
@@ -985,13 +985,10 @@ describe("Entity", function() {
 
                 $model = $this->model;
 
-                $schema = new Schema(['class' => $model]);
+                $schema = $model::definition();
                 $schema->column('child', [
-                    'type' => 'object'
+                    'type'  => 'object'
                 ]);
-                $schema->lock(false);
-
-                $model::definition($schema);
 
                 $entity = $model::create(['child' => []]);
 
@@ -999,6 +996,43 @@ describe("Entity", function() {
                 expect(get_class($child))->toBe(Document::class);
                 expect($child->parents()->get($entity))->toBe('child');
                 expect($child->basePath())->toBe('child');
+
+            });
+
+            it("casts undefined object columns", function() {
+
+                $model = $this->model;
+                $entity =$model::create(['child' => []]);
+
+                $child = $entity->get('child');
+                expect(get_class($child))->toBe(Document::class);
+                expect($child->parents()->get($entity))->toBe('child');
+                expect($child->basePath())->toBe('child');
+
+            });
+
+            it("casts undefined arrays of objects columns", function() {
+
+                $model = $this->model;
+                $entity = $model::create(['childs' => [
+                    ['child1' => []],
+                    ['child2' => []],
+                ]]);
+
+                $childs = $entity->get('childs');
+                expect(get_class($childs))->toBe(Collection::class);
+                expect($childs->parents()->get($entity))->toBe('childs');
+                expect($childs->basePath())->toBe('childs');
+
+                $child1 = $childs[0];
+                expect(get_class($child1))->toBe(Document::class);
+                expect($child1->parents()->get($childs))->toBe('*');
+                expect($child1->basePath())->toBe('childs');
+
+                $child2 = $childs[1];
+                expect(get_class($child2))->toBe(Document::class);
+                expect($child2->parents()->get($childs))->toBe('*');
+                expect($child2->basePath())->toBe('childs');
 
             });
 

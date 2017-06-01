@@ -901,10 +901,12 @@ class Schema
         }
 
         if (is_array($data)) {
+            $options['class'] = Document::class;
+            $options['basePath'] = $name;
+
             if (isset($data[0])) {
                 return $this->_castArray($name, $data, $options);
             } else {
-                $options['class'] = Document::class;
                 return $this->_cast($name, $data, $options);
             }
         }
