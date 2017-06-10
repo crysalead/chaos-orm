@@ -963,6 +963,17 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     }
 
     /**
+     * Restore a codument to its original values.
+     *
+     * @return self
+     */
+    public function restore()
+    {
+        $this->_data = $this->_original;
+        return $this;
+    }
+
+    /**
      * Returns all included relations accessible through this entity.
      *
      * @param  string      $prefix The parent relation path.
