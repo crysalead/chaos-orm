@@ -470,14 +470,12 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         } elseif ($schema->hasRelation($fieldName, false)) {
             $relation = $schema->relation($fieldName);
             $hasManyThrough = $relation->type() === 'hasManyThrough';
-            if ($this->id() !== null) {
-                if (!$hasManyThrough || !$this->has($relation->through())) {
-                    if (($this->_exists !== false && $relation->type() != 'belongsTo') || !$this->get($relation->keys('from')) !== null) {
-                        if ($fetchHandler) {
-                            return $fetchHandler($this, $name);
-                        }
-                        throw new ORMException("The relation `'{$name}'` is an external relation, use `fetch()` to lazy load its data.");
+            if (!$hasManyThrough || ($this->id() !== null && !$this->has($relation->through()))) {
+                if (($this->_exists !== false && $relation->type() !== 'belongsTo') || !$this->get($relation->keys('from')) !== null) {
+                    if ($fetchHandler) {
+                        return $fetchHandler($this, $name);
                     }
+                    throw new ORMException("The relation `'{$name}'` is an external relation, use `fetch()` to lazy load its data.");
                 }
             }
             $autoCreate = $relation->isMany();
