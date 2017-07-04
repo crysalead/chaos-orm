@@ -903,7 +903,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         $errors = [];
         $errored = false;
         foreach ($this as $entity) {
-            $result = $entity->errors();
+            $result = $entity->errors($options);
             $errors[] = $result;
             if ($result) {
                 $errored = true;

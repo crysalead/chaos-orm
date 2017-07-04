@@ -768,7 +768,8 @@ class Model extends Document
             if (!isset($this->{$field})) {
                 continue;
             }
-            if ($err = $this->{$field}->errors($value ? $value + $options : $options)) {
+            $value = $value ? $value : ['embed' => false];
+            if ($err = $this->{$field}->errors($value + $options)) {
                 $errors[$field] = $err;
             }
         }
