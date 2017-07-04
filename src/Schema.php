@@ -1325,7 +1325,7 @@ class Schema
                 $updates[] = $entity;
             }
         }
-        return $this->bulkInsert($inserts, $filter) && $this->bulkUpdate($updates, $filter);
+        return $this->bulkInsert($inserts, $filter, $options) && $this->bulkUpdate($updates, $filter, $options);
     }
 
     /**
@@ -1413,9 +1413,10 @@ class Schema
      *
      * @param  array   $inserts An array of entities to insert.
      * @param  Closure $filter  The filter handler for which extract entities values for the insertion.
+     * @param  array   $options The save option.
      * @return boolean          Returns `true` if insert operations succeeded, `false` otherwise.
      */
-    public function bulkInsert($inserts, $filter)
+    public function bulkInsert($inserts, $filter, $options = [])
     {
         throw new ORMException("Missing `bulkInsert()` implementation for `{$this->_reference}`'s schema.");
     }
@@ -1425,9 +1426,10 @@ class Schema
      *
      * @param  array   $updates An array of entities to update.
      * @param  Closure $filter  The filter handler for which extract entities values to update.
+     * @param  array   $options The save option.
      * @return boolean          Returns `true` if update operations succeeded, `false` otherwise.
      */
-    public function bulkUpdate($updates, $filter)
+    public function bulkUpdate($updates, $filter, $options = [])
     {
         throw new ORMException("Missing `bulkUpdate()` implementation for `{$this->_reference}`'s schema.");
     }
