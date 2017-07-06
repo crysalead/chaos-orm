@@ -467,14 +467,18 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @return self
      */
-    public function amend($data = [], $options = [])
+    public function amend($data = null, $options = [])
     {
-        if ($data) {
-            if (count($data) !== $this->count()) {
-                throw new Exception("Amending a collection requires passed data to have the same length of the collection.");
-            }
+        if ($data !== null) {
+            $count = $this->count();
             foreach ($data as $i => $value) {
-                $this->get($i)->amend($value, $options);
+                if (!isset($this[$i])) {
+                    $this[$i] = $value;
+                }
+                $this[$i]->amend($value, $options);
+            }
+            for ($i = count($data); $i < $count; $i++) {
+                unset($this[$i]);
             }
         }
         $this->_original = $this->_data;

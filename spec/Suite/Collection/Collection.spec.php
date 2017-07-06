@@ -8,6 +8,7 @@ use Chaos\ORM\Schema;
 use Chaos\ORM\Document;
 use Chaos\ORM\Collection\Collection;
 use Chaos\ORM\Spec\Fixture\Model\Image;
+use Chaos\ORM\Spec\Fixture\Model\Tag;
 
 use Kahlan\Plugin\Double;
 
@@ -816,6 +817,46 @@ describe("Collection", function() {
             unset($collection[1]);
             expect($collection->data())->toEqual([]);
             expect($collection->original())->toEqual([1 => 1]);
+
+        });
+
+    });
+
+    describe("->amend()", function() {
+
+        it("amends a collection with new values", function() {
+
+            $collection = Tag::create([], ['type' => 'set']);
+
+            $collection->amend([
+                ['name' => 'news'],
+                ['name' => 'sport']
+            ]);
+
+            expect($collection->data())->toBe([
+                ['name' => 'news'],
+                ['name' => 'sport']
+            ]);
+
+        });
+
+        it("amends an existing collection", function() {
+
+            $collection = Tag::create([
+                ['name' => 'music'],
+                ['name' => 'book'],
+                ['name' => 'travel']
+            ], ['type' => 'set']);
+
+            $collection->amend([
+                ['name' => 'news'],
+                ['name' => 'sport']
+            ]);
+
+            expect($collection->data())->toBe([
+                ['name' => 'news'],
+                ['name' => 'sport']
+            ]);
 
         });
 

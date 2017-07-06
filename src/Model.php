@@ -522,18 +522,20 @@ class Model extends Document
      *                       - `'exists'` _boolean_: Determines whether or not this entity exists
      *                         in data store. Defaults to `null`.
      */
-    public function amend($data = [], $options = [])
+    public function amend($data = null, $options = [])
     {
         $this->_exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
 
         $previousId = $this->id();
         $schema = $this->schema();
 
-        foreach ($data as $key => $value) {
-            if (!empty($options['rebuild']) || !$this->has($key) || !$schema->hasRelation($key, false)) {
-                $this->set($key, $value);
-            } else {
-                $this->get($key)->amend($value, $options);
+        if ($data !== null) {
+            foreach ($data as $key => $value) {
+                if (!empty($options['rebuild']) || !$this->has($key) || !$schema->hasRelation($key, false)) {
+                    $this->set($key, $value);
+                } else {
+                    $this->get($key)->amend($value, $options);
+                }
             }
         }
         parent::amend();
