@@ -801,12 +801,25 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     /**
      * Overloading for calling `isset()` or `empty()` on inaccessible properties.
      *
-     * @param  string  $name Property name.
+     * @param  string  $path Property name.
      * @return boolean
      */
-    public function __isset($name)
+    public function __isset($path)
     {
-        return $this->offsetExists($name);
+        $keys = explode('.', $path);
+        if (!$keys) {
+            return false;
+        }
+
+        $name = array_shift($keys);
+        if ($keys) {
+            $value = $this->get($name);
+            if ($value instanceof ArrayAccess) {
+                return $value->offsetExists($keys);
+            }
+            return false;
+        }
+        return isset($this->_data[$name]);
     }
 
     /**
