@@ -674,7 +674,7 @@ class Model extends Document
         $options += $defaults;
         $validator = static::validator();
 
-        $valid = $this->_validates($options);
+        $valid = $this->_validates(['embed' => $options['embed']]);
 
         $success = $validator->validates($this->get(), $options);
         $this->_errors = [];
@@ -698,7 +698,7 @@ class Model extends Document
             $options['embed'] = $this->hierarchy();
         }
 
-        $schema = static::schema();
+        $schema = $this->schema();
         $tree = $schema->treeify($options['embed']);
         $success = true;
 
@@ -720,9 +720,15 @@ class Model extends Document
      */
     public function invalidate($field, $errors = [])
     {
+        $schema = $this->schema();
+
         if (func_num_args() === 1) {
             foreach ($field as $key => $value) {
-                $this->invalidate($key, $value);
+                if ($schema->hasRelation($key) && $this->has($key)) {
+                    $this->{$key}->invalidate($value);
+                } else {
+                    $this->invalidate($key, $value);
+                }
             }
             return $this;
         }
