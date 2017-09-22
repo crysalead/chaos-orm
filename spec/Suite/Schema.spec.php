@@ -3,6 +3,7 @@ namespace Chaos\ORM\Spec\Suite;
 
 use stdClass;
 use DateTime;
+use DateTimeZone;
 use InvalidArgumentException;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Model;
@@ -1201,10 +1202,10 @@ describe("Schema", function() {
             expect($this->schema->convert('cast', 'integer', 123))->toBe(123);
             expect($this->schema->convert('cast', 'float', 12.3))->toBe(12.3);
             expect($this->schema->convert('cast', 'decimal', 12.3, ['length' =>  20, 'precision' =>  2]))->toBe('12.30');
-            $date = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 00:00:00');
+            $date = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 00:00:00', new DateTimeZone('UTC'));
             expect($this->schema->convert('cast', 'date', $date))->toEqual($date);
             expect($this->schema->convert('cast', 'date', '2014-11-21'))->toEqual($date);
-            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
+            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45', new DateTimeZone('UTC'));
             expect($this->schema->convert('cast', 'datetime', $datetime))->toEqual($datetime);
             expect($this->schema->convert('cast', 'datetime', '2014-11-21 10:20:45'))->toEqual($datetime);
             expect($this->schema->convert('cast', 'datetime', 'abcd'))->toEqual(null);

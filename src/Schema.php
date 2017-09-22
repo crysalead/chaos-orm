@@ -1061,6 +1061,17 @@ class Schema
      */
     protected function _handlers()
     {
+        $gmstrtotime = function ($value) {
+            $TZ = date_default_timezone_get();
+            if ($TZ === 'UTC') {
+                return strtotime($value);
+            }
+            date_default_timezone_set('UTC');
+            $time = strtotime($value);
+            date_default_timezone_set($TZ);
+            return $time;
+        };
+
         return [
             'array' => [
                 'object' => function($value, $options = []) {
@@ -1119,16 +1130,16 @@ class Schema
                 'date'    => function($value, $options = []) {
                     return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime'    => function($value, $options = []) {
+                'datetime'    => function($value, $options = []) use ($gmstrtotime) {
                     $options += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
                         return $value;
                     }
-                    $timestamp = is_numeric($value) ? $value : strtotime($value);
+                    $timestamp = is_numeric($value) ? $value : $gmstrtotime($value);
                     if ($timestamp < 0 || $timestamp === false) {
                         return;
                     }
-                    return DateTime::createFromFormat("!{$options['format']}", date($options['format'], $timestamp), new DateTimeZone('UTC'));
+                    return DateTime::createFromFormat("!{$options['format']}", gmdate($options['format'], $timestamp), new DateTimeZone('UTC'));
                 },
                 'null'    => function($value, $options = []) {
                     return null;
