@@ -874,18 +874,18 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @param  string|array  $field The field name to check or an options object.
      * @return boolean|array        Returns `true` if a field is given and was updated, `false` otherwise.
-     *                              If no field is given returns an array of all modified fields and their
-     *                              original values.
+     *                              If the `'return'` options is set to true, returns an array of all modified fields.
      */
     public function modified($field = null)
     {
         $schema = $this->schema();
         $options = [
-            'embed' => false
+            'embed'  => false,
+            'return' => false,
+            'ignore' => []
         ];
 
         if (is_array($field)) {
-
             $options = $field + $options;
             $field = null;
 
@@ -932,7 +932,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $original = $this->_original[$key];
             $modified = false;
 
-            if (method_exists($value, 'modified')) {
+            if (is_object($value) && method_exists($value, 'modified')) {
                 $modified = $original !== $value || $value->modified();
             } elseif (is_object($value)) {
                 $modified = $original != $value;
@@ -943,11 +943,12 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 $updated[$key] = $original;
             }
         }
-        if ($field) {
-            return !empty($updated);
+        if ($options['ignore']) {
+            $options['ignore'] = is_array($options['ignore']) ? $options['ignore'] : [$options['ignore']];
+            $updated = array_diff_key($updated, array_flip($options['ignore']));
         }
         $updated = array_keys($updated);
-        $updated = $field ? $updated : !!$updated;
+        $updated = $options['return'] ? $updated : !!$updated;
         return $updated;
     }
 

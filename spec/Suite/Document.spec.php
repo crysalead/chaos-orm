@@ -775,6 +775,26 @@ describe("Document", function() {
 
         });
 
+        it("returns the list of modified fields", function() {
+
+            $document = new Document();
+
+            $document->modified = 'modified';
+
+            expect($document->modified(['return' => true]))->toBe(['modified']);
+
+        });
+
+        it("ignores ingnored fields", function() {
+
+            $document = new Document();
+
+            $document->modified = 'modified';
+
+            expect($document->modified(['ignore' => ['modified']]))->toBe(false);
+
+        });
+
     });
 
     describe("->key()", function() {
