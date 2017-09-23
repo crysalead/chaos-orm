@@ -785,7 +785,7 @@ describe("Document", function() {
 
         });
 
-        it("ignores ingnored fields", function() {
+        it("ignores ignored fields", function() {
 
             $document = new Document();
 
