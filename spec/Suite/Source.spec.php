@@ -37,7 +37,7 @@ describe("Source", function() {
 
     });
 
-    describe("->formatter()", function() {
+    describe("->formatters()", function() {
 
         it("gets/sets a formatter", function() {
 
