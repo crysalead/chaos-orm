@@ -1156,10 +1156,10 @@ describe("Schema", function() {
             expect($this->schema->format('array', 'value', 123))->toBe(123);
             expect($this->schema->format('array', 'double', 12.3))->toBe(12.3);
             expect($this->schema->format('array', 'revenue', 12.3))->toBe('12.3');
-            $date = DateTime::createFromFormat('Y-m-d', '2014-11-21');
+            $date = DateTime::createFromFormat('Y-m-d', '2014-11-21', new DateTimeZone('UTC'));
             expect($this->schema->format('array', 'registered', $date))->toBe('2014-11-21');
             expect($this->schema->format('array', 'registered', '2014-11-21'))->toBe('2014-11-21');
-            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
+            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45', new DateTimeZone('UTC'));
             expect($this->schema->format('array', 'created', $datetime))->toBe('2014-11-21 10:20:45');
             expect($this->schema->format('array', 'created', '2014-11-21 10:20:45'))->toBe('2014-11-21 10:20:45');
             expect($this->schema->format('array', 'active', true))->toBe(true);

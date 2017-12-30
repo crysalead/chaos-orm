@@ -107,13 +107,13 @@ class Source
                 'date' => function($value, $options = []) {
                     return $this->convert('array', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime' => function($value, $options = []) {
+                'datetime' => function($value, $options = []) use ($gmstrtotime) {
                     $options += ['format' => 'Y-m-d H:i:s'];
                     $format = $options['format'];
                     if ($value instanceof DateTime) {
                         return $value->format($format);
                     }
-                    return date($format, is_numeric($value) ? $value : strtotime($value));
+                    return gmdate($format, is_numeric($value) ? $value : $gmstrtotime($value));
                 },
                 'boolean' => function($value, $options = []) {
                     return $value;
@@ -180,16 +180,16 @@ class Source
                 'date'     => function($value, $options = []) {
                     return $this->convert('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime' => function($value, $options = []) {
+                'datetime' => function($value, $options = []) use ($gmstrtotime) {
                     $options += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
                         $date = $value->format($options['format']);
                     } else {
-                        $timestamp = is_numeric($value) ? $value : strtotime($value);
+                        $timestamp = is_numeric($value) ? $value : $gmstrtotime($value);
                         if ($timestamp < 0 || $timestamp === false) {
                             throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
                         }
-                        $date = date($options['format'], $timestamp);
+                        $date = gmdate($options['format'], $timestamp);
                     }
                     return $date;
                 },
