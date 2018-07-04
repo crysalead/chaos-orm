@@ -445,6 +445,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
         $schema = $this->schema();
 
+        $field = [];
+
         if ($schema->has($fieldName)) {
             $field = $schema->column($fieldName);
         } else {
@@ -452,8 +454,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             if ($schema->has($genericFieldName)) {
                 $field = $schema->column($genericFieldName);
                 $fieldName = $genericFieldName;
-            } else {
-                $field = [];
+            } elseif ($schema->locked() && !$schema->hasRelation($fieldName, false)) {
+                throw new ORMException("Missing schema definition for field: `" . $fieldName . "`.");
             }
         }
 
@@ -471,7 +473,9 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $relation = $schema->relation($fieldName);
             $hasManyThrough = $relation->type() === 'hasManyThrough';
             if (!$hasManyThrough || ($this->id() !== null && !$this->has($relation->through()))) {
-                if (($this->_exists !== false && $relation->type() !== 'belongsTo') || !$this->get($relation->keys('from')) !== null) {
+                $belongsTo = $relation->type() === 'belongsTo';
+                $foreignKey = $belongsTo ? $this->get($relation->keys('from')) : null;
+                if (($this->_exists !== false && !$belongsTo) || $foreignKey !== null) {
                     if ($fetchHandler) {
                         return $fetchHandler($this, $name);
                     }

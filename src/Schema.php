@@ -897,7 +897,7 @@ class Schema
         }
 
         if ($this->locked()) {
-            throw new ORMException("Missing schema definition for field: `" . $name . "`.");
+            return $data;
         }
 
         if (is_array($data)) {

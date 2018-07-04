@@ -432,16 +432,6 @@ class Model extends Document
     }
 
     /**
-     * Returns a string representation of the instance.
-     *
-     * @return string
-     */
-    public function title()
-    {
-        return $this->title ?: $this->name;
-    }
-
-    /**
      * Returns the primary key value.
      *
      * @return array     the primary key value.
@@ -805,6 +795,6 @@ class Model extends Document
      */
     public function __toString()
     {
-        return (string) $this->title();
+        return (string) $this->id();
     }
 }

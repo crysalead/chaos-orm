@@ -842,17 +842,6 @@ describe("Entity", function() {
 
         });
 
-        it("throws an exception when trying to set nested arbitraty value in cascade when locked is `true`", function() {
-
-            $closure = function() {
-                $image = Image::create();
-                $image->set('a.nested.value', 'hello');
-            };
-
-            expect($closure)->toThrow(new ORMException('Missing schema definition for field: `a`.'));
-
-        });
-
         it("sets a value using a virtual field", function() {
 
             $model = $this->model;
@@ -1548,16 +1537,11 @@ describe("Entity", function() {
 
     describe("->__toString()", function() {
 
-        it("returns the title field", function() {
-
-            $data = [
-                'id'    => 1,
-                'title' => 'test record'
-            ];
+        it("returns the key as string", function() {
 
             $model = $this->model;
-            $entity = $model::create($data);
-            expect((string) $entity)->toBe('test record');
+            $entity = $model::create(['id' => 1]);
+            expect((string) $entity)->toBe('1');
 
         });
 

@@ -484,7 +484,7 @@ describe("Schema", function() {
 
                 beforeEach(function() {
 
-                    $this->schema = new Schema();
+                    $this->schema = new Schema(['locked' => false]);
                     $this->schema->column('hello', [
                         'type' => 'string',
                         'getter' => function($entity, $data, $name) {
