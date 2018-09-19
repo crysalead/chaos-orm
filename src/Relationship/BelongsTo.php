@@ -79,7 +79,8 @@ class BelongsTo extends \Chaos\ORM\Relationship
         $result = $related->save($options);
 
         $keys = $this->keys();
-        list($from, $to) = each($keys);
+        $from = key($keys);
+        $to = current($keys);
 
         $conditions = [];
         if (!isset($related->{$to})) {

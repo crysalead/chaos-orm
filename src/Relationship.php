@@ -244,7 +244,8 @@ class Relationship
     public function match($entity)
     {
         $keys = $this->keys();
-        list($from, $to) = each($keys);
+        $from = key($keys);
+        $to = current($keys);
 
         $conditions = [];
 
