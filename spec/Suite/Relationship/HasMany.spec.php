@@ -295,11 +295,11 @@ describe("HasMany", function() {
             $schema = ImageTag::definition();
 
             Stub::on($toKeep)->method('save', function() { return true; });
-            Stub::on($schema)->method('truncate', function() { return true; });
+            Stub::on($schema)->method('remove', function() { return true; });
 
             expect($image->images_tags[0])->toReceive('save');
             expect($toKeep)->toReceive('save');
-            expect($schema)->toReceive('truncate')->with(['id' => 5]);
+            expect($schema)->toReceive('remove')->with(['id' => 5]);
             expect($hasMany->save($image))->toBe(true);
             expect($toDelete->exists())->toBe(false);
             expect($image->images_tags[0]->image_id)->toBe($image->id);

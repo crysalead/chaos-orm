@@ -1397,7 +1397,7 @@ class Schema
             return true;
         }
 
-        if (!$this->truncate([$key => (count($keys) ===1 ? $keys[0] : $keys)])) {
+        if (!$this->remove([$key => (count($keys) ===1 ? $keys[0] : $keys)])) {
             return false;
         }
 
@@ -1455,7 +1455,17 @@ class Schema
      *                             documents to be deleted.
      * @return boolean             Returns `true` if the remove operation succeeded, otherwise `false`.
      */
-    public function truncate($conditions = [])
+    public function remove($conditions = [])
+    {
+        throw new ORMException("Missing `remove()` implementation for `{$this->_reference}`'s schema.");
+    }
+
+    /**
+     * Truncate a table.
+     *
+     * @return boolean Returns `true` if the remove operation succeeded, otherwise `false`.
+     */
+    public function truncate()
     {
         throw new ORMException("Missing `truncate()` implementation for `{$this->_reference}`'s schema.");
     }
