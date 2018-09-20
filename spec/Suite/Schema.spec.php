@@ -5,6 +5,7 @@ use stdClass;
 use DateTime;
 use DateTimeZone;
 use InvalidArgumentException;
+use Chaos\ORM\ORMException;
 use Chaos\ORM\Schema;
 use Chaos\ORM\Model;
 use Chaos\ORM\Document;
@@ -1289,4 +1290,74 @@ describe("Schema", function() {
 
     });
 
+    describe(".query()", function() {
+
+        it("throws an ORMException", function() {
+
+            $closure = function() {
+                $this->schema->query();
+            };
+
+            expect($closure)->toThrow(new ORMException("Missing `query()` implementation for `{$this->schema->reference()}`'s schema."));
+
+        });
+
+    });
+
+
+    describe(".bulkInsert()", function() {
+
+        it("throws an ORMException", function() {
+
+            $closure = function() {
+                $this->schema->bulkInsert(null, null);
+            };
+
+            expect($closure)->toThrow(new ORMException("Missing `bulkInsert()` implementation for `{$this->schema->reference()}`'s schema."));
+
+        });
+
+    });
+
+    describe(".bulkUpdate()", function() {
+
+        it("throws an ORMException", function() {
+
+            $closure = function() {
+                $this->schema->bulkUpdate(null, null);
+            };
+
+            expect($closure)->toThrow(new ORMException("Missing `bulkUpdate()` implementation for `{$this->schema->reference()}`'s schema."));
+
+        });
+
+    });
+
+    describe(".remove()", function() {
+
+        it("throws an ORMException", function() {
+
+            $closure = function() {
+                $this->schema->remove();
+            };
+
+            expect($closure)->toThrow(new ORMException("Missing `remove()` implementation for `{$this->schema->reference()}`'s schema."));
+
+        });
+
+    });
+
+    describe(".truncate()", function() {
+
+        it("throws an ORMException", function() {
+
+            $closure = function() {
+                $this->schema->truncate();
+            };
+
+            expect($closure)->toThrow(new ORMException("Missing `truncate()` implementation for `{$this->schema->reference()}`'s schema."));
+
+        });
+
+    });
 });

@@ -1416,7 +1416,7 @@ class Schema
      */
     public function query($options = [])
     {
-        throw new ORMException("Missing `query()` implementation for this schema.");
+        throw new ORMException("Missing `query()` implementation for `{$this->_reference}`'s schema.");
     }
 
     /**
