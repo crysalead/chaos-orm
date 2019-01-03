@@ -52,6 +52,7 @@ describe("HasManyThrough", function() {
             expect($relation->link())->toBe(Relationship::LINK_KEY);
             expect($relation->fields())->toBe(true);
             expect($relation->strategy())->toBe(null);
+            expect($relation->conditions())->toBe([]);
             expect($relation->conventions())->toBeAnInstanceOf('Chaos\ORM\Conventions');
 
         });

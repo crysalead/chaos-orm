@@ -89,6 +89,13 @@ class Relationship
     protected $_fields = true;
 
     /**
+     * The conditions to filter on.
+     *
+     * @var array
+     */
+    protected $_conditions = [];
+
+    /**
      * The embedded mode.
      *
      * @var boolean
@@ -122,6 +129,11 @@ class Relationship
      *                      - `'fields'`      _mixed_  : An array of the subset of fields that should be selected
      *                                                   from the related object(s) by default. If set to `true` (the default), all
      *                                                   fields are selected.
+     *                      - `'conditions'`  _mixed_  : A string or array containing additional conditions
+     *                                                   on the relationship association. If a string, can contain a literal SQL fragment or
+     *                                                   other database-native value. If an array, maps fields from the related object
+     *                                                   either to fields elsewhere, or to arbitrary expressions. In either case, _the
+     *                                                   values specified here will be literally interpreted by the database_.
      *                      - `'conventions'` _object_ : The naming conventions instance to use.
      */
     public function __construct($config = [])
@@ -134,6 +146,7 @@ class Relationship
             'to'          => null,
             'link'        => static::LINK_KEY,
             'fields'      => true,
+            'conditions'  => [],
             'embedded'    => false,
             'conventions' => null
         ];
@@ -164,6 +177,7 @@ class Relationship
         $this->_keys = $config['keys'];
         $this->_link = $config['link'];
         $this->_fields = $config['fields'];
+        $this->_conditions = $config['conditions'];
         $this->_embedded = $config['embedded'];
 
         $pos = strrpos(static::class, '\\');
@@ -361,7 +375,16 @@ class Relationship
         if (count($ids) === 1) {
             $ids = reset($ids);
         }
-        $query = Set::extend($options['query'], ['conditions' => [$this->keys('to') => $ids]]);
+        $conditions = [$this->keys('to') => $ids];
+        if ($this->conditions()) {
+            $conditions = [
+                ':and()' => [
+                    [$this->keys('to') => $ids],
+                    $this->conditions()
+                ]
+            ];
+        }
+        $query = Set::extend($options['query'], ['conditions' => $conditions]);
         return $to::all($query, $fetchOptions);
     }
 

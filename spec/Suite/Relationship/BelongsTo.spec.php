@@ -42,6 +42,7 @@ describe("BelongsTo", function() {
             expect($relation->to())->toBe(Gallery::class);
             expect($relation->link())->toBe(Relationship::LINK_KEY);
             expect($relation->fields())->toBe(true);
+            expect($relation->conditions())->toBe([]);
             expect($relation->conventions())->toBeAnInstanceOf('Chaos\ORM\Conventions');
 
         });
