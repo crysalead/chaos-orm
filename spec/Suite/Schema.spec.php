@@ -257,6 +257,23 @@ describe("Schema", function() {
 
         });
 
+        it("correctly sets default values with stars and prefix collisions", function() {
+
+            $schema = new Schema();
+            $schema->column('datasource', ['type' => 'boolean', 'default' => false]);
+            $schema->column('data', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*', ['type' => 'object', 'default' => []]);
+            $schema->column('data.*.checked', ['type' => 'boolean', 'default' => true]);
+
+            $schema->locked(true);
+
+            $document = new Document(['schema' => $schema]);
+
+            expect($document->get('datasource'))->toBe(false);
+            expect($document->get('data.value1.checked'))->toBe(true);
+
+        });
+
     });
 
     describe("->type()", function() {
@@ -1303,7 +1320,6 @@ describe("Schema", function() {
         });
 
     });
-
 
     describe(".bulkInsert()", function() {
 

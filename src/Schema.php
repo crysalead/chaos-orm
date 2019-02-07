@@ -347,10 +347,11 @@ class Schema
     {
         $defaults = [];
         foreach ($this->_columns as $key => $value) {
-            if ($basePath && strpos($key, $basePath) !== 0) {
-                continue;
+            if ($basePath) {
+                $fieldName = strpos($key, $basePath . '.') === 0 ? substr($key, strlen($basePath) + 1) : null;
+            } else {
+                $fieldName = $key;
             }
-            $fieldName = $basePath ? substr($key, strlen($basePath) + 1) : $key;
             if (!$fieldName || $fieldName === '*' || strpos($fieldName, '.') !== false) {
                 continue;
             }
