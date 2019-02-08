@@ -377,6 +377,39 @@ describe("Document", function() {
 
         });
 
+        it("casts data in nested array", function() {
+
+            $schema = new Schema();
+            $schema->column('data', ['type' => 'object', 'array' => true]);
+            $schema->column('data.count', ['type' => 'integer']);
+            $schema->column('data.value', ['type' => 'integer']);
+
+            $document = new Document(['schema' => $schema]);
+            $data = [
+                ['count' => '09', 'value' => 5]
+            ];
+            $document->data = $data;
+            expect($document->data[0]->count)->toBe(9);
+
+        });
+
+        it("casts data in nested object", function() {
+
+            $schema = new Schema();
+            $schema->column('data', ['type' => 'object']);
+            $schema->column('data.*', ['type' => 'object']);
+            $schema->column('data.*.count', ['type' => 'integer']);
+            $schema->column('data.*.value', ['type' => 'integer']);
+
+            $document = new Document(['schema' => $schema]);
+            $data = [
+                'test' => ['count' => '09', 'value' => 5]
+            ];
+            $document->data = $data;
+            expect($document->data->test->count)->toBe(9);
+
+        });
+
     });
 
     describe("->__set()", function() {

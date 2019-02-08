@@ -92,68 +92,72 @@ class Source
 
         return [
             'array' => [
-                'object' => function($value, $options = []) {
-                    return $value->to('array', $options);
+                'object' => function($value, $column) {
+                    return $value->to('array', $column);
                 },
-                'string' => function($value, $options = []) {
+                'string' => function($value, $column) {
                     return (string) $value;
                 },
-                'integer' => function($value, $options = []) {
+                'integer' => function($value, $column) {
                     return (int) $value;
                 },
-                'float' => function($value, $options = []) {
+                'float' => function($value, $column) {
                     return (float) $value;
                 },
-                'date' => function($value, $options = []) {
+                'date' => function($value, $column) {
                     return $this->convert('array', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime' => function($value, $options = []) use ($gmstrtotime) {
-                    $options += ['format' => 'Y-m-d H:i:s'];
-                    $format = $options['format'];
+                'datetime' => function($value, $column) use ($gmstrtotime) {
+                    $column += ['format' => 'Y-m-d H:i:s'];
+                    $format = $column['format'];
                     if ($value instanceof DateTime) {
                         return $value->format($format);
                     }
                     return gmdate($format, is_numeric($value) ? $value : $gmstrtotime($value));
                 },
-                'boolean' => function($value, $options = []) {
+                'boolean' => function($value, $column) {
                     return $value;
                 },
-                'null' => function($value, $options = []) {
+                'null' => function($value, $column) {
                     return;
                 },
-                'json' => function($value, $options = []) {
-                    return is_array($value) ? $value : $value->to('array', $options);
+                'json' => function($value, $column) {
+                    return is_array($value) ? $value : $value->to('array', $column);
                 }
             ],
             'cast' => [
-                'object' => function($value, $options) {
-                    return is_array($value) ? new Document(['data' => $value]) : $value;
+                'object' => function($value, $column, $options) {
+                    return is_array($value) ? new Document([
+                        'schema' => $options['schema'] ?? null,
+                        'basePath' => $options['basePath'] ?? null,
+                        'data' => $value
+                    ]) : $value;
                 },
-                'string' => function($value, $options = []) {
+                'string' => function($value, $column, $options) {
                     return (string) $value;
                 },
-                'integer' => function($value, $options = []) {
+                'integer' => function($value, $column, $options) {
                     return (integer) $value;
                 },
-                'float'   => function($value, $options = []) {
+                'float'   => function($value, $column, $options) {
                     return (float) $value;
                 },
-                'decimal' => function($value, $options = []) {
-                    $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                'decimal' => function($value, $column, $options) {
+                    $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
                     if (is_numeric($value)) {
-                        return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
+                        return number_format($value, $column['precision'], $column['decimal'], $column['separator']);
                     } else {
                         return NAN;
                     }
                 },
-                'boolean' => function($value, $options = []) {
+                'boolean' => function($value, $column, $options) {
                     return !!$value;
                 },
-                'date'    => function($value, $options = []) {
+                'date'    => function($value, $column, $options) {
                     return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime'    => function($value, $options = []) use ($gmstrtotime) {
-                    $options += ['format' => 'Y-m-d H:i:s'];
+                'datetime'    => function($value, $column, $options) use ($gmstrtotime) {
+                    $column += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
                         return $value;
                     }
@@ -161,45 +165,45 @@ class Source
                     if ($timestamp < 0 || $timestamp === false) {
                         return;
                     }
-                    return DateTime::createFromFormat("!{$options['format']}", gmdate($options['format'], $timestamp), new DateTimeZone('UTC'));
+                    return DateTime::createFromFormat("!{$column['format']}", gmdate($column['format'], $timestamp), new DateTimeZone('UTC'));
                 },
-                'null'    => function($value, $options = []) {
+                'null'    => function($value, $column, $options) {
                     return null;
                 },
-                'json' => function($value, $options = []) {
+                'json' => function($value, $column, $options) {
                     return is_string($value) ? json_decode($value, true) : $value;
                 }
             ],
             'datasource' => [
-                'object'   => function($value, $options = []) {
+                'object'   => function($value, $column) {
                     return $value->to('plain'); // Unexisting handlers will simply return raw data
                 },
-                'string'   => function($value, $options = []) {
+                'string'   => function($value, $column) {
                     return (string) $value;
                 },
-                'date'     => function($value, $options = []) {
+                'date'     => function($value, $column) {
                     return $this->convert('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime' => function($value, $options = []) use ($gmstrtotime) {
-                    $options += ['format' => 'Y-m-d H:i:s'];
+                'datetime' => function($value, $column) use ($gmstrtotime) {
+                    $column += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
-                        $date = $value->format($options['format']);
+                        $date = $value->format($column['format']);
                     } else {
                         $timestamp = is_numeric($value) ? $value : $gmstrtotime($value);
                         if ($timestamp < 0 || $timestamp === false) {
                             throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
                         }
-                        $date = gmdate($options['format'], $timestamp);
+                        $date = gmdate($column['format'], $timestamp);
                     }
                     return $date;
                 },
-                'boolean'  => function($value, $options = []) {
+                'boolean'  => function($value, $column) {
                     return !!$value ? '1' : '0';
                 },
-                'null'     => function($value, $options = []) {
+                'null'     => function($value, $column) {
                     return '';
                 },
-                'json'     => function($value, $options = []) {
+                'json'     => function($value, $column) {
                     if (is_object($value)) {
                         $value = $value->data();
                     }
@@ -247,13 +251,14 @@ class Source
     /**
      * Formats a value according to its type.
      *
-     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $type    The field name.
-     * @param   mixed  $data    The value to format.
-     * @param   mixed  $options The options array to pass the the formatter handler.
-     * @return  mixed           The formated value.
+     * @param  string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param  string $type    The field name.
+     * @param  mixed  $data    The value to format.
+     * @param  array  $column  The column options to pass the the formatter handler.
+     * @param  array  $options The options to pass the the formatter handler (for `'cast'` mode only).
+     * @return mixed           The formated value.
      */
-    public function convert($mode, $type, $data, $options = [])
+    public function convert($mode, $type, $data, $column = [], $options = [])
     {
         $formatter = null;
         $type = $data === null ? 'null' : $type;
@@ -262,6 +267,6 @@ class Source
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-        return $formatter ? $formatter($data, $options) : $data;
+        return $formatter ? $formatter($data, $column, $options) : $data;
     }
 }

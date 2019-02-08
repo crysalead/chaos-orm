@@ -6,6 +6,7 @@ use DateTime;
 use DateTimeZone;
 use Chaos\ORM\Source;
 use Chaos\ORM\Document;
+use Chaos\ORM\Schema;
 use Chaos\ORM\Collection\Collection;
 
 describe("Source", function() {
@@ -135,6 +136,13 @@ describe("Source", function() {
             expect($this->source->convert('cast', '_default_', 'abc'))->toBe('abc');
             expect($this->source->convert('cast', '_undefined_', 'abc'))->toBe('abc');
             expect($this->source->convert('cast', 'json', '[1,2]'))->toBe([1,2]);
+            expect($this->source->convert('cast', 'object', ['a' => 'b'])->data())->toEqual(['a' => 'b']);
+
+            $schema = new Schema(['locked' => false]);
+            $value = $this->source->convert('cast', 'object', ['a' => 'b'], [], ['basePath' => 'test', 'schema' => $schema]);
+            expect($value->basePath())->toEqual('test');
+            expect($value->schema())->toEqual($schema);
+            expect($value->data())->toEqual(['a' => 'b']);
 
         });
 

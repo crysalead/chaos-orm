@@ -928,6 +928,7 @@ class Schema
     {
         $options = $this->_relations[$name] + $options;
         $options['basePath'] = $options['embedded'] ? $name : null;
+        $options['schema'] = $options['embedded'] ? $this : null;
 
         if ($options['relation'] !== 'hasManyThrough') {
             $options['class'] = $options['to'];
@@ -942,7 +943,7 @@ class Schema
             return $data;
         }
         $column = $this->_columns[$name];
-        return $this->convert('cast', $column['type'], $data, $column);
+        return $this->convert('cast', $column['type'], $data, $column, $options);
     }
 
     /**
@@ -957,14 +958,13 @@ class Schema
     protected function _columnCast($field, $name, $data, $options)
     {
         $column = $this->_columns[$name];
-        $options = $column + $options;
-        if (!empty($options['setter'])) {
-            $data = $options['setter']($options['parent'], $data, $name);
+        if (!empty($column['setter'])) {
+            $data = $column['setter']($options['parent'], $data, $name);
         }
-        if ($options['array'] && $field) {
+        if ($column['array'] && $field) {
             return $this->_castArray($name, $data, $options);
         }
-        return $this->convert('cast', $column['type'], $data, $column);
+        return $this->convert('cast', $column['type'], $data, $column/*, []*/);
     }
 
     /**
@@ -998,7 +998,7 @@ class Schema
 
         $column = isset($this->_columns[$name]) ? $this->_columns[$name] : [];
         if (!empty($column['format'])) {
-            $data = $this->convert('cast', $column['format'], $data, $column);
+            $data = $this->convert('cast', $column['format'], $data, $column, $config);
         }
 
         return $class::create($data ? $data : [], $config);
@@ -1041,7 +1041,7 @@ class Schema
         $column = isset($this->_columns[$name]) ? $this->_columns[$name] : [];
         if (!empty($column['format']) && $data !== null) {
             $type = $column['format'];
-            $data = $this->convert('cast', $type, $data, $column);
+            $data = $this->convert('cast', $type, $data, $column, $config);
         }
 
         if ($isThrough) {
@@ -1075,64 +1075,68 @@ class Schema
 
         return [
             'array' => [
-                'object' => function($value, $options = []) {
-                    return $value->to('array', $options);
+                'object' => function($value, $column) {
+                    return $value->to('array', $column);
                 },
-                'string' => function($value, $options = []) {
+                'string' => function($value, $column) {
                     return (string) $value;
                 },
-                'integer' => function($value, $options = []) {
+                'integer' => function($value, $column) {
                     return (int) $value;
                 },
-                'float' => function($value, $options = []) {
+                'float' => function($value, $column) {
                     return (float) $value;
                 },
-                'date' => function($value, $options = []) {
+                'date' => function($value, $column) {
                     return $this->convert('array', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime' => function($value, $options = []) use ($gmstrtotime) {
-                    $options += ['format' => 'Y-m-d H:i:s'];
-                    $format = $options['format'];
+                'datetime' => function($value, $column) use ($gmstrtotime) {
+                    $column += ['format' => 'Y-m-d H:i:s'];
+                    $format = $column['format'];
                     if ($value instanceof DateTime) {
                         return $value->format($format);
                     }
                     return gmdate($format, is_numeric($value) ? $value : $gmstrtotime($value));
                 },
-                'boolean' => function($value, $options = []) {
+                'boolean' => function($value, $column) {
                     return $value;
                 },
-                'null' => function($value, $options = []) {
+                'null' => function($value, $column) {
                     return;
                 },
-                'json' => function($value, $options = []) {
-                    return is_array($value) ? $value : $value->to('array', $options);
+                'json' => function($value, $column) {
+                    return is_array($value) ? $value : $value->to('array', $column);
                 }
             ],
             'cast' => [
-                'object' => function($value, $options) {
-                    return is_array($value) ? new Document(['data' => $value]) : $value;
+                'object' => function($value, $column, $options) {
+                    return is_array($value) ? new Document([
+                        'schema' => $options['schema'] ?? null,
+                        'basePath' => $options['basePath'] ?? null,
+                        'data' => $value
+                    ]) : $value;
                 },
-                'string' => function($value, $options = []) {
+                'string' => function($value, $column, $options) {
                     return (string) $value;
                 },
-                'integer' => function($value, $options = []) {
+                'integer' => function($value, $column, $options) {
                     return (integer) $value;
                 },
-                'float'   => function($value, $options = []) {
+                'float'   => function($value, $column, $options) {
                     return (float) $value;
                 },
-                'decimal' => function($value, $options = []) {
-                    $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
-                    return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
+                'decimal' => function($value, $column, $options) {
+                    $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                    return number_format($value, $column['precision'], $column['decimal'], $column['separator']);
                 },
-                'boolean' => function($value, $options = []) {
+                'boolean' => function($value, $column, $options) {
                     return !!$value;
                 },
-                'date'    => function($value, $options = []) {
-                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                'date'    => function($value, $column, $options) {
+                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d'], $options);
                 },
-                'datetime'    => function($value, $options = []) use ($gmstrtotime) {
-                    $options += ['format' => 'Y-m-d H:i:s'];
+                'datetime'    => function($value, $column, $options) use ($gmstrtotime) {
+                    $column += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
                         return $value;
                     }
@@ -1140,12 +1144,12 @@ class Schema
                     if ($timestamp < 0 || $timestamp === false) {
                         return;
                     }
-                    return DateTime::createFromFormat("!{$options['format']}", gmdate($options['format'], $timestamp), new DateTimeZone('UTC'));
+                    return DateTime::createFromFormat("!{$column['format']}", gmdate($column['format'], $timestamp), new DateTimeZone('UTC'));
                 },
-                'null'    => function($value, $options = []) {
+                'null'    => function($value, $column, $options) {
                     return null;
                 },
-                'json' => function($value, $options = []) {
+                'json' => function($value, $column, $options) {
                     return is_string($value) ? json_decode($value, true) : $value;
                 }
             ]
@@ -1186,13 +1190,14 @@ class Schema
     /**
      * Formats a value according to its type.
      *
-     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $type    The field name.
-     * @param   mixed  $data    The value to format.
-     * @param   mixed  $options The options array to pass the the formatter handler.
-     * @return  mixed           The formated value.
+     * @param  string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param  string $type    The field name.
+     * @param  mixed  $data    The value to format.
+     * @param  array  $column  The column options to pass the the formatter handler.
+     * @param  array  $options The options to pass the the formatter handler (for `'cast'` mode only).
+     * @return mixed           The formated value.
      */
-    public function convert($mode, $type, $data, $options = [])
+    public function convert($mode, $type, $data, $column = [], $options = [])
     {
         $formatter = null;
         $type = $data === null ? 'null' : $type;
@@ -1201,7 +1206,7 @@ class Schema
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-        return $formatter ? $formatter($data, $options) : $data;
+        return $formatter ? $formatter($data, $column, $options) : $data;
     }
 
     /**
