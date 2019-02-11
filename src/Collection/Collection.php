@@ -123,12 +123,8 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         $this->schema($config['schema']);
         $this->meta($config['meta']);
 
-        foreach ($config['data'] as $key => $value) {
-            $this->set($key, $value, $config['exists']);
-        }
         $this->_parents = new Map();
-
-        $this->amend();
+        $this->amend($config['data'], ['exists' => $config['exists']]);
     }
 
     /**
@@ -457,9 +453,20 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @return boolean
      */
-    public function modified()
+    public function modified($options = [])
     {
-      return $this->_modified;
+        $options += ['embed' => false];
+
+        if ($this->_modified) {
+          return true;
+        }
+
+        foreach ($this->_data as $index => $entity) {
+            if (is_object($entity) && method_exists($entity, 'modified') && $entity->modified($options)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -472,10 +479,11 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         if ($data !== null) {
             $count = $this->count();
             foreach ($data as $i => $value) {
-                if (!isset($this[$i])) {
-                    $this[$i] = $value;
+                if (!isset($this[$i]) || !method_exists($this[$i], 'amend')) {
+                    $this->set($i, $value, isset($options['exists']) ? $options['exists'] : null);
+                } else {
+                    $this[$i]->amend($value, $options);
                 }
-                $this[$i]->amend($value, $options);
             }
             for ($i = count($data); $i < $count; $i++) {
                 unset($this[$i]);

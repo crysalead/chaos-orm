@@ -519,6 +519,8 @@ class Model extends Document
         $previousId = $this->id();
         $schema = $this->schema();
 
+        $data = $data instanceof Document ? $data->get() : $data;
+
         if ($data !== null) {
             foreach ($data as $key => $value) {
                 if (!empty($options['rebuild']) || !$this->has($key) || !$schema->hasRelation($key, false)) {

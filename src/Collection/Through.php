@@ -92,11 +92,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
 
         $config['data'] = isset($config['data']) ? $config['data'] : [];
 
-        foreach ($config['data'] as $entity) {
-            $this[] = $entity;
-        }
-
-        $this->_parent->{$this->_through}->amend();
+        $this->amend($config['data'], ['exists' => $config['exists']]);
     }
 
     /**
@@ -393,6 +389,23 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     public function unset($name)
     {
         return $this->offsetUnset($name);
+    }
+
+    /**
+     * Amend the collection modifications.
+     *
+     * @return self
+     */
+    public function amend($data, $options = []) {
+        $name = $this->_through;
+        $exists = isset($config['exists']) ? $config['exists'] : null;
+        foreach ($data as $value) {
+            $item = $this->_item($value, $exists);
+            $this->_parent->get($name)->push($item, $exists);
+            $item->amend();
+        }
+        $this->_parent->get($name)->amend();
+        return $this;
     }
 
     /**

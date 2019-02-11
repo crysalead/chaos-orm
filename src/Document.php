@@ -937,7 +937,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $modified = false;
 
             if (is_object($value) && method_exists($value, 'modified')) {
-                $modified = $original !== $value || $value->modified();
+                $modified = $original !== $value || $value->modified($options);
             } elseif (is_object($value)) {
                 $modified = $original != $value;
             } else {
