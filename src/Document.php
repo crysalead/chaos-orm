@@ -1029,13 +1029,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         $data = $data instanceof Document ? $data->get() : $data;
 
-        if (!empty($options['rebuild'])) {
-            $this->_data = [];
-        }
-
         if ($data !== null) {
             foreach ($data as $key => $value) {
-                if ($this->has($key) && $schema->hasRelation($key, false)) {
+                // Not sure if overwrite is really necessary but keep it now for now
+                if ($this->has($key) && $schema->hasRelation($key, false) && empty($options['overwrite'])) {
                     $this->get($key)->amend($value, $options);
                 } else {
                     $this->setAt($key, $value, $options);
