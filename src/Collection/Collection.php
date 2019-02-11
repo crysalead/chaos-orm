@@ -280,24 +280,36 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Sets data inside the `Collection` instance.
      *
-     * @param  mixed   $offset The offset.
-     * @param  mixed   $data   The entity object or data to set.
-     * @param  boolean $exists Define existence mode of related data.
-     * @return mixed           Returns `$this`.
+     * @param  mixed $offset  The offset.
+     * @param  mixed $data    The entity object or data to set.
+     * @return mixed          Returns `$this`.
      */
-    public function set($offset = null, $data = [], $exists = null)
+    public function set($offset, $data = []) {
+        return $this->setAt($offset, $data);
+    }
+
+    /**
+     * Sets data inside the `Collection` instance.
+     *
+     * @param  mixed $offset  The offset.
+     * @param  mixed $data    The entity object or data to set.
+     * @param  array $options Method options:
+     *                        - `'exists'` _boolean_: Determines whether or not this entity exists
+     * @return mixed          Returns `$this`.
+     */
+    public function setAt($offset, $data, $options = [])
     {
         $keys = is_array($offset) ? $offset : ($offset !== null ? explode('.', $offset) : []);
 
         $name = array_shift($keys);
 
         if ($keys) {
-          $this->get($name)->set($keys, $data);
+          $this->get($name)->setAt($keys, $data, $options);
         }
 
         if ($schema = $this->schema()) {
             $data = $schema->cast(null, $data, [
-                'exists'    => $exists,
+                'exists'    => isset($options['exists']) ? $options['exists'] : null,
                 'parent'    => $this,
                 'basePath'  => $this->basePath(),
                 'defaults'  => true
@@ -327,12 +339,11 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * Adds data into the `Collection` instance.
      *
      * @param  mixed   $data   The entity object or data to set.
-     * @param  boolean $exists Define existence mode of related data.
      * @return mixed           Returns the set `Entity` object.
      */
-    public function push($data, $exists = null)
+    public function push($data)
     {
-        $this->set(null, $data, $exists);
+        $this->setAt(null, $data);
         return $this;
     }
 
@@ -357,7 +368,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      */
     public function offsetSet($offset, $data)
     {
-        return $this->set($offset, $data);
+        return $this->setAt($offset, $data);
     }
 
     /**
@@ -479,8 +490,8 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
         if ($data !== null) {
             $count = $this->count();
             foreach ($data as $i => $value) {
-                if (!isset($this[$i]) || !method_exists($this[$i], 'amend')) {
-                    $this->set($i, $value, isset($options['exists']) ? $options['exists'] : null);
+                if (!isset($this[$i])) {
+                    $this->setAt($i, $value, $options);
                 } else {
                     $this[$i]->amend($value, $options);
                 }

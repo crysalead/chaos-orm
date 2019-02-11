@@ -354,7 +354,7 @@ describe("Document", function() {
 
         it("casts array of custom objects according JSON casting handlers", function() {
 
-            $event = new class extends Model {
+            $event = new class extends Document {
                 protected static function _define($schema) {
                     $schema->column('from', ['type' => 'string']);
                     $schema->column('to', ['type' => 'string']);
@@ -374,6 +374,32 @@ describe("Document", function() {
             expect($document->events[0])->toBeAnInstanceOf($Event);
             expect($document->events[1])->toBeAnInstanceOf($Event);
             expect($document->events->data())->toEqual($events);
+
+        });
+
+        it("amends passed data", function() {
+
+            $schema = new Schema();
+            $schema->column('data', ['type' => 'object']);
+            $schema->column('data.*', ['type' => 'object']);
+            $schema->column('data.*.count', ['type' => 'integer']);
+            $schema->column('data.*.value', ['type' => 'integer']);
+
+            $document = new Document(['schema' => $schema]);
+            $document->set('data', [
+                'test' => ['count' => 5, 'value' => 5]
+            ]);
+            expect($document->get('data.test.count'))->toBe(5);
+
+            $document->amend([
+                'data' => [
+                    'test' => [
+                        'count' => 10, 'value' => 10
+                    ]
+                ]
+            ]);
+
+            expect($document->get('data.test.count'))->toBe(10);
 
         });
 

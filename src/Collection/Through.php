@@ -279,13 +279,28 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *
      * @param  mixed   $offset  The offset. If offset is `null` data is simply appended to the set.
      * @param  mixed   $data    An array or an entity instance to set.
-     * @param  boolean $exists  The exists value.
      * @return self             Return `this`.
      */
-    public function set($offset = null, $data = [], $exists = null)
+    public function set($offset = null, $data = [])
     {
         $name = $this->_through;
-        $this->_parent->{$name}->set($offset, $this->_item($data, $exists), $exists);
+        $this->_parent->{$name}->set($offset, $this->_item($data));
+        return $this;
+    }
+
+    /**
+     * Sets data to a specified offset and wraps all data array in its appropriate object type.
+     *
+     * @param  mixed $offset  The offset. If offset is `null` data is simply appended to the set.
+     * @param  mixed $data    An array or an entity instance to set.
+     * @param  array $options Method options:
+     *                        - `'exists'` _boolean_: Determines whether or not this entity exists
+     * @return self           Return `this`.
+     */
+    public function setAt($offset = null, $data = [], $options = [])
+    {
+        $name = $this->_through;
+        $this->_parent->{$name}->set($offset, $this->_item($data, $options), $options);
         return $this;
     }
 
@@ -293,32 +308,32 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * Adds data into the `Collection` instance.
      *
      * @param  mixed   $data    An array or an entity instance to set.
-     * @param  boolean $exists  The exists value.
      * @return self             Return `this`.
      */
-    public function push($data = [], $exists = null)
+    public function push($data = [])
     {
         $name = $this->_through;
-        $this->_parent->{$name}->push($offset, $this->_item($data, $exists), $exists);
+        $this->_parent->{$name}->push($offset, $this->_item($data));
         return $this;
     }
 
     /**
      * Create a pivot instance.
      *
-     * @param  mixed   $data   The data.
-     * @param  boolean $exists The exists value.
-     * @return mixed           The pivot instance.
+     * @param  mixed $data    The data.
+     * @param  array $options Method options:
+     *                        - `'exists'` _boolean_: Determines whether or not this entity exists
+     * @return mixed          The pivot instance.
      */
-    protected function _item($data, $exists)
+    protected function _item($data, $options = [])
     {
         $name = $this->_through;
         $parent = $this->_parent;
         $relThrough = $parent->schema()->relation($name);
         $through = $relThrough->to();
         $id = $this->_parent->id();
-        $item = $through::create($id !== null ? $relThrough->match($this->_parent) : [], ['exists' => $exists]);
-        $item->set($this->_using, $data, $exists);
+        $item = $through::create($id !== null ? $relThrough->match($this->_parent) : [], $options);
+        $item->setAt($this->_using, $data, $options);
         return $item;
     }
 
@@ -396,13 +411,14 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *
      * @return self
      */
-    public function amend($data, $options = []) {
+    public function amend($data = null, $options = []) {
         $name = $this->_through;
-        $exists = isset($config['exists']) ? $config['exists'] : null;
-        foreach ($data as $value) {
-            $item = $this->_item($value, $exists);
-            $this->_parent->get($name)->push($item, $exists);
-            $item->amend();
+        if ($data !== null) {
+            foreach ($data as $value) {
+                $item = $this->_item($value, $options);
+                $this->_parent->get($name)->setAt(null, $item, $options);
+                $item->amend();
+            }
         }
         $this->_parent->get($name)->amend();
         return $this;

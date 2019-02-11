@@ -32,6 +32,13 @@ class Model extends Document
     protected static $_definition = 'Chaos\ORM\Schema';
 
     /**
+     * Stores model's schema definition.
+     *
+     * @var array
+     */
+    protected static $_definitions = [];
+
+    /**
      * MUST BE re-defined in sub-classes which require a different unicity mode by default.
      *
      * @var boolean
@@ -51,13 +58,6 @@ class Model extends Document
         'finders'     => 'Chaos\ORM\Finders',
         'validator'   => 'Lead\Validator\Validator'
     ];
-
-    /**
-     * Stores model's schema definition.
-     *
-     * @var array
-     */
-    protected static $_definitions = [];
 
     /**
      * Stores model's unicity definition.
@@ -92,42 +92,6 @@ class Model extends Document
      *  Model related methods
      *
      **************************/
-
-    /**
-     * Gets/sets the schema instance.
-     *
-     * @param  object $schema The schema instance to set or none to get it.
-     * @return mixed          The schema instance on get.
-     */
-    public static function definition($schema = null)
-    {
-        if (func_num_args()) {
-            if (is_string($schema)) {
-                static::$_definition = $schema;
-            } elseif($schema) {
-                static::$_definitions[static::class] = $schema;
-            } else {
-                unset(static::$_definitions[static::class]);
-            }
-            return;
-        }
-        $self = static::class;
-        if (isset(static::$_definitions[$self])) {
-            return static::$_definitions[$self];
-        }
-        $conventions = static::conventions();
-        $config = [
-            'connection'  => static::$_connection,
-            'conventions' => $conventions,
-            'class'       => $self
-        ];
-        $config += ['source' => $conventions->apply('source', $self)];
-
-        $class = static::$_definition;
-        $schema = static::$_definitions[$self] = new $class($config);
-        static::_define($schema);
-        return $schema;
-    }
 
     /**
      * Get/set the unicity value.
@@ -418,17 +382,6 @@ class Model extends Document
         if (!$id = $this->id()) {
             throw new ORMException("Existing entities must have a valid ID.");
         }
-
-        if (!static::unicity()) {
-            return;
-        }
-        $shard = static::shard();
-        if ($shard->has($id)) {
-          $schema = static::definition();
-          $source = $schema->source();
-          throw new ORMException("Trying to create a duplicate of `" . $source . "` ID `" . $id . "` which is not allowed when unicity is enabled.");
-        }
-        $shard->set($id, $this);
     }
 
     /**
@@ -507,49 +460,42 @@ class Model extends Document
      * Automatically called after an entity is saved. Updates the object's internal state
      * to reflect the corresponding database record.
      *
-     * @param array $data    Any additional generated data assigned to the object by the database.
-     * @param array $options Method options:
-     *                       - `'exists'` _boolean_: Determines whether or not this entity exists
-     *                         in data store. Defaults to `null`.
+     * @param  array $data    Any additional generated data assigned to the object by the database.
+     * @param  array $options Method options:
+     *                        - `'exists'` _boolean_: Determines whether or not this entity exists
+     *                          in data store. Defaults to `null`.
+     * @return self
      */
     public function amend($data = null, $options = [])
     {
-        $this->_exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
-
         $previousId = $this->id();
-        $schema = $this->schema();
-
-        $data = $data instanceof Document ? $data->get() : $data;
-
-        if ($data !== null) {
-            foreach ($data as $key => $value) {
-                if (!empty($options['rebuild']) || !$this->has($key) || !$schema->hasRelation($key, false)) {
-                    $this->set($key, $value);
-                } else {
-                    $this->get($key)->amend($value, $options);
-                }
-            }
-        }
-        parent::amend();
+        parent::amend($data, $options);
 
         $this->_exists = $this->_exists === 'all' ? true : $this->_exists;
 
         if (!static::unicity()) {
-          return $this;
+            return $this;
         }
 
         $id = $this->id();
-
+        $shard = static::shard();
         if ($previousId !== null && $previousId !== $id) {
-            static::shard()->delete($previousId);
+            $shard->delete($previousId);
         }
 
-        if ($id !== null) {
-            if ($this->_exists) {
-                static::shard()->set($id, $this);
-            } else {
-                static::shard()->delete($id);
+        if ($id === null) {
+            return $this;
+        }
+        if ($this->_exists) {
+            if (!$shard->has($id)) {
+                $shard->set($id, $this);
+            } elseif ($shard->get($id) !== $this) {
+                $schema = static::definition();
+                $source = $schema->source();
+                throw new ORMException("Trying to create a duplicate of `" . $source . "` ID `" . $id . "` which is not allowed when unicity is enabled.");
             }
+        } else {
+            $shard->delete($id);
         }
         return $this;
     }

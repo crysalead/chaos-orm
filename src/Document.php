@@ -19,11 +19,25 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     protected static $_conventions = null;
 
     /**
+     * MUST BE re-defined in sub-classes which require a different connection.
+     *
+     * @var object The connection instance.
+     */
+    protected static $_connection = null;
+
+    /**
      * MUST BE re-defined in sub-classes which require a different schema.
      *
      * @var string
      */
     protected static $_definition = 'Chaos\ORM\Schema';
+
+    /**
+     * Stores document's schema definition.
+     *
+     * @var array
+     */
+    protected static $_definitions = [];
 
     /**
      * Class dependencies.
@@ -151,19 +165,38 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     }
 
     /**
-     * Gets the Document schema definition.
+     * Gets/sets the schema instance.
      *
-     * @return object The schema instance.
+     * @param  object $schema The schema instance to set or none to get it.
+     * @return mixed          The schema instance on get.
      */
-    public static function definition()
+    public static function definition($schema = null)
     {
-        $definition = static::$_definition;
-        $schema = new $definition([
-            'classes'     => ['entity' => Document::class] + static::$_classes,
-            'conventions' => static::conventions(),
-            'class'       => Document::class
-        ]);
-        $schema->lock(false);
+        if (func_num_args()) {
+            if (is_string($schema)) {
+                static::$_definition = $schema;
+            } elseif($schema) {
+                static::$_definitions[static::class] = $schema;
+            } else {
+                unset(static::$_definitions[static::class]);
+            }
+            return;
+        }
+        $self = static::class;
+        if (isset(static::$_definitions[$self])) {
+            return static::$_definitions[$self];
+        }
+        $conventions = static::conventions();
+        $config = [
+            'connection'  => static::$_connection,
+            'conventions' => $conventions,
+            'class'       => $self,
+            'locked'      => Document::class !== $self
+        ];
+        $config += ['source' => $conventions->apply('source', $self)];
+
+        $class = static::$_definition;
+        $schema = static::$_definitions[$self] = new $class($config);
         static::_define($schema);
         return $schema;
     }
@@ -275,6 +308,15 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         return new $classname($options);
     }
 
+    /**
+     * Reset the Document class.
+     */
+    public static function reset()
+    {
+        unset(static::$_dependencies[static::class]);
+        unset(static::$_definitions[static::class]);
+    }
+
     /***************************
      *
      *  Document related methods
@@ -294,10 +336,11 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public function __construct($config = [])
     {
         $defaults = [
-            'schema'    => null,
-            'basePath'  => null,
-            'defaults'  => true,
-            'data'      => []
+            'schema'   => null,
+            'basePath' => null,
+            'defaults' => true,
+            'exists'   => false,
+            'data'     => []
         ];
         $config += $defaults;
         $this->_parents = new Map();
@@ -309,8 +352,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             $config['data'] = Set::extend($this->schema()->defaults($config['basePath']), $config['data']);
         }
 
-        $this->set($config['data']);
-        $this->_original = $this->_data;
+        $this->amend($config['data'], ['exists' => $config['exists']]);
     }
 
     /**
@@ -490,7 +532,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         }
 
         if ($autoCreate) {
-            $this->_set($name, $value);
+            $this->setAt($name, $value);
             return $this->_data[$name];
         }
     }
@@ -505,7 +547,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     public function set($name, $data = [])
     {
         if (!is_array($name) || (isset($name[0]) && is_string($name[0]))) {
-            $this->_set($name, $data);
+            $this->setAt($name, $data);
             return $this;
         }
         $data = $name;
@@ -513,7 +555,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             throw new ORMException('Invalid bulk data for a document.');
         }
         foreach ($data as $name => $value) {
-            $this->_set($name, $value);
+            $this->setAt($name, $value);
         }
         return $this;
     }
@@ -547,10 +589,13 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * ];
      * ```
      *
-     * @param string  $offset  The field name.
-     * @param mixed   $data    The value to set.
+     * @param  string $offset  The field name.
+     * @param  mixed  $data    The value to set.
+     * @param  array  $options Method options:
+     *                         - `'exists'` _boolean_: Determines whether or not this entity exists
+     * @return object          Returns `$this`.
      */
-    protected function _set($name, $data)
+    public function setAt($name, $data, $options = [])
     {
         $keys = is_array($name) ? $name : explode('.', $name);
 
@@ -561,13 +606,14 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
 
         if ($keys) {
             if (!array_key_exists($name, $this->_data)) {
-                $this->_set($name, []);
+                $this->setAt($name, [join('.', $keys) => $data], $options);
+            } else {
+                if (!$this->_data[$name] instanceof DataStoreInterface) {
+                    throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
+                }
+                $this->_data[$name]->setAt($keys, $data, $options);
             }
-            if (!$this->_data[$name] instanceof DataStoreInterface) {
-                throw new ORMException("The field: `" . $name . "` is not a valid document or entity.");
-            }
-            $this->_data[$name]->set($keys, $data);
-            return;
+            return $this;
         }
 
         $schema = $this->schema();
@@ -580,20 +626,20 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             'exists'    => $this instanceof Model && $this->_exists === 'all' ? 'all' : null
         ]);
         if ($previous !== null && $previous === $value) {
-            return;
+            return $this;
         }
         $fieldName = $this->basePath() ? $this->basePath() . '.' . $name : $name;
 
         $this->_data[$name] = $value;
 
         if ($schema->isVirtual($fieldName)) {
-            return;
+            return $this;
         }
 
         if ($schema->hasRelation($fieldName, false)) {
             $relation = $schema->relation($fieldName);
             if ($relation->type() === 'belongsTo') {
-                $this->_set($relation->keys('from'), $value ? $value->id() : null);
+                $this->setAt($relation->keys('from'), $value ? $value->id() : null);
             }
         }
 
@@ -603,6 +649,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         if ($previous instanceof HasParentsInterface) {
             $previous->unsetParent($this);
         }
+        return $this;
     }
 
     /**
@@ -625,7 +672,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function offsetSet($offset, $value)
     {
-        return $this->_set($offset, $value);
+        return $this->setAt($offset, $value);
     }
 
     /**
@@ -788,7 +835,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function __set($name, $value)
     {
-        $this->_set($name, $value);
+        $this->setAt($name, $value);
     }
 
     /**
@@ -959,22 +1006,55 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
     /**
      * Amend the document modifications.
      *
+     * @param  array $data    Any additional generated data assigned to the object by the database.
+     * @param  array $options Method options:
+     *                        - `'exists'` _boolean_: Determines whether or not this entity exists
+     *                        in data store.
      * @return self
      */
-    public function amend()
+    /**
+     * Automatically called after an entity is saved. Updates the object's internal state
+     * to reflect the corresponding database record.
+     *
+     * @param array $data    Any additional generated data assigned to the object by the database.
+     * @param array $options Method options:
+     *                       - `'exists'` _boolean_: Determines whether or not this entity exists
+     *                         in data store. Defaults to `null`.
+     */
+    public function amend($data = null, $options = [])
     {
-        $this->_original = $this->_data;
+        $this->_exists = isset($options['exists']) ? $options['exists'] : $this->_exists;
+
         $schema = $this->schema();
 
+        $data = $data instanceof Document ? $data->get() : $data;
+
+        if (!empty($options['rebuild'])) {
+            $this->_data = [];
+        }
+
+        if ($data !== null) {
+            foreach ($data as $key => $value) {
+                if ($this->has($key) && $schema->hasRelation($key, false)) {
+                    $this->get($key)->amend($value, $options);
+                } else {
+                    $this->setAt($key, $value, $options);
+                }
+                unset($this->_original[$key]);
+            }
+        }
+
+        // Populate amending to children
         foreach ($this->_original as $key => $value) {
             if ($schema->hasRelation($key, false)) {
                 continue;
             }
-            $value = $this->_original[$key];
             if ($value instanceof DataStoreInterface) {
                 $value->amend();
             }
         }
+
+        $this->_original = $this->_data;
         return $this;
     }
 
@@ -1121,13 +1201,5 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
             }
         }
         return $result;
-    }
-
-    /**
-     * Reset the Document class.
-     */
-    public static function reset()
-    {
-        unset(static::$_dependencies[static::class]);
     }
 }
