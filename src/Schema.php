@@ -1174,14 +1174,15 @@ class Schema
             return $this->convert($mode, '_default_', $data, []);
         }
         $column = $this->_columns[$name];
-        $type = $data === null ? 'null' : $this->type($name);
+        $isNull = $data === null;
+        $type = $isNull ? 'null' : $this->type($name);
 
         if (!$column['array']) {
             $data = $this->convert($mode, $type, $data, $column);
         } else {
             $data = Collection::format($mode, $data);
         }
-        if (!empty($column['format'])) {
+        if (!$isNull && !empty($column['format'])) {
             $data = $this->convert($mode, $column['format'], $data, $column);
         }
         return $data;

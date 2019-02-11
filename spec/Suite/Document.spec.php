@@ -1067,7 +1067,10 @@ describe("Document", function() {
             beforeEach(function() {
 
                 $this->schema = new Schema();
-                $this->schema->formatter('datasource', 'json', function($value) {
+                $this->schema->formatter('datasource', 'null', function($value, $column) {
+                    return '';
+                });
+                $this->schema->formatter('datasource', 'json', function($value, $column) {
                     if (is_object($value)) {
                         $value = $value->data();
                     }
@@ -1102,6 +1105,17 @@ describe("Document", function() {
                 expect($document->weekend->data())->toBe([1, 2]);
                 expect($document->to('datasource'))->toEqual(['weekend' => '[1,2]']);
                 expect($document->data())->toEqual(['weekend' => [1, 2]]);
+
+            });
+
+            it("ignores the format option for `null` values", function() {
+
+                $this->schema->column('data', ['type' => 'object', 'format' => 'json']);
+
+                $document = new Document(['schema' => $this->schema]);
+                $document->set('data', null);
+                expect($document->data)->toBe(null);
+                expect($document->to('datasource'))->toEqual(['data' => '']);
 
             });
 
