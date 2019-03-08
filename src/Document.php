@@ -1189,6 +1189,8 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
                 $options['basePath'] = $value->basePath();
                 if ($schema->has($path)) {
                     $result[$field] = $schema->format($format, $path, $value);
+                } if ($schema->has($options['basePath'])) {
+                    $result[$field] = $schema->format($format, $options['basePath'], $value);
                 } else {
                     $result[$field] = $value->to($format, $options);
                 }
