@@ -488,9 +488,10 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     public function amend($data = null, $options = [])
     {
         if ($data !== null) {
+            $data = $data instanceof Collection ? $data->get() : $data;
             $count = $this->count();
             foreach ($data as $i => $value) {
-                if (!isset($this[$i])) {
+                if (!isset($this[$i]) || ($value && $value instanceof DataStoreInterface)) {
                     $this->setAt($i, $value, $options);
                 } else {
                     $this[$i]->amend($value, $options);
