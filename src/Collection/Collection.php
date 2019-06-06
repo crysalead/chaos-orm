@@ -41,15 +41,6 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     protected $_basePath = null;
 
     /**
-     * Cached value indicating whether or not this instance exists somehow. If this instance has been loaded
-     * from the database, or has been created and subsequently saved this value should be automatically
-     * setted to `true`.
-     *
-     * @var boolean
-     */
-    protected $_exists = false;
-
-    /**
      * Indicating whether or not this collection has been modified or not after creation.
      *
      * @var Boolean
@@ -491,11 +482,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
             $data = $data instanceof Collection ? $data->get() : $data;
             $count = $this->count();
             foreach ($data as $i => $value) {
-                if (!isset($this[$i]) || ($value && $value instanceof DataStoreInterface)) {
-                    $this->setAt($i, $value, $options);
-                } else {
-                    $this[$i]->amend($value, $options);
-                }
+                $this->setAt($i, $value, $options);
             }
             for ($i = count($data); $i < $count; $i++) {
                 unset($this[$i]);

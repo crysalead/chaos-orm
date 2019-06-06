@@ -262,63 +262,6 @@ describe("Entity", function() {
 
         });
 
-        it("merges data", function() {
-
-            $schema = Image::definition();
-            $image = $schema->cast(null, [
-                'gallery_id' => '2',
-                'name' => 'image.jpg',
-                'title' => 'My Image',
-                'score' => '8.9',
-                'tags' => [
-                    [
-                        'id' => '1',
-                        'name' => 'landscape'
-                    ],
-                    [
-                        'id' => '2',
-                        'name' => 'mountain'
-                    ]
-                ]
-            ], ['exists' => false]);
-
-            $image->amend([
-                'id' => 1,
-                'gallery_id' => '2',
-                'name' => 'image.jpg',
-                'title' => 'My Image',
-                'score' => '8.9',
-                'images_tags' => [
-                    [
-                      'id' => 1,
-                      'image_id' => 1,
-                      'tag_id' => 1
-                    ],
-                    [
-                      'id' => 2,
-                      'image_id' => 1,
-                      'tag_id' => 2
-                    ]
-                ]
-            ], ['exists' => true]);
-
-            expect($image->data())->toEqual([
-                'id' => 1,
-                'name' => 'image.jpg',
-                'title' => 'My Image',
-                'score' => 8.9,
-                'gallery_id' => 2,
-                'images_tags' => [
-                    ['id' => 1, 'image_id' => 1, 'tag_id' => 1, 'tag' => ['id' => 1, 'name' => 'landscape']],
-                    ['id' => 2, 'image_id' => 1, 'tag_id' => 2, 'tag' => ['id' => 2, 'name' => 'mountain']]
-                ],
-                'tags' => [
-                  ['id' => 1, 'name' => 'landscape'], ['id' => 2, 'name' => 'mountain']
-                ]
-            ]);
-
-        });
-
         context("when unicity is enabled", function() {
 
             it("stores the entity in the shard when the entity has been persisted", function() {
@@ -362,63 +305,6 @@ describe("Entity", function() {
                 expect($entity->name)->toBe('file.jpg');
 
                 $model::reset();
-
-            });
-
-            it("merges data", function() {
-
-                $schema = Image::definition();
-                $image = $schema->cast(null, [
-                    'gallery_id' => '2',
-                    'name' => 'image.jpg',
-                    'title' => 'My Image',
-                    'score' => '8.9',
-                    'tags' => [
-                        [
-                            'id' => '1',
-                            'name' => 'landscape'
-                        ],
-                        [
-                            'id' => '2',
-                            'name' => 'mountain'
-                        ]
-                    ]
-                ], ['exists' => false]);
-
-                $image->amend([
-                    'id' => 1,
-                    'gallery_id' => '2',
-                    'name' => 'image.jpg',
-                    'title' => 'My Image',
-                    'score' => '8.9',
-                    'images_tags' => [
-                        [
-                          'id' => 1,
-                          'image_id' => 1,
-                          'tag_id' => 1
-                        ],
-                        [
-                          'id' => 2,
-                          'image_id' => 1,
-                          'tag_id' => 2
-                        ]
-                    ]
-                ], ['exists' => true]);
-
-                expect($image->data())->toEqual([
-                    'id' => 1,
-                    'name' => 'image.jpg',
-                    'title' => 'My Image',
-                    'score' => 8.9,
-                    'gallery_id' => 2,
-                    'images_tags' => [
-                        ['id' => 1, 'image_id' => 1, 'tag_id' => 1, 'tag' => ['id' => 1, 'name' => 'landscape']],
-                        ['id' => 2, 'image_id' => 1, 'tag_id' => 2, 'tag' => ['id' => 2, 'name' => 'mountain']]
-                    ],
-                    'tags' => [
-                      ['id' => 1, 'name' => 'landscape'], ['id' => 2, 'name' => 'mountain']
-                    ]
-                ]);
 
             });
 

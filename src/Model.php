@@ -198,7 +198,7 @@ class Model extends Document
             if (isset($data[$key]) && $shard->has($data[$key])) {
                 $id = $data[$key];
                 $instance = $shard->get($id);
-                $instance->amend($data, ['exists' => $options['exists'], 'overwrite' => true]);
+                $instance->amend($data, ['exists' => $options['exists']]);
                 return $instance;
             }
         }
