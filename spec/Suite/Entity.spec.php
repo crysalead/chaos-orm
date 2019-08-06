@@ -1228,6 +1228,44 @@ describe("Entity", function() {
 
         });
 
+        it("invalidates a belongsTo nested entity", function() {
+
+            $image = Image::create();
+            $image->gallery = Gallery::create();
+
+            $image->invalidate([
+                'name' => ['is required'],
+                'gallery' => [
+                    'name' => ['is required']
+                ]
+            ]);
+
+            expect($image->gallery->errors())->toBe([
+                'name' => ['is required']
+            ]);
+
+        });
+
+        it("doesn't invalidate embedded document", function() {
+
+            $model = Double::classname(['extends' => Model::class]);
+
+            $schema = $model::definition();
+            $schema->column('id', ['type' => 'serial']);
+            $schema->column('timeSheet', ['type' => 'object', 'default' => []]);
+
+            $entity = $model::create();
+
+            $entity->invalidate([
+                'timeSheet' => ['is invalid']
+            ]);
+
+            expect($entity->errors())->toBe([
+                'timeSheet' => ['is invalid']
+            ]);
+
+        });
+
     });
 
     describe("->save()", function() {
