@@ -662,7 +662,7 @@ class Model extends Document
 
         if (func_num_args() === 1) {
             foreach ($field as $key => $value) {
-                if ($schema->hasRelation($key) && $this->has($key)) {
+                if ($schema->hasRelation($key) && $this->has($key) && $this->{$key} instanceof static) {
                     $this->{$key}->invalidate($value);
                 } else {
                     $this->invalidate($key, $value);
