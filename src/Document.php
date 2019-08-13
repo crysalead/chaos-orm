@@ -706,7 +706,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function offsetUnset($offset)
     {
-        $keys = is_array($offset) ? $offset : explode('.', $offset);
+        $keys = is_array($offset) ? $offset : (is_string($offset) ? explode('.', $offset) : [$offset]);
         if (!$keys) {
             return;
         }

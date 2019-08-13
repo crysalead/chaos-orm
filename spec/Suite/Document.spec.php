@@ -612,16 +612,19 @@ describe("Document", function() {
 
             $document = new Document(['data' => $data]);
 
+            $loop = 0;
             foreach ($document as $i => $word) {
                 if ($word === 'Delete me') {
                     unset($document[$i]);
                 }
+                $loop++;
             }
 
             expect($document->data())->toBe([
                 'field2' => 'Hello',
                 'field3' => 'Hello again!'
             ]);
+            expect($loop)->toBe(3);
 
         });
 
@@ -650,6 +653,32 @@ describe("Document", function() {
                 'field2' => 'Hello',
                 'field4' => 'Hello again!'
             ]);
+
+        });
+
+        it("unsets first items in a foreach with numeric values", function() {
+
+            $data = [
+                1 => 'Delete me',
+                2 => 'Hello',
+                3 => 'Hello again!'
+            ];
+
+            $document = new Document(['data' => $data]);
+
+            $loop = 0;
+            foreach ($document as $i => $word) {
+                if ($word === 'Delete me') {
+                    unset($document[$i]);
+                }
+                $loop++;
+            }
+
+            expect($document->data())->toBe([
+                2 => 'Hello',
+                3 => 'Hello again!'
+            ]);
+            expect($loop)->toBe(3);
 
         });
 
