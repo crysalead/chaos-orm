@@ -1388,7 +1388,7 @@ class Schema
 
         $key = $this->key();
         if (!$key) {
-          throw new ORMException("No primary key has been defined for `" + instance.self() + "`'s schema.");
+          throw new ORMException("No primary key has been defined for `" + (instance.self()) + "`'s schema.");
         }
 
         $keys = [];

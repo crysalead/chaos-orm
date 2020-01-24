@@ -64,6 +64,8 @@ class Source
         $this->formatter('cast', 'string',   $handlers['cast']['string']);
 
         $this->formatter('datasource', 'object',    $handlers['datasource']['object']);
+        $this->formatter('datasource', 'integer',   $handlers['datasource']['integer']);
+        $this->formatter('datasource', 'float',     $handlers['datasource']['float']);
         $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
         $this->formatter('datasource', 'datetime',  $handlers['datasource']['datetime']);
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
@@ -180,6 +182,12 @@ class Source
                 },
                 'string'   => function($value, $column) {
                     return (string) $value;
+                },
+                'integer' => function($value, $column) {
+                    return (integer) $value;
+                },
+                'float'   => function($value, $column) {
+                    return (float) $value;
                 },
                 'date'     => function($value, $column) {
                     return $this->convert('datasource', 'datetime', $value, ['format' => 'Y-m-d']);

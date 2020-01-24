@@ -59,8 +59,8 @@ describe("Source", function() {
 
         it("formats according default `'datasource'` handlers", function() {
 
-            expect($this->source->convert('datasource', 'integer', 123))->toBe('123');
-            expect($this->source->convert('datasource', 'float', 12.3))->toBe('12.3');
+            expect($this->source->convert('datasource', 'integer', 123))->toBe(123);
+            expect($this->source->convert('datasource', 'float', 12.3))->toBe(12.3);
             expect($this->source->convert('datasource', 'decimal', 12.3))->toBe('12.3');
             expect($this->source->convert('datasource', 'date', '2014-11-21'))->toBe('2014-11-21');
             $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
