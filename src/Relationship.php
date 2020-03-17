@@ -354,7 +354,7 @@ class Relationship
         $fetchOptions = $options['fetchOptions'];
         unset($options['fetchOptions']);
 
-        if ($this->link() !== static::LINK_KEY) {
+        if (strncmp($this->link(), 'key', 3)) {
             throw new ORMException("This relation is not based on a foreign key.");
         }
         $to = $this->to();
@@ -399,16 +399,36 @@ class Relationship
     protected function _index($collection, $name)
     {
         $indexes = [];
-        foreach ($collection as $key => $entity) {
-            if (is_object($entity)) {
-                if ($entity->{$name}) {
-                    $indexes[(string) $entity->{$name}] = $key;
-                }
-            } else {
-                if (isset($entity[$name])) {
-                    $indexes[(string) $entity[$name]] = $key;
+        if ($this->link() === static::LINK_KEY) {
+            foreach ($collection as $key => $entity) {
+                if (is_object($entity)) {
+                    if ($entity->{$name}) {
+                        $indexes[(string) $entity->{$name}] = $key;
+                    }
+                } else {
+                    if (isset($entity[$name])) {
+                        $indexes[(string) $entity[$name]] = $key;
+                    }
                 }
             }
+        } else if ($this->link() === static::LINK_KEY_LIST) {
+            foreach ($collection as $key => $entity) {
+                if (is_object($entity)) {
+                    if ($entity->{$name}) {
+                        foreach ($entity->{$name} as $value) {
+                            $indexes[(string) $value] = $key;
+                        }
+                    }
+                } else {
+                    if (isset($entity[$name])) {
+                        foreach ($entity[$name] as $value) {
+                            $indexes[(string) $value] = $key;
+                        }
+                    }
+                }
+            }
+        } else {
+           throw new ORMException("This relation is not based on a foreign key.");
         }
         return $indexes;
     }

@@ -12,6 +12,7 @@ use Kahlan\Plugin\Stub;
 use Chaos\ORM\Spec\Fixture\Model\Image;
 use Chaos\ORM\Spec\Fixture\Model\ImageTag;
 use Chaos\ORM\Spec\Fixture\Model\Gallery;
+use Chaos\ORM\Spec\Fixture\Model\Tag;
 
 describe("HasMany", function() {
 
@@ -89,6 +90,19 @@ describe("HasMany", function() {
                 }
                 return $images;
             });
+
+            Stub::on(Tag::class)->method('::all', function($options = [], $fetchOptions = []) {
+                $tags =  Tag::create([
+                    ['id' => 4, 'title' => 'Computer'],
+                    ['id' => 5, 'title' => 'Science'],
+                    ['id' => 6, 'title' => 'Landscape'],
+                    ['id' => 7, 'title' => 'Sport']
+                ], ['type' => 'set', 'exists' => true]);
+                if (!empty($fetchOptions['return']) && $fetchOptions['return'] === 'array') {
+                    return $tags->data();
+                }
+                return $tags;
+            });
         });
 
         it("embeds a hasMany relationship", function() {
@@ -107,6 +121,7 @@ describe("HasMany", function() {
             $galleries->embed(['images']);
 
             foreach ($galleries as $gallery) {
+                expect(count($gallery->images))->not->toBe(0);
                 foreach ($gallery->images as $image) {
                     expect($image->gallery_id)->toBe($gallery->id);
                 }
@@ -132,9 +147,60 @@ describe("HasMany", function() {
             $hasMany->embed($galleries, ['fetchOptions' => ['return' => 'array']]);
 
             foreach ($galleries as $gallery) {
+                expect(count($gallery['images']))->not->toBe(0);
                 foreach ($gallery['images'] as $image) {
                     expect($gallery['id'])->toBe($image['gallery_id']);
                     expect($image)->toBeAn('array');
+                }
+            }
+
+        });
+
+        it("embeds a hasMany LINK_KEY_LIST relationships", function() {
+
+            $hasMany = Gallery::definition()->relation('tags');
+
+            $galleries = Gallery::create([
+                ['id' => 1, 'name' => 'Foo Gallery', 'tag_ids' => [4, 5]],
+                ['id' => 2, 'name' => 'Bar Gallery', 'tag_ids' => [6, 7]]
+            ], ['type' => 'set', 'exists' => true]);
+
+            expect(Tag::class)->toReceive('::all')->with([
+                'conditions' => ['id' => [4, 5, 6, 7]]
+            ], []);
+
+            $galleries->embed(['tags']);
+
+            foreach ($galleries as $gallery) {
+                expect(count($gallery->tags))->not->toBe(0);
+                foreach ($gallery->tags as $tag) {
+                    expect($gallery->tag_ids->data())->toContain($tag->id());
+                }
+            }
+
+        });
+
+        it("embeds a hasMany LINK_KEY_LIST relationships using array hydration", function() {
+
+            $hasMany = Gallery::definition()->relation('tags');
+
+            $galleries = Gallery::create([
+                ['id' => 1, 'name' => 'Foo Gallery', 'tag_ids' => [4, 5]],
+                ['id' => 2, 'name' => 'Bar Gallery', 'tag_ids' => [6, 7]]
+            ], ['type' => 'set', 'exists' => true]);
+
+            $galleries = $galleries->data();
+
+            expect(Tag::class)->toReceive('::all')->with([
+                'conditions' => ['id' => [4, 5, 6, 7]]
+            ], []);
+
+            $hasMany->embed($galleries);
+
+            foreach ($galleries as $gallery) {
+                expect(count($gallery['tags']))->not->toBe(0);
+                foreach ($gallery['tags'] as $tag) {
+                    expect($gallery['tag_ids'])->toContain($tag['id']);
                 }
             }
 
