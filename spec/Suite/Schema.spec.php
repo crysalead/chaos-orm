@@ -730,7 +730,29 @@ describe("Schema", function() {
 
     describe("->bind()", function() {
 
-        it("binds a `belongsTo` relation", function() {
+        it("binds a `belongsTo` relation with default foreign key naming", function() {
+
+            expect($this->schema->hasRelation('parent'))->toBe(false);
+
+            $this->schema->bind('parent', [
+                'relation' => 'belongsTo',
+                'to'       => Image::class
+            ]);
+
+            expect($this->schema->hasRelation('parent'))->toBe(true);
+
+            $foreignKey = $this->schema->conventions()->apply('reference', 'parent');
+
+            $column = $this->schema->column($foreignKey);
+            expect($column)->toBe([
+                'type' => 'id',
+                'array' => false,
+                'null' => false
+            ]);
+
+        });
+
+        it("binds a `belongsTo` relation with custom foreign key naming", function() {
 
             expect($this->schema->hasRelation('parent'))->toBe(false);
 
@@ -742,9 +764,7 @@ describe("Schema", function() {
 
             expect($this->schema->hasRelation('parent'))->toBe(true);
 
-            $foreignKey = $this->schema->conventions()->apply('reference', 'parent');
-
-            $column = $this->schema->column($foreignKey);
+            $column = $this->schema->column('image_id');
             expect($column)->toBe([
                 'type' => 'id',
                 'array' => false,

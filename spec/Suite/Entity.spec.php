@@ -381,7 +381,7 @@ describe("Entity", function() {
 
             expect($image->get('gallery_id'))->toBe(1);
             expect($image->get('gallery') instanceof Gallery)->toBe(true);
-            expect($image->get('gallery')->data())->toEqual([ 'id' => 1, 'name' => 'MyGallery' ]);
+            expect($image->get('gallery')->data())->toEqual([ 'id' => 1, 'name' => 'MyGallery', 'tag_ids' => []]);
 
         });
 
@@ -1448,7 +1448,7 @@ describe("Entity", function() {
 
             expect($image->to('array'))->toEqual([
                 'title' => 'Amiga 1200',
-                'gallery' => ['name' => 'Gallery 1'],
+                'gallery' => ['name' => 'Gallery 1', 'tag_ids' => []],
                 'gallery_id' => null,
                 'images_tags' => [
                     ['tag_id' => null, 'tag' => ['name' => 'Computer']],
@@ -1462,8 +1462,8 @@ describe("Entity", function() {
 
             expect($image->to('array', ['embed' => ['gallery']]))->toEqual([
                 'title'   => 'Amiga 1200',
-                'gallery' => ['name' => 'Gallery 1'],
-                'gallery_id' => null
+                'gallery_id' => null,
+                'gallery' => ['name' => 'Gallery 1', 'tag_ids' => []],
             ]);
 
             expect($image->to('array', ['embed' => false]))->toEqual([
