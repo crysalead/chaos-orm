@@ -4,7 +4,7 @@
     "keywords": ["Data Abstraction", "DataMapper", "ORM", "Model"],
     "license": "MIT",
     "require": {
-        "php": ">=5.5",
+        "php": ">=7.0",
         "crysalead/box": "~2.0",
         "crysalead/set": "~2.0",
         "crysalead/text": "~2.0",

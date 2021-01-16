@@ -4,7 +4,9 @@ namespace Chaos\ORM;
 use Iterator;
 use InvalidArgumentException;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeZone;
+use DateTimeInterface;
 use Lead\Set\Set;
 use Chaos\ORM\Collection\Collection;
 
@@ -1097,7 +1099,7 @@ class Schema
                 'datetime' => function($value, $column) use ($gmstrtotime) {
                     $column += ['format' => 'Y-m-d H:i:s'];
                     $format = $column['format'];
-                    if ($value instanceof DateTime) {
+                    if ($value instanceof DateTimeInterface) {
                         return $value->format($format);
                     }
                     return gmdate($format, is_numeric($value) ? $value : $gmstrtotime($value));
@@ -1143,6 +1145,11 @@ class Schema
                     $column += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
                         return $value;
+                    }
+                    if ($value instanceof DateTimeImmutable) {
+                        $dateTime = new DateTime(null, $value->getTimezone());
+                        $dateTime->setTimestamp($value->getTimestamp());
+                        return $dateTime;
                     }
                     $timestamp = is_numeric($value) ? $value : $gmstrtotime($value);
                     if ($timestamp < 0 || $timestamp === false) {

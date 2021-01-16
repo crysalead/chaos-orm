@@ -3,6 +3,7 @@ namespace Chaos\ORM;
 
 use InvalidArgumentException;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeZone;
 use Lead\Set\Set;
 
@@ -162,6 +163,11 @@ class Source
                     $column += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
                         return $value;
+                    }
+                    if ($value instanceof DateTimeImmutable) {
+                        $dateTime = new DateTime(null, $value->getTimezone());
+                        $dateTime->setTimestamp($value->getTimestamp());
+                        return $dateTime;
                     }
                     $timestamp = is_numeric($value) ? $value : $gmstrtotime($value);
                     if ($timestamp < 0 || $timestamp === false) {

@@ -3,6 +3,7 @@ namespace Chaos\ORM\Database\Spec\Suite;
 
 use InvalidArgumentException;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeZone;
 use Chaos\ORM\Source;
 use Chaos\ORM\Document;
@@ -129,6 +130,8 @@ describe("Source", function() {
             expect($this->source->convert('cast', 'datetime', $datetime)->format('Y-m-d H:i:s'))->toBe('2014-11-21 10:20:45');
             expect($this->source->convert('cast', 'datetime', '2014-11-21 10:20:45')->format('Y-m-d H:i:s'))->toBe('2014-11-21 10:20:45');
             expect($this->source->convert('cast', 'datetime', '1416565245')->format('Y-m-d H:i:s'))->toBe('2014-11-21 10:20:45');
+            $datetimeImmutable = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45', new DateTimeZone('UTC'));
+            expect($this->source->convert('cast', 'datetime', $datetimeImmutable)->format('Y-m-d H:i:s'))->toEqual('2014-11-21 10:20:45');
             expect($this->source->convert('cast', 'boolean', 1))->toBe(true);
             expect($this->source->convert('cast', 'boolean', 0))->toBe(false);
             expect($this->source->convert('cast', 'null', ''))->toBe(null);

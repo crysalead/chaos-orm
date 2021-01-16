@@ -3,6 +3,7 @@ namespace Chaos\ORM\Spec\Suite;
 
 use stdClass;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use Chaos\ORM\ORMException;
@@ -979,6 +980,11 @@ describe("Schema", function() {
                     if ($value instanceof DateTime) {
                         return $value;
                     }
+                    if ($value instanceof DateTimeImmutable) {
+                        $dateTime = new DateTime(null, $value->getTimezone());
+                        $dateTime->setTimestamp($value->getTimestamp());
+                        return $dateTime;
+                    }
                     return DateTime::createFromFormat($options['format'], date($options['format'], strtotime($value)));
                 },
                 'null'    => function($value, $options = []) {
@@ -1247,6 +1253,8 @@ describe("Schema", function() {
             expect($this->schema->convert('cast', 'datetime', $datetime))->toEqual($datetime);
             expect($this->schema->convert('cast', 'datetime', '2014-11-21 10:20:45'))->toEqual($datetime);
             expect($this->schema->convert('cast', 'datetime', 'abcd'))->toEqual(null);
+            $datetimeImmutable = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45', new DateTimeZone('UTC'));
+            expect($this->schema->convert('cast', 'datetime', $datetimeImmutable))->toEqual($datetime);
             expect($this->schema->convert('cast', 'boolean', true))->toBe(true);
             expect($this->schema->convert('cast', 'boolean', false))->toBe(false);
             expect($this->schema->convert('cast', 'null', null))->toBe(null);
@@ -1290,12 +1298,11 @@ describe("Schema", function() {
 
     describe("->persist()", function() {
 
-        beforeEach(function() {
+        it("filters out virtual values", function() {
+
             $this->schema = new Schema(['locked' => false]);
-            $this->data = [];
-            $data = &$this->data;
-            $this->filter = null;
-            $filter = &$this->filter;
+            $data = [];
+            $filter = null;
             allow($this->schema)->toReceive('bulkInsert')->andRun(function ($inserts, $closure) use (&$data, &$filter) {
                 $data['inserts'] = $inserts;
                 $filter = $closure;
@@ -1305,9 +1312,6 @@ describe("Schema", function() {
                 $data['updates'] = $updates;
                 $filter = $closure;
             });
-        });
-
-        it("filters out virtual values", function() {
 
             $this->schema->column('a', ['type' => 'string', 'virtual' => true]);
 
@@ -1320,8 +1324,8 @@ describe("Schema", function() {
 
             $this->schema->persist($entity);
 
-            expect($this->data['inserts'])->toBe([$entity]);
-            expect($this->filter($entity))->toBe(['b' => 2]);
+            expect($data['inserts'])->toBe([$entity]);
+            expect($filter($entity))->toBe(['b' => 2]);
 
         });
 
