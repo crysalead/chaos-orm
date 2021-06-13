@@ -1133,6 +1133,7 @@ class Schema
                 },
                 'decimal' => function($value, $column, $options) {
                     $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                    $value = is_numeric($value) ? $value : 0;
                     return number_format($value, $column['precision'], $column['decimal'], $column['separator']);
                 },
                 'boolean' => function($value, $column, $options) {

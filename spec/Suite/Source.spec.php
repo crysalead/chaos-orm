@@ -123,6 +123,7 @@ describe("Source", function() {
             expect($this->source->convert('cast', 'integer', '123'))->toBe(123);
             expect($this->source->convert('cast', 'float', '12.3'))->toBe(12.3);
             expect($this->source->convert('cast', 'decimal', '12.3'))->toBe('12.30');
+            expect($this->source->convert('cast', 'decimal', 'invalid'))->toBe('0.00');
             $date = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 00:00:00', new DateTimeZone('UTC'));
             expect($this->source->convert('cast', 'date', $date))->toEqual($date);
             expect($this->source->convert('cast', 'date', '2014-11-21'))->toEqual($date);

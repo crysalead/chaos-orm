@@ -963,8 +963,9 @@ describe("Schema", function() {
                     return (float) $value;
                 },
                 'decimal' => function($value, $options = []) {
-                    $options += ['precision' => 2];
-                    return (float) number_format($value, $options['precision']);
+                    $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                    $value = is_numeric($value) ? $value : 0;
+                    return number_format($value, $column['precision'], $column['decimal'], $column['separator']);
                 },
                 'boolean' => function($value, $options = []) {
                     return !!$value;
@@ -1246,6 +1247,7 @@ describe("Schema", function() {
             expect($this->schema->convert('cast', 'integer', 123))->toBe(123);
             expect($this->schema->convert('cast', 'float', 12.3))->toBe(12.3);
             expect($this->schema->convert('cast', 'decimal', 12.3, ['length' =>  20, 'precision' =>  2]))->toBe('12.30');
+            expect($this->schema->convert('cast', 'decimal', 'invalid', ['length' =>  20, 'precision' =>  2]))->toBe('0.00');
             $date = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 00:00:00', new DateTimeZone('UTC'));
             expect($this->schema->convert('cast', 'date', $date))->toEqual($date);
             expect($this->schema->convert('cast', 'date', '2014-11-21'))->toEqual($date);
