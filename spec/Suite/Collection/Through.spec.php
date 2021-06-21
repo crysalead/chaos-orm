@@ -702,7 +702,7 @@ describe("Through", function() {
             $image->tags[] = Tag::create();
             $image->tags[] = Tag::create();
 
-            expect($image->validates())->toBe(false);
+            expect($image->validates(['embed' => true]))->toBe(false);
 
             expect($image->tags->errors())->toBe([
                 [

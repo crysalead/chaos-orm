@@ -1,7 +1,7 @@
 # Chaos - Domain Modeling Library
 
 ![Build Status](https://img.shields.io/badge/branch-master-blue.svg)
-[![Build Status](https://travis-ci.org/crysalead/chaos-orm.png?branch=master)](https://travis-ci.org/crysalead/chaos-orm)
+[![Build Status](https://travis-ci.com/crysalead/chaos-orm.png?branch=master)](https://travis-ci.com/crysalead/chaos-orm)
 [![Scrutinizer Coverage Status](https://scrutinizer-ci.com/g/crysalead/chaos-orm/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/crysalead/chaos-orm/?branch=master)
 
 Chaos is an independent, persistence-agnostic layer responsible for defining entities' business logic and relationships. It allows to describe a [Domain Model](https://en.wikipedia.org/wiki/Domain_model) without any assumption about the persistence layer.

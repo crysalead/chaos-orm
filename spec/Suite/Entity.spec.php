@@ -1039,7 +1039,7 @@ describe("Entity", function() {
 
             $image = Image::create();
             $image->gallery = Gallery::create();
-            expect($image->validates())->toBe(false);
+            expect($image->validates(['embed' => true]))->toBe(false);
             expect($image->errors())->toBe([
                 'name' => ['is required'],
                 'gallery' => [
@@ -1048,7 +1048,7 @@ describe("Entity", function() {
             ]);
 
             $image->name = 'new image';
-            expect($image->validates())->toBe(false);
+            expect($image->validates(['embed' => true]))->toBe(false);
             expect($image->errors())->toBe([
                 'gallery' => [
                     'name' => ['is required']
@@ -1056,7 +1056,7 @@ describe("Entity", function() {
             ]);
 
             $image->gallery->name = 'new gallery';
-            expect($image->validates())->toBe(true);
+            expect($image->validates(['embed' => true]))->toBe(true);
             expect($image->errors())->toBe([]);
 
         });
@@ -1067,7 +1067,7 @@ describe("Entity", function() {
             $gallery->images[] = Image::create();
             $gallery->images[] = Image::create();
 
-            expect($gallery->validates())->toBe(false);
+            expect($gallery->validates(['embed' => true]))->toBe(false);
             expect($gallery->errors())->toBe([
                 'name'   => ['is required'],
                 'images' => [
@@ -1079,7 +1079,7 @@ describe("Entity", function() {
             $gallery->name = '';
             $gallery->images[0]->name = '';
             $gallery->images[1]->name = '';
-            expect($gallery->validates())->toBe(false);
+            expect($gallery->validates(['embed' => true]))->toBe(false);
             expect($gallery->errors())->toBe([
                 'name'   => ['must not be a empty'],
                 'images' => [
@@ -1091,7 +1091,7 @@ describe("Entity", function() {
             $gallery->name = 'new gallery';
             $gallery->images[0]->name = 'image1';
             $gallery->images[1]->name = '';
-            expect($gallery->validates())->toBe(false);
+            expect($gallery->validates(['embed' => true]))->toBe(false);
             expect($gallery->errors())->toBe([
                 'images' => [
                     [],
@@ -1102,7 +1102,7 @@ describe("Entity", function() {
             $gallery->name = 'new gallery';
             $gallery->images[0]->name = 'image1';
             $gallery->images[1]->name = 'image2';
-            expect($gallery->validates())->toBe(true);
+            expect($gallery->validates(['embed' => true]))->toBe(true);
             expect($gallery->errors())->toBe([]);
 
         });
@@ -1113,7 +1113,7 @@ describe("Entity", function() {
             $image->tags[] = Tag::create();
             $image->tags[] = Tag::create();
 
-            expect($image->validates())->toBe(false);
+            expect($image->validates(['embed' => true]))->toBe(false);
             expect($image->errors())->toBe([
                 'name'   => ['is required'],
                 'images_tags' => [
@@ -1129,7 +1129,7 @@ describe("Entity", function() {
             $image->name = '';
             $image->tags[0]->name = '';
             $image->tags[1]->name = '';
-            expect($image->validates())->toBe(false);
+            expect($image->validates(['embed' => true]))->toBe(false);
             expect($image->errors())->toBe([
                 'name'   => ['must not be a empty'],
                 'images_tags' => [
@@ -1145,7 +1145,7 @@ describe("Entity", function() {
             $image->name = 'new gallery';
             $image->tags[0]->name = 'image1';
             $image->tags[1]->name = '';
-            expect($image->validates())->toBe(false);
+            expect($image->validates(['embed' => true]))->toBe(false);
             expect($image->errors())->toBe([
                 'images_tags' => [
                    [],
@@ -1160,7 +1160,7 @@ describe("Entity", function() {
             $image->name = 'new gallery';
             $image->tags[0]->name = 'image1';
             $image->tags[1]->name = 'image2';
-            expect($image->validates())->toBe(true);
+            expect($image->validates(['embed' => true]))->toBe(true);
             expect($image->errors())->toBe([]);
 
         });
@@ -1301,13 +1301,13 @@ describe("Entity", function() {
 
             allow($schema)->toReceive('bulkInsert')->andReturn(true);
             allow($schema)->toReceive('bulkUpdate')->andReturn(true);
+
             expect($schema)->toReceive('save')->with($image, [
                 'validate' => true,
                 'embed' => false
             ]);
 
             expect($image->save())->toBe(true);
-
         });
 
         it("validates embedded relationships", function() {
@@ -1319,6 +1319,13 @@ describe("Entity", function() {
                 'title'   => 'Amiga 1200',
                 'gallery' => []
             ]);
+
+            $schema = $image->schema();
+            allow($schema)->toReceive('bulkInsert')->andReturn(true);
+            allow($schema)->toReceive('bulkUpdate')->andReturn(true);
+
+            allow($image->gallery)->toReceive('__isset')->andReturn(true);
+
             expect($image->save(['embed' => 'gallery']))->toBe(false);
 
         });

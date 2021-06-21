@@ -538,11 +538,19 @@ class Model extends Document
         ];
 
         $options += $defaults;
-        if ($options['validate'] && !$this->validates($options)) {
+        if ($options['validate'] && !$this->validates(['embed' => false] + $options)) {
+            $this->_validates(['embed' => $options['embed']]);
             return false;
+        } else {
+            $this->sync();
+            $this->_errors = [];
         }
         $schema = $this->schema();
-        return $schema->save($this, $options);
+        if (!$schema->save($this, $options)) {
+            $this->_validates(['embed' => $options['embed']]);
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -607,14 +615,14 @@ class Model extends Document
             'events'   => $exists ? 'update' : 'create',
             'required' => $exists ? false : true,
             'entity'   => $this,
-            'embed'    => true
+            'embed'    => false
         ];
         $options += $defaults;
         $validator = static::validator();
 
+        $success = $validator->validates($this->get(), $options);
         $valid = $this->_validates(['embed' => $options['embed']]);
 
-        $success = $validator->validates($this->get(), $options);
         $this->_errors = [];
         $this->invalidate($validator->errors());
         return $success && $valid;

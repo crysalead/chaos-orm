@@ -1288,8 +1288,6 @@ class Schema
         ];
         $options += $defaults;
 
-        $options['validate'] = false;
-
         if ($options['embed'] === true) {
             $options['embed'] = $instance->hierarchy();
         }
@@ -1301,7 +1299,6 @@ class Schema
         }
 
         $success = $this->persist($instance, $options);
-
         return $success && $this->saveRelation($instance, ['hasMany', 'hasOne'], $options);
     }
 
@@ -1381,7 +1378,10 @@ class Schema
                     if (!($rel = $this->relation($relName)) || $rel->type() !== $type) {
                         continue;
                     }
-                    $success = $success && $rel->save($entity,  $value ? $value + $options : $options);
+                    $success = (
+                        $success &&
+                        $rel->save($entity,  $value ? $value + $options : $options)
+                    );
                 }
             }
         }
