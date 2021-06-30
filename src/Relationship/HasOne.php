@@ -61,7 +61,6 @@ class HasOne extends \Chaos\ORM\Relationship
 
         $conditions = $this->match($entity);
         $related = $entity->{$name};
-        $result = !!$related->set($conditions)->save($options);
-        return $result;
+        return $related->set($conditions)->save($options);
     }
 }
