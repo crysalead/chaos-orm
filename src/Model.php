@@ -538,13 +538,9 @@ class Model extends Document
         ];
 
         $options += $defaults;
-        if ($options['validate'] && !$this->validates(['embed' => false] + $options)) {
-            $this->_validates(['embed' => $options['embed']]);
-            return false;
-        } else {
-            $this->sync();
-            $this->_errors = [];
-        }
+        $this->sync();
+        $this->_errors = [];
+
         $schema = $this->schema();
         if (!$schema->save($this, $options)) {
             $this->_validates(['embed' => $options['embed']]);

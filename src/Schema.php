@@ -361,6 +361,17 @@ class Schema
                 $defaults[$fieldName] = $value['default'];
             }
         }
+        if (!$basePath) {
+            foreach($this->_relations as $name => $value) {
+                $rel = $this->relation($name);
+                if ($rel->type() !== 'belongsTo') {
+                    continue;
+                }
+                if (!empty($value['null']) && empty($value['array'])) {
+                    $defaults[$rel->keys('from')] = null;
+                }
+            }
+        }
         return $defaults;
     }
 
@@ -1297,7 +1308,9 @@ class Schema
         if (!$this->saveRelation($instance, 'belongsTo', $options)) {
             return false;
         }
-
+        if ($options['validate'] && !$instance->validates(['embed' => false] + $options)) {
+            return false;
+        }
         $success = $this->persist($instance, $options);
         return $success && $this->saveRelation($instance, ['hasMany', 'hasOne'], $options);
     }

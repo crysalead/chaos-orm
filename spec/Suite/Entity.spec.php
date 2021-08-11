@@ -361,6 +361,7 @@ describe("Entity", function() {
             $image->set('a.nested.value', 'hello');
 
             expect($image->data())->toEqual([
+                'gallery_id' => null,
                 'a' => [
                     'nested' => [
                         'value' => 'hello'
@@ -1423,6 +1424,7 @@ describe("Entity", function() {
             expect($image->data())->toBe([
                 'name' => 'amiga_1200.jpg',
                 'title' => 'Amiga 1200',
+                'gallery_id' => null,
                 'images_tags' => [
                     [
                         'tag_id' => null,

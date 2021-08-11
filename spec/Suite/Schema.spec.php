@@ -239,7 +239,8 @@ describe("Schema", function() {
 
             expect($this->schema->defaults())->toBe([
                 'name'       => 'Enter The Name Here',
-                'title'      => 'Enter The Title Here'
+                'title'      => 'Enter The Title Here',
+                'gallery_id' => null,
             ]);
 
         });
