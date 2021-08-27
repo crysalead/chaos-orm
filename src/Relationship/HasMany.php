@@ -113,7 +113,7 @@ class HasMany extends \Chaos\ORM\Relationship
             return true;
         }
 
-        $conditions = $this->match($entity);
+        $conditions = $this->match($entity) + $this->conditions();
         $to = $this->to();
         $previous = $to::all(['conditions' => $conditions]);
 

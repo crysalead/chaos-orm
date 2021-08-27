@@ -373,6 +373,31 @@ describe("HasMany", function() {
 
         });
 
+        it("assures removed associative entity to be deleted according to the defined scope", function() {
+
+            $schema = Image::definition();
+            $schema->hasMany('images_tags', ImageTag::class, [
+                'keys' => ['id' => 'tag_id'],
+                'conditions' => ['scope' => 1]
+            ]);
+
+            $result = [];
+
+            Stub::on(ImageTag::class)->method('::all', function($options = [], $fetchOptions = []) use (&$result) {
+                $result = $options;
+                return ImageTag::create([], ['type' => 'set']);
+            });
+
+            $relation = $schema->relation('images_tags');
+
+            $relation->save(Image::create(['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley', 'images_tags' => []], ['exists' => true]));
+
+            expect($result['conditions'])->toBe([
+                'tag_id' => 4,
+                'scope' => 1
+            ]);
+        });
+
     });
 
 });
