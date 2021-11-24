@@ -463,7 +463,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         if (!func_num_args()) {
             $data = [];
             foreach ($this->_data as $key => $value) {
-                $data[$key] = $this->{$key};
+                $data[$key] = $this->__get($key);
             }
             return $data;
         }
