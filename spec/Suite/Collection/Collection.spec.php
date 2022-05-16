@@ -735,6 +735,18 @@ describe("Collection", function() {
 
         });
 
+        it("returns -1 when the id doesn't exists", function() {
+
+            $model = $this->model;
+
+            $collection = new Collection(['data' => [
+                new $model(['data' => ['id' => 1, 'type' => 'type1']])
+            ]]);
+
+            expect($collection->indexOfId(2))->toBe(-1);
+
+        });
+
         it("throws an error when collection doesn't contain documents", function() {
 
             $closure = function() {

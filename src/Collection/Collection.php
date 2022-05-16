@@ -713,6 +713,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
                 return $key;
             }
         }
+        return -1;
     }
 
     /**
