@@ -1159,7 +1159,7 @@ class Schema
                         return $value;
                     }
                     if ($value instanceof DateTimeImmutable) {
-                        $dateTime = new DateTime(null, $value->getTimezone());
+                        $dateTime = new DateTime('', $value->getTimezone());
                         $dateTime->setTimestamp($value->getTimestamp());
                         return $dateTime;
                     }

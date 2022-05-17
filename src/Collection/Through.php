@@ -345,6 +345,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *                        index of an entity in the set.
      * @return boolean        Result.
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         return $this->_parent->{$this->_through}->offsetExists($offset);
@@ -356,6 +357,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * @param  mixed $offset The offset.
      * @return mixed         Returns an `Entity` object if exists otherwise returns `null`.
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->get($offset);
@@ -369,9 +371,10 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * @param  mixed  $data   The entity object to add.
      * @return mixed          Returns the set `Entity` object.
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $data)
     {
-        return $this->set($offset, $data);
+        $this->set($offset, $data);
     }
 
     /**
@@ -379,6 +382,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *
      * @param integer $offset The offset to unset.
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         unset($this->_parent->{$this->_through}[$offset]);
@@ -467,6 +471,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * @param  boolean $full If true, returns the complete key.
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function key($full = false)
     {
         return $this->_parent->{$this->_through}->key();
@@ -477,6 +482,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *
      * @return object `Record`
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         $entity = $this->_parent->{$this->_through}->current();
@@ -491,6 +497,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *
      * @return mixed The current item after moving or the last item on failure.
      */
+    #[\ReturnTypeWillChange]
     public function prev()
     {
         $entity = $this->_parent->{$this->_through}->prev();
@@ -507,6 +514,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      * @return mixed Returns the next document in the set, or `false`, if no more documents are
      *               available.
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $entity = $this->_parent->{$this->_through}->next();
@@ -518,6 +526,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
     /**
      * Rewinds the collection to the beginning.
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->_parent->{$this->_through}->rewind();
@@ -540,6 +549,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *
      * @return boolean `true` if valid, `false` otherwise.
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->_parent->{$this->_through}->valid();
@@ -550,6 +560,7 @@ class Through implements DataStoreInterface, HasParentsInterface, \ArrayAccess, 
      *
      * @return integer Returns the number of items in the collection.
      */
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return $this->_parent->{$this->_through}->count();

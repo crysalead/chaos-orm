@@ -597,7 +597,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      */
     public function setAt($name, $data, $options = [])
     {
-        $keys = is_array($name) ? $name : explode('.', $name);
+        $keys = is_array($name) ? $name : explode('.', $name ?? '');
 
         $name = array_shift($keys);
         if ($name === null || $name === '') {
@@ -658,6 +658,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @param  string $offset The field name.
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function &offsetGet($offset)
     {
         $result = $this->get($offset);
@@ -670,9 +671,10 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @param  string $offset The field name.
      * @param  mixed  $value  The value.
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
-        return $this->setAt($offset, $value);
+        $this->setAt($offset, $value);
     }
 
     /**
@@ -681,6 +683,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      * @param  string $offset The field name.
      * @return boolean
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         $keys = is_array($offset) ? $offset : explode('.', $offset);
@@ -704,6 +707,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @param  string $offset The field name.
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         $keys = is_array($offset) ? $offset : (is_string($offset) ? explode('.', $offset) : [$offset]);
@@ -735,6 +739,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return scalar Scalar on success or `null` on failure.
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return key($this->_data);
@@ -745,6 +750,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return mixed The current item or `false` on failure.
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return current($this->_data);
@@ -756,6 +762,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return mixed The current item after moving or the last item on failure.
      */
+    #[\ReturnTypeWillChange]
     public function prev()
     {
         $value = prev($this->_data);
@@ -767,6 +774,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return The current item after moving or `false` on failure.
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $value = $this->_skipNext ? current($this->_data) : next($this->_data);
@@ -779,6 +787,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return mixed The current item after rewinding.
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         return reset($this->_data);
@@ -800,6 +809,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return boolean `true` if valid, `false` otherwise.
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return key($this->_data) !== null;
@@ -810,6 +820,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
      *
      * @return integer Returns the number of items in the collection.
      */
+    #[\ReturnTypeWillChange]
     public function count() {
         return count($this->_data);
     }

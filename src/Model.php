@@ -423,6 +423,7 @@ class Model extends Document
      * @param  string $offset The field name.
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function &offsetGet($offset)
     {
         $result = $this->fetch($offset);

@@ -344,6 +344,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  mixed $offset The offset.
      * @return mixed         Returns an `Entity` object if exists otherwise returns `null`.
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->get($offset);
@@ -357,9 +358,10 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  mixed  $data   The entity object to add.
      * @return mixed          Returns the set `Entity` object.
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $data)
     {
-        return $this->setAt($offset, $data);
+        $this->setAt($offset, $data);
     }
 
     /**
@@ -368,6 +370,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  string $offset String or integer indicating the offset or index of an entity in the set.
      * @return boolean        Result.
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         $keys = is_array($offset) ? $offset : explode('.', $offset);
@@ -395,6 +398,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @param integer $offset The offset to unset.
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         $keys = is_array($offset) ? $offset : explode('.', $offset);
@@ -406,7 +410,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
 
         if ($keys) {
             if (!array_key_exists($name, $this->_data)) {
-                return false;
+                return;
             }
             $value = $this->_data[$name];
             if ($value instanceof ArrayAccess) {
@@ -537,6 +541,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @param  boolean $full If true, returns the complete key.
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function key($full = false)
     {
         return key($this->_data);
@@ -547,6 +552,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @return object `Record`
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return current($this->_data);
@@ -558,6 +564,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @return mixed The current item after moving or the last item on failure.
      */
+    #[\ReturnTypeWillChange]
     public function prev()
     {
         $value = prev($this->_data);
@@ -572,6 +579,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      * @return mixed Returns the next document in the set, or `false`, if no more documents are
      *               available.
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $value = $this->_skipNext ? current($this->_data) : next($this->_data);
@@ -582,6 +590,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
     /**
      * Rewinds the collection to the beginning.
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->_skipNext = false;
@@ -604,6 +613,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @return boolean `true` if valid, `false` otherwise.
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return key($this->_data) !== null;
@@ -614,6 +624,7 @@ class Collection implements DataStoreInterface, HasParentsInterface, \ArrayAcces
      *
      * @return integer Returns the number of items in the collection.
      */
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return count($this->_data);

@@ -41,6 +41,7 @@ class Buffer implements IteratorAggregate
      *
      * @return object An iterator instance.
      */
+    #[\ReturnTypeWillChange]
     public function getIterator()
     {
         $data = $this->get();
