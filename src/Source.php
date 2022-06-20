@@ -116,7 +116,7 @@ class Source
                     if ($value instanceof DateTime) {
                         return $value->format($format);
                     }
-                    return gmdate($format, is_numeric($value) ? $value : $gmstrtotime($value));
+                    return gmdate($format, (integer) (is_numeric($value) ? $value : $gmstrtotime($value)));
                 },
                 'boolean' => function($value, $column) {
                     return $value;
@@ -170,7 +170,7 @@ class Source
                     if ($timestamp < 0 || $timestamp === false) {
                         return;
                     }
-                    return DateTime::createFromFormat("!{$column['format']}", gmdate($column['format'], $timestamp), new DateTimeZone('UTC'));
+                    return DateTime::createFromFormat("!{$column['format']}", gmdate($column['format'], (integer) $timestamp), new DateTimeZone('UTC'));
                 },
                 'null'    => function($value, $column, $options) {
                     return null;
@@ -204,7 +204,7 @@ class Source
                         if ($timestamp < 0 || $timestamp === false) {
                             throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
                         }
-                        $date = gmdate($column['format'], $timestamp);
+                        $date = gmdate($column['format'], (integer) $timestamp);
                     }
                     return $date;
                 },

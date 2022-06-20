@@ -1113,7 +1113,7 @@ class Schema
                     if ($value instanceof DateTimeInterface) {
                         return $value->format($format);
                     }
-                    return gmdate($format, is_numeric($value) ? $value : $gmstrtotime($value));
+                    return gmdate($format, (integer) (is_numeric($value) ? $value : $gmstrtotime($value)));
                 },
                 'boolean' => function($value, $column) {
                     return $value;
@@ -1167,7 +1167,7 @@ class Schema
                     if ($timestamp < 0 || $timestamp === false) {
                         return;
                     }
-                    return DateTime::createFromFormat("!{$column['format']}", gmdate($column['format'], $timestamp), new DateTimeZone('UTC'));
+                    return DateTime::createFromFormat("!{$column['format']}", gmdate($column['format'], (integer) $timestamp), new DateTimeZone('UTC'));
                 },
                 'null'    => function($value, $column, $options) {
                     return null;
