@@ -1234,4 +1234,38 @@ describe("Document", function() {
         });
     });
 
+    describe(".keys()", function() {
+
+        it("extracts keys", function() {
+
+            $document = new Document([
+                'data' => [
+                    'title' => 'original',
+                    'body' => 'content'
+                ]
+            ]);
+
+            expect($document->keys())->toEqual(['title', 'body']);
+
+        });
+
+    });
+
+    describe(".values()", function() {
+
+        it("extracts values", function() {
+
+            $document = new Document([
+                'data' => [
+                    'title' => 'original',
+                    'body' => 'content'
+                ]
+            ]);
+
+            expect($document->values())->toEqual(['original', 'content']);
+
+        });
+
+    });
+
 });

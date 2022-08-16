@@ -652,6 +652,16 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         return $this;
     }
 
+    public function keys()
+    {
+        return array_keys($this->_data);
+    }
+
+    public function values()
+    {
+        return array_values($this->_data);
+    }
+
     /**
      * Allows fields to be accessed as an array, i.e. `$entity['id']`.
      *
