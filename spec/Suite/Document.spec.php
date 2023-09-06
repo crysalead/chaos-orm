@@ -32,6 +32,19 @@ describe("Document", function() {
 
         });
 
+        it("do no merges arrays as default values", function() {
+
+            $schema = new Schema();
+            $schema->column('features', ['type' => 'string', 'array' => true, 'format' => 'json', 'use' => 'json', 'default' => ['one', 'two']]);
+
+            $document = new Document([
+                'schema' => $schema,
+                'data' => ['features' => ['one', 'three']]
+            ]);
+            expect($document->data())->toBe(['features' => ['one', 'three']]);
+
+        });
+
     });
 
     describe("->self()", function() {

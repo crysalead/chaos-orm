@@ -349,7 +349,7 @@ class Document implements DataStoreInterface, HasParentsInterface, \ArrayAccess,
         $this->schema($config['schema']);
 
         if ($config['defaults']) {
-            $config['data'] = Set::extend($this->schema()->defaults($config['basePath']), $config['data']);
+            $config['data'] = array_replace($this->schema()->defaults($config['basePath']), $config['data']);
         }
 
         $this->amend($config['data'], ['exists' => $config['exists']]);
