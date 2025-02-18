@@ -17,6 +17,13 @@ class Buffer implements IteratorAggregate
     protected $_data = [];
 
     /**
+     * The handler.
+     *
+     * @var Closure
+     */
+    protected $_handler = null;
+
+    /**
      * Creates a new record object with default values.
      *
      * @param mixed $handler The handler.

@@ -4,15 +4,15 @@
     "keywords": ["Data Abstraction", "DataMapper", "ORM", "Model"],
     "license": "MIT",
     "require": {
-        "php": ">=7.0",
-        "crysalead/box": "~2.0",
-        "crysalead/set": "~2.0",
-        "crysalead/text": "~2.0",
-        "crysalead/inflector": "~2.0",
-        "crysalead/validator": "~3.0"
+        "php": ">=8.3",
+        "crysalead/box": "^2",
+        "crysalead/set": "^2",
+        "crysalead/text": "^2",
+        "crysalead/inflector": "^2",
+        "crysalead/validator": "^3"
     },
     "require-dev": {
-        "kahlan/kahlan": "~5.1"
+        "kahlan/kahlan": "^6"
     },
     "autoload": {
         "psr-4": {
