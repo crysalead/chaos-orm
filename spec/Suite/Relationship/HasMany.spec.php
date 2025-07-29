@@ -364,9 +364,9 @@ describe("HasMany", function() {
             Stub::on($toKeep)->method('save', function() { return true; });
             Stub::on($schema)->method('remove', function() { return true; });
 
-            expect($image->images_tags[0])->toReceive('save');
             expect($toKeep)->toReceive('save');
             expect($schema)->toReceive('remove')->with(['id' => 5]);
+            expect($image->images_tags[0])->toReceive('save');
             expect($hasMany->save($image))->toBe(true);
             expect($toDelete->exists())->toBe(false);
             expect($image->images_tags[0]->image_id)->toBe($image->id);
@@ -396,6 +396,43 @@ describe("HasMany", function() {
                 'tag_id' => 4,
                 'scope' => 1
             ]);
+        });
+
+        it("correctly handle reinserted entities", function() {
+
+            $toReinsert = ImageTag::create(['id' => 5, 'image_id' => 4, 'tag_id' => 6], ['exists' => true]);
+            $toKeep = ImageTag::create(['id' => 6, 'image_id' => 4, 'tag_id' => 3], ['exists' => true]);
+
+            Stub::on(ImageTag::class)->method('::all', function($options = [], $fetchOptions = []) use ($toReinsert, $toKeep){
+                $images =  ImageTag::create([
+                    $toReinsert,
+                    $toKeep
+                ], ['type' => 'set']);
+                return $images;
+            });
+
+            $hasMany = Image::definition()->relation('images_tags');
+
+            $image = Image::create(['id' => 4, 'gallery_id' => 2, 'title' => 'Silicon Valley'], ['exists' => true]);
+            $image->images_tags = [['image_id' => 4, 'tag_id' => 6], $toKeep];
+
+            Stub::on($image->images_tags[0])->method('save', function() use ($image) {
+                $image->images_tags[0]->id = 7;
+                return true;
+            });
+
+            $schema = ImageTag::definition();
+
+            Stub::on($toKeep)->method('save', function() { return true; });
+            Stub::on($schema)->method('remove', function() { return true; });
+
+            expect($toKeep)->toReceive('save')->ordered;
+            expect($schema)->toReceive('remove')->with(['id' => 5])->ordered;
+            expect($image->images_tags[0])->toReceive('save')->ordered;
+            expect($hasMany->save($image))->toBe(true);
+            expect($toReinsert->exists())->toBe(false);
+            expect($image->images_tags[0]->image_id)->toBe($image->id);
+
         });
 
     });

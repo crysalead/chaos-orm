@@ -120,6 +120,9 @@ class HasMany extends \Chaos\ORM\Relationship
         $indexes = $this->_index($previous, $this->keys('from'));
         $result = true;
 
+        $junction = $this->junction();
+        $toInsert = [];
+
         foreach ($entity->{$name} as $item) {
             $item->sync();
             $value = (string) $item->id();
@@ -127,14 +130,19 @@ class HasMany extends \Chaos\ORM\Relationship
                 unset($previous[$indexes[$value]]);
             }
             $item->set($conditions);
-            $result = $result && $item->save($options);
+            if ($junction && !$item->exists()) {
+                $toInsert[] = $item;
+            } else {
+                $result = $result && $item->save($options);
+            }
         }
-
-        $junction = $this->junction();
 
         if ($junction) {
             foreach ($previous as $deprecated) {
                 $deprecated->delete();
+            }
+            foreach ($toInsert as $insert) {
+                $result = $result && $insert->save($options);
             }
         } else {
             $toKey = $this->keys('to');
